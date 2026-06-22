@@ -1,0 +1,66 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "deepseek-ai/DeepSeek-V2-Lite",
+  "platform": "A100 80GB",
+  "run_time": "2026-06-22T21:00:00+08:00",
+  "config": {
+    "hbm_budget": 8,
+    "cpu_budget": 12,
+    "alpha": 0.73,
+    "max_new_tokens": 64,
+    "prompt_len": 64,
+    "n_prompts": 8,
+    "cold_ssd": true
+  },
+  "compiled_plan": {
+    "k_h": 19,
+    "k_c": 28,
+    "n_layers": 26,
+    "n_experts": 64,
+    "expert_mb": 16.5
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 3899.73,
+      "tpot_ms": 847.03,
+      "tokens_per_s": 1.14,
+      "ppl": 43.895,
+      "hit_pct": {
+        "hbm": 75.6,
+        "cpu": 14.5,
+        "ssd": 10.0,
+        "cpu_compute": 0.0
+      },
+      "speedup_vs": {
+        "swapmoe": 2.28,
+        "fiddler": 1.14
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 17691.67,
+      "tpot_ms": 1743.98,
+      "tokens_per_s": 0.5,
+      "ppl": 91.06,
+      "hit_pct": {
+        "hbm": 61.6,
+        "cpu": 7.1,
+        "ssd": 31.4,
+        "cpu_compute": 0.0
+      }
+    },
+    "fiddler": {
+      "ttft_ms": 6332.87,
+      "tpot_ms": 940.13,
+      "tokens_per_s": 1.0,
+      "ppl": 44.742,
+      "hit_pct": {
+        "hbm": 82.5,
+        "cpu": 0.0,
+        "ssd": 9.6,
+        "cpu_compute": 7.9
+      }
+    }
+  },
+  "note": "swapmoe PPL=91 anomalous vs ours/fiddler ~44; needs investigation"
+}
