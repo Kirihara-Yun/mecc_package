@@ -277,8 +277,8 @@ class LayerExpertCache:
                     with torch.cuda.stream(self._copy_stream):
                         self._nearmiss_buf[uid] = ws_cpu.to(self.device, non_blocking=True)
             elif uid not in self.static_cpu:
-                # SSD → CPU 后台读 (不改命中计数)
-                self._nearmiss_buf[uid] = self.store.load_to_cpu(uid, cold=self.cold_ssd)
+                # M2: pin 后后续 H2D 更快
+                self._nearmiss_buf[uid] = self.store.load_to_cpu(uid, cold=self.cold_ssd).pin()
 
     def consume_nearmiss(self, uid: ExpertUID):
         """在 _access 前检查 near-miss 预取缓冲, 命中则直接提升到 HBM。"""

@@ -89,7 +89,8 @@ class OursPolicy(CachePolicy):
                 g = cache._to_gpu(ws_cpu)
                 cache.hits[1] += 1                       # 预取命中 = CPU hit
             else:
-                ws_cpu = cache.store.load_to_cpu(uid, cold=cache.cold_ssd)
+                # M2: pin 后 H2D 走 DMA (~12GB/s vs ~6GB/s staged)
+                ws_cpu = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
                 g = cache._to_gpu(ws_cpu)
                 cache.hits[2] += 1
         cache.gpu[uid] = (g, ws_cpu)
@@ -112,7 +113,8 @@ class SwapMoePolicy(CachePolicy):
             g = cache._to_gpu(cache.static_cpu[uid])
             cache.hits[1] += 1
         else:
-            g = cache._to_gpu(cache.store.load_to_cpu(uid, cold=cache.cold_ssd))
+            # M2: pin 后 H2D 走 DMA
+            g = cache._to_gpu(cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin())
             cache.hits[2] += 1
         cache.gpu[uid] = (g, None)                        # swapmoe 不保留 CPU 镜像
         cache.gpu.move_to_end(uid)
@@ -134,8 +136,9 @@ class FiddlerPolicy(CachePolicy):
             cache.cpu.move_to_end(uid)
             cache.hits[3] += 1    # cpu_compute
             return cache.cpu[uid]
-        src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd)
-        cache.cpu[uid] = src.pin()
+        # M2: pin 后 H2D 走 DMA
+        src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
+        cache.cpu[uid] = src
         cache.cpu.move_to_end(uid)
         while len(cache.cpu) > cache.k_c:
             cache.cpu.popitem(last=False)
@@ -153,7 +156,8 @@ class NaivePolicy(CachePolicy):
             cache.gpu.move_to_end(uid)
             cache.hits[0] += 1
             return cache.gpu[uid][0]
-        src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd)
+        # M2: pin 后 H2D 走 DMA
+        src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
         cache.hits[2] += 1
         return cache._to_gpu(src)
 
