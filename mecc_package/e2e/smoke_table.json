@@ -34,55 +34,55 @@
   },
   "results": {
     "ours": {
-      "ttft_ms": 53.76,
-      "tpot_ms": 57.23,
-      "tokens_per_s": 17.83,
+      "ttft_ms": 34.81,
+      "tpot_ms": 40.45,
+      "tokens_per_s": 25.77,
       "ppl": "exact(lossless)",
       "hit_pct": {
         "hbm": 0.0,
-        "cpu": 12.9,
-        "ssd": 87.1,
+        "cpu": 23.0,
+        "ssd": 77.0,
         "cpu_compute": 0.0
       },
       "speedup_vs": {
-        "swapmoe": 0.478,
-        "fiddler": 0.675,
-        "naive": 0.469
+        "swapmoe": 0.488,
+        "fiddler": 0.664,
+        "naive": 0.627
       }
     },
     "swapmoe": {
-      "ttft_ms": 28.84,
-      "tpot_ms": 28.5,
-      "tokens_per_s": 37.3,
+      "ttft_ms": 18.26,
+      "tpot_ms": 19.17,
+      "tokens_per_s": 52.85,
       "ppl": "exact(lossless)",
       "hit_pct": {
         "hbm": 0.0,
-        "cpu": 37.5,
-        "ssd": 62.5,
+        "cpu": 38.5,
+        "ssd": 61.5,
         "cpu_compute": 0.0
       }
     },
     "fiddler": {
-      "ttft_ms": 30.73,
-      "tpot_ms": 43.54,
-      "tokens_per_s": 26.43,
+      "ttft_ms": 24.2,
+      "tpot_ms": 26.31,
+      "tokens_per_s": 38.79,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 25.6,
+        "cpu": 0.0,
+        "ssd": 71.6,
+        "cpu_compute": 2.7
+      }
+    },
+    "naive": {
+      "ttft_ms": 23.11,
+      "tpot_ms": 24.6,
+      "tokens_per_s": 41.12,
       "ppl": "exact(lossless)",
       "hit_pct": {
         "hbm": 26.4,
         "cpu": 0.0,
-        "ssd": 67.2,
-        "cpu_compute": 6.4
-      }
-    },
-    "naive": {
-      "ttft_ms": 25.76,
-      "tpot_ms": 27.78,
-      "tokens_per_s": 37.99,
-      "ppl": "exact(lossless)",
-      "hit_pct": {
-        "hbm": 26.9,
-        "cpu": 0.0,
-        "ssd": 73.1,
+        "ssd": 73.6,
         "cpu_compute": 0.0
       }
     }
