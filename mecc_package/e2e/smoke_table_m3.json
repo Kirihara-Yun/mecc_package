@@ -1,0 +1,90 @@
+{
+  "device": "cuda",
+  "mode": "smoke",
+  "model": "smoke-tiny-moe",
+  "compiled_plan": {
+    "model": "smoke",
+    "hardware": "rtx5090 (HBM_budget=0.0006GB, CPU_budget=0.0008GB)",
+    "alpha": 1.0,
+    "n_layers": 2,
+    "n_experts": 8,
+    "expert_mb": 0.2,
+    "k_h": 2,
+    "k_c": 3,
+    "per_layer_k_h": [
+      1,
+      1
+    ],
+    "per_layer_k_c": [
+      2,
+      2
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 36.8,
+    "cpu_hit_pct": 30.7,
+    "ssd_hit_pct": 32.5,
+    "hbm_gb_used": 0.0,
+    "cpu_gb_used": 0.0
+  },
+  "config": {
+    "max_new_tokens": 6,
+    "prompt_len": 8,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 27.14,
+      "tpot_ms": 27.09,
+      "tokens_per_s": 38.1,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.0,
+        "cpu": 16.7,
+        "ssd": 83.3,
+        "cpu_compute": 0.0
+      },
+      "speedup_vs": {
+        "swapmoe": 0.729,
+        "fiddler": 1.003,
+        "naive": 1.452
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 18.03,
+      "tpot_ms": 19.36,
+      "tokens_per_s": 52.25,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.0,
+        "cpu": 37.4,
+        "ssd": 62.6,
+        "cpu_compute": 0.0
+      }
+    },
+    "fiddler": {
+      "ttft_ms": 25.48,
+      "tpot_ms": 27.38,
+      "tokens_per_s": 38.0,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 28.7,
+        "cpu": 0.0,
+        "ssd": 61.3,
+        "cpu_compute": 10.0
+      }
+    },
+    "naive": {
+      "ttft_ms": 34.86,
+      "tpot_ms": 38.94,
+      "tokens_per_s": 26.24,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 26.9,
+        "cpu": 0.0,
+        "ssd": 73.1,
+        "cpu_compute": 0.0
+      }
+    }
+  }
+}

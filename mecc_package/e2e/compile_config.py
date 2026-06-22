@@ -10,6 +10,11 @@ compile_config.py — 编译器接入: (模型 + 硬件 + profiled α) → 每�
   k_c      : 每层常驻 CPU 的 expert 数
   placement: {layer_id: [按热度降序的 expert id]}  (warm-up 放置依据)
   预估命中率 / 延迟 (来自编译器解析模型, 供 sanity check)
+
+M3 扩展 (路由感知联合放置):
+  新增 cooc_data 参数与 joint_ranking 函数: 若提供层间专家共现矩阵, 则放置排序
+  不仅按单层热度, 还按跨层共现加分 (与上一层 HBM 驻留专家共现的专家获得 boost)。
+  无共现数据时退化为纯热度排序, 向后兼容。
 """
 from __future__ import annotations
 import json
@@ -67,6 +72,145 @@ def _rank_from_profile(profile_path: Optional[str], n_layers: int, n_experts: in
     return {L: list(range(n_experts)) for L in range(n_layers)}
 
 
+# ════════════════════════════════════════════════════════════════════
+# M3: 路由感知的层间联合放置 (routing_aware_placement)
+# ════════════════════════════════════════════════════════════════════
+
+def build_cooccurrence_from_trace(per_layer_trace: Dict[int, List[List[int]]],
+                                   n_layers: int, n_experts: int
+                                   ) -> Dict[int, Dict[int, Dict[int, float]]]:
+    """从 per-layer 路由 trace 构建层间专家共现矩阵。
+
+    per_layer_trace: {layer_id: [[expert_ids_per_token], ...]}
+        每层每 token 激活的 expert id 列表 (top-k 结果).
+
+    Returns:
+        cooc[L][e][e_next] = P(e_next in L+1 | e in L)
+        即给定层 L 激活 expert e, 下一层 L+1 激活 e_next 的条件概率。
+    """
+    if not per_layer_trace:
+        return {}
+    cooc: Dict[int, Dict[int, Dict[int, float]]] = {}
+    for L in range(n_layers - 1):
+        trace_L = per_layer_trace.get(L)
+        trace_next = per_layer_trace.get(L + 1)
+        if not trace_L or not trace_next:
+            continue
+        n_tokens = min(len(trace_L), len(trace_next))
+        # 先统计联合出现次数
+        joint_counts: Dict[int, Dict[int, int]] = {}
+        marginal_counts: Dict[int, int] = {}
+        for t in range(n_tokens):
+            experts_L = set(trace_L[t])
+            experts_next = set(trace_next[t])
+            for e in experts_L:
+                marginal_counts[e] = marginal_counts.get(e, 0) + 1
+                if e not in joint_counts:
+                    joint_counts[e] = {}
+                for e_next in experts_next:
+                    joint_counts[e][e_next] = joint_counts[e].get(e_next, 0) + 1
+        # 转为条件概率 P(e_next | e)
+        cooc[L] = {}
+        for e, total in marginal_counts.items():
+            if total > 0:
+                cooc[L][e] = {}
+                for e_next in range(n_experts):
+                    cnt = joint_counts.get(e, {}).get(e_next, 0)
+                    if cnt > 0:
+                        cooc[L][e][e_next] = cnt / total
+    return cooc
+
+
+def joint_ranking(per_layer_counts: Dict[int, List[int]],
+                  cooc: Dict[int, Dict[int, Dict[int, float]]],
+                  per_layer_k_h: List[int],
+                  n_layers: int,
+                  n_experts: int,
+                  boost_factor: float = 0.5,
+                  min_cooc_prob: float = 0.05) -> Dict[int, List[int]]:
+    """层间联合排序: 在单层热度的基础上, 对与上一层 HBM 驻留专家高频共现的
+    专家进行加分, 使其优先进入快层。
+
+    Args:
+        per_layer_counts: {layer: [count_per_expert]}  — 各 expert 的独立访问计数
+        cooc: 共现条件概率矩阵, build_cooccurrence_from_trace 产出
+        per_layer_k_h: 每层 HBM 槽位数 (决定上一层哪些专家在 HBM)
+        n_layers, n_experts: 模型维度
+        boost_factor: 共现加分强度 (0 = 退化为纯热度排序)
+        min_cooc_prob: 忽略低于此概率的共现 (过滤噪声)
+
+    Returns:
+        {layer_id: [expert_ids in joint-heat order]}
+    """
+    placement: Dict[int, List[int]] = {}
+
+    for L in range(n_layers):
+        raw_counts = list(per_layer_counts.get(L, [0.0] * n_experts))
+        # 确保长度为 n_experts
+        if len(raw_counts) < n_experts:
+            raw_counts.extend([0.0] * (n_experts - len(raw_counts)))
+        adjusted = list(raw_counts)
+
+        # 若有上一层 HBM 驻留信息, 计算共现加分
+        if L > 0 and (L - 1) in cooc and (L - 1) in placement:
+            prev_placement = placement[L - 1]
+            prev_k_h = per_layer_k_h[L - 1] if L - 1 < len(per_layer_k_h) else 0
+            hbm_experts_prev = set(prev_placement[:prev_k_h])
+            prev_cooc = cooc[L - 1]
+
+            max_raw = max(raw_counts) if max(raw_counts) > 0 else 1.0
+            for e in range(n_experts):
+                cooc_score = 0.0
+                for prev_e in hbm_experts_prev:
+                    prob = prev_cooc.get(prev_e, {}).get(e, 0.0)
+                    if prob >= min_cooc_prob:
+                        cooc_score += prob
+                if cooc_score > 0:
+                    # 共现得分归一化后加权叠加到原始计数
+                    adjusted[e] = raw_counts[e] + boost_factor * max_raw * cooc_score
+
+        # 按调整后分数降序排列
+        ranked = sorted(range(n_experts), key=lambda e: -adjusted[e])
+        placement[L] = ranked
+
+    return placement
+
+
+def _extract_per_layer_counts(profile_path: Optional[str],
+                               n_layers: int, n_experts: int
+                               ) -> Dict[int, List[int]]:
+    """从 profile JSON 提取每层访问计数, 兼容 str/int 两种 layer key。"""
+    counts: Dict[int, List[int]] = {}
+    if profile_path and os.path.exists(profile_path):
+        try:
+            prof = json.load(open(profile_path))
+            per_layer = prof.get("per_layer_counts")
+            if per_layer:
+                for L in range(n_layers):
+                    c = per_layer.get(str(L)) or per_layer.get(L)
+                    if c:
+                        counts[L] = list(c)
+        except Exception:
+            pass
+    return counts
+
+
+def _extract_per_layer_trace(profile_path: Optional[str],
+                              n_layers: int
+                              ) -> Optional[Dict[int, List[List[int]]]]:
+    """从 profile JSON 提取每层路由 trace (若存在)。"""
+    if not (profile_path and os.path.exists(profile_path)):
+        return None
+    try:
+        prof = json.load(open(profile_path))
+        trace = prof.get("per_layer_trace")
+        if trace:
+            return {int(k): v for k, v in trace.items()}
+    except Exception:
+        pass
+    return None
+
+
 # 已知 MoE 模型规格 (expert fp16 单层单 expert 大小)
 MODEL_SPECS = {
     # name: (n_layers, n_experts, top_k, expert_mb_fp16)
@@ -93,7 +237,8 @@ def compile_plan(model_name: str,
                  n_layers: Optional[int] = None,
                  n_experts: Optional[int] = None,
                  expert_mb: Optional[float] = None,
-                 hw_name: str = "rtx5090") -> CompiledPlan:
+                 hw_name: str = "rtx5090",
+                 enable_m3: bool = True) -> CompiledPlan:
     """给定 expert 可用的 HBM / CPU 预算 (GB), 计算 (K_H, K_C)。
 
     若提供 per_layer_alpha, 使用 Theorem 4 per-layer 自适应分配:
@@ -183,7 +328,25 @@ def compile_plan(model_name: str,
         cpu_hit = zcdf(k_h + k_c, n_experts, alpha) - hbm_hit
         ssd_hit = max(0.0, 1.0 - hbm_hit - cpu_hit)
 
-    placement = _rank_from_profile(profile_path, n_layers, n_experts)
+    # ── M3: 尝试层间联合排序 (路由感知放置) ──
+    cooc_data = None
+    if enable_m3:
+        per_layer_trace = _extract_per_layer_trace(profile_path, n_layers)
+        if per_layer_trace and len(per_layer_trace) >= 2:
+            cooc_data = build_cooccurrence_from_trace(per_layer_trace, n_layers, n_experts)
+
+    if cooc_data and enable_m3:
+        # 有共现数据 → 联合排序
+        per_layer_counts = _extract_per_layer_counts(profile_path, n_layers, n_experts)
+        if not per_layer_counts:
+            per_layer_counts = {L: [1] * n_experts for L in range(n_layers)}
+        placement = joint_ranking(per_layer_counts, cooc_data, per_k_h,
+                                  n_layers, n_experts)
+        print(f"  [M3] Routing-aware joint placement active "
+              f"(cooc layers={len(cooc_data)}, boost={0.5})")
+    else:
+        # 无共现数据或 M3 禁用 → 纯热度排序 (向后兼容)
+        placement = _rank_from_profile(profile_path, n_layers, n_experts)
 
     plan = CompiledPlan(
         model=model_name,

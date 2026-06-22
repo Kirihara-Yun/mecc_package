@@ -44,13 +44,14 @@ def generate_profile(model_name: str, n_tokens: int = 100000) -> dict:
     np.random.seed(42)
 
     model_configs = {
-        "mixtral-8x7b": {"n_experts": 256, "alpha": 1.2},
-        "deepseek-v2-lite": {"n_experts": 1536, "alpha": 1.3},
-        "large-moe": {"n_experts": 3000, "alpha": 1.4},
+        "mixtral-8x7b": {"n_experts": 256, "alpha": 1.2, "n_layers": 32},
+        "deepseek-v2-lite": {"n_experts": 1536, "alpha": 1.3, "n_layers": 26},
+        "large-moe": {"n_experts": 3000, "alpha": 1.4, "n_layers": 48},
     }
     cfg = model_configs[model_name]
     N = cfg["n_experts"]
     true_alpha = cfg["alpha"]
+    n_layers = cfg["n_layers"]
 
     # 向量化: 概率分布 + 采样 + 计数 (替代 random.choices + Python 循环)
     w = 1.0 / np.arange(1, N + 1, dtype=np.float64) ** true_alpha
@@ -63,10 +64,101 @@ def generate_profile(model_name: str, n_tokens: int = 100000) -> dict:
     return {
         "model": model_name,
         "n_experts": N,
+        "n_layers": n_layers,
         "true_alpha": true_alpha,
         "estimated_alpha": estimated_alpha,
         "estimation_error": abs(estimated_alpha - true_alpha) / true_alpha * 100,
         "top10_coverage": sum(sorted(counts, reverse=True)[:10]) / sum(counts) * 100,
+    }
+
+
+def generate_profile_per_layer(model_name: str, n_tokens: int = 100000,
+                                inter_layer_corr: float = 0.3) -> dict:
+    """生成带层间相关性的 per-layer profiling 数据 (M3 用)。
+
+    每层独立从 Zipf(α) 采样, 但注入层间相关性:
+    - inter_layer_corr 概率: 当前层的 expert 与上一层相同 (± 偏斜调整)
+    - 其余概率: 当前层独立从 Zipf 分布重采样
+
+    产出同时包含 per_layer_counts 与 per_layer_trace,
+    可直接用作 compile_config.py 的 profile_path。
+
+    Args:
+        model_name: 模型名 (查找预定义 α)
+        n_tokens: token 数
+        inter_layer_corr: 层间路由相关度 (0=完全独立, 1=完全相同)
+    """
+    np.random.seed(42)
+
+    model_configs = {
+        "mixtral-8x7b": {"n_experts": 256, "alpha": 1.2, "n_layers": 32, "top_k": 2},
+        "deepseek-v2-lite": {"n_experts": 1536, "alpha": 1.3, "n_layers": 26, "top_k": 6},
+        "large-moe": {"n_experts": 3000, "alpha": 1.4, "n_layers": 48, "top_k": 2},
+    }
+    cfg = model_configs[model_name]
+    N = cfg["n_experts"]
+    alpha = cfg["alpha"]
+    n_layers = cfg["n_layers"]
+    top_k = cfg["top_k"]
+
+    # Zipf 概率分布
+    w = 1.0 / np.arange(1, N + 1, dtype=np.float64) ** alpha
+    probs = w / w.sum()
+
+    per_layer_counts: Dict[int, list] = {}
+    per_layer_trace: Dict[int, list] = {}
+
+    prev_trace = None
+    for L in range(n_layers):
+        layer_trace = []
+        for t in range(n_tokens):
+            if prev_trace is not None and np.random.random() < inter_layer_corr:
+                # 与上一层相关: 在上一层选中 expert 附近偏斜选取
+                prev_experts = prev_trace[t]
+                experts = []
+                for pe in prev_experts:
+                    # 以 prev_expert 为中心的高斯偏移 (± N*0.05), clamp 到 [0, N)
+                    offset = int(np.random.normal(0, N * 0.02))
+                    e = max(0, min(N - 1, pe + offset))
+                    experts.append(e)
+                # 补足 top_k
+                while len(experts) < top_k:
+                    e = np.random.choice(N, p=probs)
+                    if e not in experts:
+                        experts.append(e)
+                layer_trace.append(experts[:top_k])
+            else:
+                # 独立采样
+                experts = np.random.choice(N, size=top_k, replace=False, p=probs).tolist()
+                layer_trace.append(experts)
+        prev_trace = layer_trace
+        per_layer_trace[L] = layer_trace
+
+        # 计数: 展平所有 token 的 expert 选择
+        all_selections = [e for trace in layer_trace for e in trace]
+        counts = [0] * N
+        for e in all_selections:
+            counts[e] += 1
+        per_layer_counts[L] = counts
+
+    # 聚合 α 估计 (取所有层的均值)
+    all_counts_flat = [0] * N
+    for L in range(n_layers):
+        for e in range(N):
+            all_counts_flat[e] += per_layer_counts[L][e]
+    estimated_alpha = estimate_alpha(all_counts_flat)
+
+    return {
+        "model": model_name,
+        "n_experts": N,
+        "n_layers": n_layers,
+        "true_alpha": alpha,
+        "estimated_alpha": round(estimated_alpha, 3),
+        "inter_layer_corr": inter_layer_corr,
+        "top_k": top_k,
+        "n_tokens": n_tokens,
+        "per_layer_counts": {str(L): per_layer_counts[L] for L in range(n_layers)},
+        "per_layer_trace": {str(L): per_layer_trace[L] for L in range(n_layers)},
     }
 
 
