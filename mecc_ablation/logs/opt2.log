@@ -1,0 +1,49 @@
+START opt2 2026年 06月 21日 星期日 21:01:03 CST
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=2 (HBM)  K_C=3 (CPU)  SSD=3
+  total HBM for experts ≈ 21.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=55.2%  CPU=28.8%  SSD=16.0%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store
+  [store] all 256 experts already materialized, skip.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 08750862-af61-40e5-bf9a-3e394faca97b)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 8870d746-46cf-41e7-a3ee-2207b378b300)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: cfc404ce-9057-4eda-aa03-08ec1a50cfb9)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: fcbcf698-35c2-429c-92c2-2f7d1a7eba64)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: c035b7da-322f-4059-bed9-e4e4aa3d8550)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 94174a55-64e2-49f6-acf0-8c0f27e24e50)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-06-21 21:01:31.306855: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-06-21 21:01:31.359351: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-06-21 21:01:32.606537: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer K_H=2 (GPU) + K_C=3 (CPU), rest SSD
+  TTFT=292977.08ms  TPOT=26476.46ms  throughput=0.02 tok/s  PPL=exact(lossless)
+  hit: HBM=19.8% CPU=33.6% SSD=46.6% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /data/mecc_ablation/02_no_pin.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours        292977.08   26476.46      0.02 exact(lossless)
+======================================================================
+DONE opt2 2026年 06月 21日 星期日 21:30:40 CST

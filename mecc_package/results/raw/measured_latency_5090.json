@@ -1,0 +1,22 @@
+{
+  "device": "cuda",
+  "expert_size_mb": 336.0,
+  "dtype": "float16",
+  "token_batch": 64,
+  "hidden": 4096,
+  "ffn": 14336,
+  "tier_latency_us": {
+    "hbm_hit": 255.8,
+    "cpu_hit": 6504.0,
+    "ssd_miss": 789738.9
+  },
+  "transfer_only_us": {
+    "cpu_to_device": 6255.4,
+    "ssd_read": 286086.0
+  },
+  "ratios_vs_hbm": {
+    "cpu": 25.421,
+    "ssd": 3086.736
+  },
+  "note": "CPU tier uses PINNED (page-locked) host memory — fair vs real offload systems & avoids pageable 6-7GB/s artifact. SSD read is COLD: macOS F_NOCACHE / Linux posix_fadvise(DONTNEED). H2D via tensor.to(dev, non_blocking=True)."
+}

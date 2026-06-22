@@ -1,0 +1,68 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] cudnn.benchmark + TF32 + AMP autocast
+----------------------------------------------------------------------
+COMPILED PLAN  model=deepseek-ai/DeepSeek-V2-Lite
+  α=0.73  layers=26  experts/layer=64  expert=16.5MB
+  per-layer  K_H=4 (HBM)  K_C=19 (CPU)  SSD=41
+  total HBM for experts ≈ 1.68GB | CPU ≈ 7.96GB
+  predicted hit  HBM=29.2%  CPU=37.8%  SSD=32.9%
+----------------------------------------------------------------------
+  [model_type] deepseek
+
+[materialize] streaming 1664 experts → /tmp/mecc_store
+  [store] all 1664 experts already materialized, skip.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 276bd4ee-a929-4d13-8117-b150949a1701)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: e1198745-1610-4d18-aa62-e500c48c2799)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: e31a934d-2fea-406a-95ac-c231e3af7183)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 88f51d71-76d3-458b-a92f-8173db93245b)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: fd261896-fb3a-46e7-a1b0-8cfb22f0540d)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 67b075a6-54a7-4a34-89d6-2c7eee712c16)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] 27 layers, MoE layers: 1..26, 64 routed + 2 shared experts
+  [build] loading full model (fp16, eager attn, ~30GB)...
+2026-06-19 13:38:52.075992: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-06-19 13:38:52.133393: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-06-19 13:38:53.383405: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:02<00:07,  2.47s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:05<00:05,  2.97s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:08<00:02,  2.96s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:10<00:00,  2.50s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:10<00:00,  2.64s/it]
+  [build] unloaded routed experts, cuda mem free
+  [build] unloaded routed experts, cuda mem free
+  [build] trunk + gate → cuda
+  [build] ours: 26 MoE layers, per-layer K_H=4 (GPU) + K_C=19 (CPU), shared experts on GPU
+/home/qinzy/mecc_package/e2e/run_e2e.py:64: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with amp_ctx():
+  TTFT=21170.94ms  TPOT=3147.63ms  throughput=0.29 tok/s  PPL=exact(lossless)
+  hit: HBM=16.5% CPU=7.8% SSD=75.6% CPUcompute=0.0%
+
+======================================================================
+[POLICY = swapmoe]
+======================================================================
+  [build] 27 layers, MoE layers: 1..26, 64 routed + 2 shared experts
+  [build] loading full model (fp16, eager attn, ~30GB)...
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:02<00:07,  2.35s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:04<00:04,  2.35s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:07<00:02,  2.66s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:09<00:00,  2.17s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:09<00:00,  2.28s/it]
+  [build] unloaded routed experts, cuda mem free
+  [build] unloaded routed experts, cuda mem free
+  [build] trunk + gate → cuda
+  [build] swapmoe: 26 MoE layers, per-layer K_H=4 (GPU) + K_C=19 (CPU), shared experts on GPU
+  TTFT=26778.2ms  TPOT=3791.66ms  throughput=0.24 tok/s  PPL=exact(lossless)
+  hit: HBM=14.0% CPU=0.0% SSD=86.0% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → main_table_batch.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours         21170.94    3147.63      0.29 exact(lossless)
+swapmoe       26778.2    3791.66      0.24 exact(lossless)
+  OURS speedup: vs swapmoe 1.208×
+======================================================================

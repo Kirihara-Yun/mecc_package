@@ -1,0 +1,88 @@
+START opt5 2026年 06月 22日 星期一 07:22:00 CST
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer adaptive: K_H∈[2..3]  K_C∈[2..6]  α∈[0.55..1.39]
+  total HBM=67 slots  CPU=121 slots
+  total HBM for experts ≈ 21.0GB | CPU ≈ 42.0GB
+  predicted hit  HBM=56.3%  CPU=33.8%  SSD=9.9%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store
+  [store] all 256 experts already materialized, skip.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: f5ec5d7b-52f0-48b2-834c-fa8694019979)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 3c084a7a-866f-4a63-aeec-88cf588f6dc9)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: b3c3a0e6-4db2-4e29-ba62-d78b9facf887)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 2c3ea041-20b9-4a6c-90b9-107bd2d89f6f)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: bbc201e0-0519-4295-85a1-014ba0c5a8bd)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 1d632064-b869-43f1-94ab-0f07ac4ea039)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-06-22 07:22:28.915174: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-06-22 07:22:28.967140: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-06-22 07:22:30.283952: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[2..3] K_C∈[2..6], total HBM=67 slots
+Traceback (most recent call last):
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 384, in <module>
+    main()
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 349, in main
+    results = {p: run_policy(p, args, plan, store, device, prompts, ppl_text,
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 349, in <dictcomp>
+    results = {p: run_policy(p, args, plan, store, device, prompts, ppl_text,
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 204, in run_policy
+    _ = measure_latency(model, ids, min(4, args.max_new_tokens), device, use_cache,
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 84, in measure_latency
+    logits, past = _forward(model, input_ids, None, use_cache, use_amp=use_amp)
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 66, in _forward
+    out = model(ids, past_key_values=past, use_cache=True)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 965, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 1030, in forward
+    outputs: MoeModelOutputWithPast = self.model(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 965, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 660, in forward
+    layer_outputs = decoder_layer(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 383, in forward
+    hidden_states, router_logits = self.block_sparse_moe(hidden_states)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/mecc_package/e2e/mixtral_tiered.py", line 56, in forward
+    _, near_miss_experts = torch.topk(routing_weights, min(self.top_k + 2, self.num_experts), dim=-1)
+RuntimeError: selected index k out of range
+DONE opt5 2026年 06月 22日 星期一 07:24:51 CST

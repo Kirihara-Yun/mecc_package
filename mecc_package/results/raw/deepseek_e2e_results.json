@@ -1,0 +1,71 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "deepseek-ai/DeepSeek-V2-Lite",
+  "platform": "A100 80GB",
+  "run_time": "2026-06-20T20:15:50+08:00",
+  "run_time_note": "backfilled(approx, from file mtime)",
+  "compiled_plan": {
+    "model": "deepseek-ai/DeepSeek-V2-Lite",
+    "hardware": "rtx5090 (HBM_budget=8.0GB, CPU_budget=12.0GB)",
+    "alpha": 0.73,
+    "n_layers": 26,
+    "n_experts": 64,
+    "expert_mb": 16.5,
+    "k_h": 19,
+    "k_c": 28,
+    "hbm_hit_pct": 61.9,
+    "cpu_hit_pct": 27.2,
+    "ssd_hit_pct": 10.9,
+    "hbm_gb_used": 7.96,
+    "cpu_gb_used": 11.73
+  },
+  "config": {
+    "max_new_tokens": 64,
+    "prompt_len": 64,
+    "n_prompts": 8,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 7426.08,
+      "tpot_ms": 990.71,
+      "tokens_per_s": 0.92,
+      "ppl": 44.752,
+      "hit_pct": {
+        "hbm": 72.7,
+        "cpu": 5.4,
+        "ssd": 21.9,
+        "cpu_compute": 0.0
+      },
+      "speedup_vs": {
+        "swapmoe": 1.034,
+        "fiddler": 1.353
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 11568.91,
+      "tpot_ms": 977.55,
+      "tokens_per_s": 0.89,
+      "ppl": 44.752,
+      "hit_pct": {
+        "hbm": 68.7,
+        "cpu": 0.0,
+        "ssd": 31.3,
+        "cpu_compute": 0.0
+      }
+    },
+    "fiddler": {
+      "ttft_ms": 8597.64,
+      "tpot_ms": 1374.53,
+      "tokens_per_s": 0.68,
+      "ppl": 44.73,
+      "hit_pct": {
+        "hbm": 66.6,
+        "cpu": 0.0,
+        "ssd": 33.4,
+        "cpu_compute": 0.0
+      }
+    }
+  }
+}

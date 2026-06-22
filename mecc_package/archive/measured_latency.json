@@ -1,0 +1,22 @@
+{
+  "device": "mps",
+  "expert_size_mb": 336.0,
+  "dtype": "float16",
+  "token_batch": 64,
+  "hidden": 4096,
+  "ffn": 14336,
+  "tier_latency_us": {
+    "hbm_hit": 1830.8,
+    "cpu_hit": 5679.9,
+    "ssd_miss": 45376.1
+  },
+  "transfer_only_us": {
+    "cpu_to_device": 3956.8,
+    "ssd_read": 29425.4
+  },
+  "ratios_vs_hbm": {
+    "cpu": 3.102,
+    "ssd": 24.785
+  },
+  "note": "Apple Silicon UMA. SSD read uses F_NOCACHE (cold NVMe, bypasses unified buffer cache). H2D measured via tensor.to(mps)."
+}

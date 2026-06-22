@@ -1,0 +1,96 @@
+{
+  "device": "cuda",
+  "config": {
+    "n_experts": 64,
+    "expert_mb": 7.1,
+    "hidden": 576,
+    "ffn": 2048,
+    "batch": 64,
+    "alpha": 0.73,
+    "requests": 600,
+    "k_h": 19,
+    "k_c": 45,
+    "phases": 4,
+    "fast_fraction": 1.0
+  },
+  "workloads": [
+    {
+      "workload": "stationary",
+      "results": [
+        {
+          "policy": "FluxMoE",
+          "hbm_hit_pct": 0.0,
+          "cpu_hit_pct": 91.5,
+          "ssd_hit_pct": 8.5,
+          "avg_lat_us": 3138.9,
+          "p50_us": 866.8,
+          "p99_us": 47041.5,
+          "wall_s": 1.9
+        },
+        {
+          "policy": "SwapMoE",
+          "hbm_hit_pct": 48.2,
+          "cpu_hit_pct": 44.3,
+          "ssd_hit_pct": 7.5,
+          "avg_lat_us": 2000.4,
+          "p50_us": 847.7,
+          "p99_us": 29621.2,
+          "wall_s": 1.2
+        },
+        {
+          "policy": "TieredLRU",
+          "hbm_hit_pct": 49.2,
+          "cpu_hit_pct": 50.8,
+          "ssd_hit_pct": 0.0,
+          "avg_lat_us": 501.4,
+          "p50_us": 838.1,
+          "p99_us": 1053.2,
+          "wall_s": 0.3
+        }
+      ],
+      "speedup": {
+        "vs_flux": 6.26,
+        "vs_swap": 3.99
+      }
+    },
+    {
+      "workload": "drift",
+      "results": [
+        {
+          "policy": "FluxMoE",
+          "hbm_hit_pct": 0.0,
+          "cpu_hit_pct": 85.0,
+          "ssd_hit_pct": 15.0,
+          "avg_lat_us": 4571.2,
+          "p50_us": 874.0,
+          "p99_us": 45539.3,
+          "wall_s": 2.7
+        },
+        {
+          "policy": "SwapMoE",
+          "hbm_hit_pct": 48.7,
+          "cpu_hit_pct": 40.0,
+          "ssd_hit_pct": 11.3,
+          "avg_lat_us": 2732.6,
+          "p50_us": 834.0,
+          "p99_us": 34880.2,
+          "wall_s": 1.6
+        },
+        {
+          "policy": "TieredLRU",
+          "hbm_hit_pct": 49.8,
+          "cpu_hit_pct": 50.2,
+          "ssd_hit_pct": 0.0,
+          "avg_lat_us": 481.1,
+          "p50_us": 822.5,
+          "p99_us": 1366.6,
+          "wall_s": 0.3
+        }
+      ],
+      "speedup": {
+        "vs_flux": 9.502,
+        "vs_swap": 5.68
+      }
+    }
+  ]
+}

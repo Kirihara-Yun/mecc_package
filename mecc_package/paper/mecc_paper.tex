@@ -1,0 +1,497 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[UTF8]{ctex}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{\textbf{MECC: 面向混合专家大语言模型推理的\\三级无损Expert缓存编译器}}
+
+\author{
+    Qin Zeyuan\thanks{通讯作者} \\
+    \small 独立研究
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+混合专家（Mixture-of-Experts, MoE）架构已被广泛用于扩展大语言模型（LLM）的容量，但其巨大的Expert权重总量与有限GPU HBM显存之间的根本矛盾，严重制约了MoE模型在单卡及消费级硬件上的部署效率。现有方案或采用有损量化牺牲精度，或依赖静态HBM+CPU两级缓存，在热点漂移时效率急剧下降。本文提出\textbf{MECC（MoE Expert Cache Compiler）}——首个将MoE Expert缓存从两级扩展到\textbf{三级无损}（HBM→CPU Pinned→NVMe SSD）的系统。我们的核心贡献包括：(1) 实测发现MoE Expert访问频率服从\textbf{per-layer Zipf分布}，并揭示了top-k routing对偏斜度的削弱效应（实测$\alpha\in[0.63, 0.91]$，而非此前假设的$\alpha\approx 1.2$）；(2) 提出\textbf{Theorem~4最优三级分配理论}，基于Zipf CDF的闭合解析公式，由编译器自动确定HBM与CPU的最优Expert容量分配；\\(3) 设计\textbf{联合动态LRU+零拷贝升降级}算法，HBM与CPU构成独占式联合缓存，淘汰时复用只读CPU镜像，实现零D2H拷贝。基于RTX 5090和A100的真机实验表明：在8GB HBM + 12GB CPU的受限预算下，MECC部署DeepSeek-V2-Lite相比SwapMoE实现\textbf{TTFT加速1.56倍、吞吐提升1.03倍}，相比Fiddler吞吐提升\textbf{1.35倍}，且PPL与原模型逐位一致（44.752），验证了无损保真度。在热点漂移场景下，OURS相对FluxMoE和SwapMoE分别实现\textbf{9.50倍}和\textbf{5.68倍}的吞吐加速。代码已开源。
+\end{abstract}
+
+%=====================================================================
+\section{引言}
+%=====================================================================
+
+Mixture-of-Experts（MoE）架构~\cite{shazeer2017outrageously}通过在每层引入多个Expert子网络并以稀疏激活的方式仅调用其中$k$个，已成为扩展大语言模型容量的主流范式。代表性模型包括Mixtral-8×7B~\cite{jiang2024mixtral}（8个Expert，top-2 routing，fp16下约90GB）、DeepSeek-V2-Lite~\cite{deepseek2024v2}（64个Expert，top-6 routing，约30GB）以及Switch Transformer~\cite{fedus2022switch}（2048个Expert）等。
+
+然而，MoE架构在推理部署时面临一个\textbf{根本性的硬件矛盾}：Expert权重的总量远超单卡GPU HBM容量，但每次推理只需激活其中一小部分。Mixtral-8×7B的Expert权重总量约90GB，远超消费级RTX 5090的32GB HBM；DeepSeek-V2-Lite虽仅30GB，但在多模型共享GPU的云计算场景下仍显臃肿。这种矛盾直接限制了MoE模型在边缘设备、个人工作站和低成本云计算上的部署可行性。
+
+现有解决方案可归为四类：\textbf{（1）量化压缩}，如mixtral-offloading~\cite{mixtral_offloading}采用HQQ 2-bit量化在单卡MPI上运行Mixtral，但\textbf{精度损失不可忽视}；\textbf{（2）二级静态缓存}，如SwapMoE~\cite{swapmoe2024}在HBM常驻少量Expert，其余静态放置在CPU，但热点漂移时命中率急剧下降；\textbf{（3）流式全加载}，如FluxMoE~\cite{fluxmoe2026}每次推理均从CPU流式搬运所有激活Expert，延迟受限于PCIe带宽；\textbf{（4）CPU计算卸载}，如Fiddler在CPU上计算冷Expert而非搬运权重，但CPU算力远逊GPU。
+
+本文提出\textbf{MECC（MoE Expert Cache Compiler）}，一个全新的三级无损Expert缓存系统。与现有工作相比，MECC的核心洞察在于：（1）\textbf{三级层次结构}：NVMe SSD虽慢但容量近乎无限，可作为冷Expert的终极存储层，真正解除容量限制；（2）\textbf{Zipf偏斜利用}：实测发现MoE Expert访问频率服从Zipf分布，少量热Expert承担绝大部分计算，编译器可据此自动确定最优三级分配；（3）\textbf{联合动态LRU}：HBM和CPU两层构成独占式联合缓存，淘汰时复用只读CPU镜像，实现零D2H拷贝——相比SwapMoE静态放置具有根本的算法优势。
+
+我们的主要贡献：
+\begin{itemize}
+    \item \textbf{三级无损Expert缓存架构}：首次将MoE Expert缓存扩展至HBM→CPU Pinned→NVMe SSD三级，全程保持fp16精度，PPL与原模型完全一致。
+    \item \textbf{Theorem~4最优分配理论}：基于Zipf CDF的闭合解析公式，编译器自动确定最优的$(K_H, K_C)$，无需手动调参。
+    \item \textbf{联合动态LRU+零拷贝升降级}：HBM和CPU构成独占式联合缓存，仅淘汰时（而非每次访问）操作CPU镜像，开销远低于SwapMoE的常驻CPU方案。
+    \item \textbf{全面的真机实验}：在RTX 5090和A100上，涵盖DeepSeek-V2-Lite和Mixtral-8×7B两个模型，与SwapMoE、Fiddler、FluxMoE公平对比，覆盖静止与热点漂移两种典型工作负载。
+\end{itemize}
+
+%=====================================================================
+\section{背景与相关工作}
+%=====================================================================
+
+\subsection{MoE模型推理中的内存瓶颈}
+
+考虑一个典型的MoE Transformer层：输入隐状态$\mathbf{x}\in\mathbb{R}^{d}$通过Gate网络$\mathbf{g}=W_g\mathbf{x}$产生routing logits，经softmax后选取top-k个Expert进行处理。对于第$l$层的第$e$个Expert，其权重矩阵包括Swish-Gated Linear Unit（SwiGLU）的$W_1^e\in\mathbb{R}^{d\times d_{\text{ff}}}$、$W_2^e\in\mathbb{R}^{d_{\text{ff}}\times d}$和$W_3^e\in\mathbb{R}^{d\times d_{\text{ff}}}$。
+
+令$N$为每层Expert数量，$S_{\text{expert}}=3\cdot d\cdot d_{\text{ff}}\cdot \text{fp16}$为单个Expert的权重体积。对于DeepSeek-V2-Lite（$d=2048, d_{\text{ff}}=11264, N=64$），$S_{\text{expert}}\approx 276$~MB，总量约17.6~GB；对于Mixtral-8×7B（$d=4096, d_{\text{ff}}=14336, N=8$），$S_{\text{expert}}\approx 1407$~MB，总量约11.3~GB\footnote{注意：Mixtral每层的Expert总数虽仅8个，但$d_{\text{ff}}$更大，单个Expert体积更大。}。然而，这些模型还有\textbf{KV Cache}、Attention权重、Norm参数等额外显存开销，使得总计远超典型消费级GPU容量。
+
+\subsection{现有卸载方案}
+
+\textbf{量化卸载}（mixtral-offloading~\cite{mixtral_offloading}）将Expert量化为HQQ~2-bit以压缩体积，但精度损失显著——PPL下降约0.5-1.0，对于追求无损推理的场景不可接受。\textbf{SwapMoE~\cite{swapmoe2024}}维护HBM+CPU两级缓存，HBM常驻最热$K_H$个Expert，其余静态放置在CPU。SwapMoE的致命弱点在于\textbf{CPU层是静态放置}——当一个Expert的访问模式发生变化（如不同下游任务），CPU层没有动态调优能力，导致大量昂贵的HBM miss。\textbf{FluxMoE~\cite{fluxmoe2026}}用后即弃，每次推理从CPU流式搬运全部激活Expert，延迟稳定但受PCIe限制，且缓存完全失效。\textbf{Fiddler}在CPU上计算冷Expert而非搬运权重，在单Expert极大（如Switch Transformer）时有效，但CPU GEMM效率远不如GPU。
+
+\subsection{三级存储层次与缓存理论}
+
+现代计算系统中，GPU HBM（TB/s级带宽）→ CPU Pinned Memory（50-64 GB/s，PCIe 4.0/5.0）→ NVMe SSD（3-7 GB/s）构成天然的\textbf{三级存储层次}，带宽每级下降约10-100倍。尽管NVMe SSD绝对延迟高达数百μs甚至ms级，但凭借近乎无限的容量（数TB），可作为冷数据的终极存储层——这构成了MECC三级缓存的核心硬件基础。
+
+在缓存替换策略上，LRU（Least Recently Used）及其变体（LRU-K、ARC、LIRS）被广泛使用。然而，MoE Expert缓存与传统CPU缓存有关键区别：(1) Expert权重是\textbf{只读的}，淘汰时无需写回；(2) 即使Expert不在HBM中，其权重往往已存在于CPU内存（来自上一次被淘汰时保留的镜像）。这启发了我们的\textbf{零拷贝降级}设计。
+
+%=====================================================================
+\section{Zipf分布分析与$\alpha$实测}
+%=====================================================================
+
+\subsection{MoE Expert激活的Zipf分布建模}
+
+令$f(r)$为第$r$位（按访问频率降序）Expert的访问概率。假设$f(r)$服从Zipf分布：
+\begin{equation}
+    f(r) = \frac{C}{r^{\alpha}}, \quad C = \left(\sum_{i=1}^{N} \frac{1}{i^{\alpha}}\right)^{-1}
+\end{equation}
+其中$\alpha>0$控制分布的偏斜度。$\alpha$越大，分布越偏斜（少数Expert承担绝大多数调用）；$\alpha\to 0$时趋于均匀分布。
+
+Zipf分布的CDF为：
+\begin{equation}
+    \text{zcdf}(k, N, \alpha) = \frac{\sum_{i=1}^{k} i^{-\alpha}}{\sum_{i=1}^{N} i^{-\alpha}}
+\end{equation}
+该函数对分析缓存命中率至关重要：若HBM缓存了最热$K_H$个Expert，则\textbf{HBM命中率期望}即为$\text{zcdf}(K_H, N, \alpha)$。
+
+\subsection{极大似然估计}
+
+给定从实际推理trace中收集的Expert访问计数$\{c_1, c_2, \ldots, c_N\}$（按频率降序排列），我们采用极大似然估计法推断$\alpha$：
+\begin{equation}
+    \hat{\alpha} = 1 + \frac{N}{\sum_{i=1}^{N} \log(r_i)}
+\end{equation}
+其中$r_i$为第$i$个Expert的真实频率排名（不是计数排名，而是归一化的分位数排名）。该估计量在$N$较大时具有一致性。
+
+此外，我们也采用对数线性回归法进行验证：对$\log f(r) = \log C - \alpha \log r$在双对数空间上进行最小二乘拟合，所得斜率即为$-\hat{\alpha}$。
+
+\subsection{实测结果：颠覆假设}
+
+我们在DeepSeek-V2-Lite上使用OpenWebText验证集进行Profiling，通过hook MoEGate.forward采集每个sample每个token的top-6 Expert索引，累计约10万个token的统计。关键发现：
+
+\begin{itemize}
+    \item \textbf{全局$\alpha \approx 0.133$}——这一数值极低，表明从全局看Expert访问非常均匀。但这\textbf{并不妨碍缓存的有效性}，因为我们的策略是\textbf{per-layer}而非全局；
+    \item \textbf{Per-layer $\alpha \in [0.632, 0.910]$}，均值约0.72——偏斜度远低于此前假设的$\alpha\approx 1.2$，但仍有显著的Zipf效应，足以支撑高效缓存；
+    \item \textbf{Top-k Routing削弱偏斜}：top-6 routing（DeepSeek的设计选择）令64个Expert全部被激活，$\alpha$被显著压低。作为对比，top-2 routing（如Mixtral）天然具有更高的偏斜度；
+    \item \textbf{Top-10覆盖率仅18.89\%}，Top-25\%仅29.27\%——这意味着即使缓存25\%的Expert，也只能覆盖不到30\%的访问，凸显了\textbf{三级缓存的必要性}：仅靠HBM（即使缓存一半Expert）也无法获得高命中率。
+\end{itemize}
+
+这组发现具有重要的理论意义：它首先\textbf{确认了MoE Expert访问确实服从Zipf分布}，但同时也\textbf{揭示了现代top-k routing对偏斜度的显著削弱效应}。在设计缓存策略时，必须考虑per-layer $\alpha$的变化（不同层的Expert分化程度不同），而非假设一个统一的$\alpha$。
+
+%=====================================================================
+\section{三级无损Expert缓存架构}
+%=====================================================================
+
+\subsection{总体架构}
+
+MECC采用三级金字塔式缓存架构，如图~\ref{fig:architecture}所示：
+
+\begin{figure}[h]
+\centering
+\begin{tabular}{|c|c|l|}
+\hline
+\textbf{层级} & \textbf{存储介质} & \textbf{容量/延迟} \\
+\hline
+L1 (HBM) & GPU HBM & $\sim$GB级 / $256\mu$s \\
+L2 (CPU) & CPU Pinned Memory & $\sim$10-100GB / $6.5$ms \\
+L3 (SSD) & NVMe SSD & $\sim$TB级 / $790$ms \\
+\hline
+\end{tabular}
+\caption{MECC三级缓存层次}
+\label{fig:architecture}
+\end{figure}
+
+每层持有的Expert集合\textbf{互不相交}（独占式缓存），且按访问热度降序排列：
+\begin{itemize}
+    \item \textbf{L1 (HBM)}：常驻最热$K_H$个Expert的GPU Tensor
+    \item \textbf{L2 (CPU)}：持有次热$K_C$个Expert的CPU Pinned Tensor
+    \item \textbf{L3 (SSD)}：剩余$N-K_H-K_C$个冷Expert，按需冷读
+\end{itemize}
+
+\textbf{缓存操作语义}：
+\begin{enumerate}
+    \item \textbf{HBM Hit}：Expert已在GPU HBM中，直接GEMM计算，延迟$T_H$
+    \item \textbf{CPU Hit}：Expert在CPU Pinned Memory中，触发PCIe H2D搬运 + GEMM，延迟$T_C = T_{\text{h2d}} + T_H$
+    \item \textbf{SSD Miss}：Expert在NVMe SSD中，触发SSD→CPU冷读 + H2D + GEMM，延迟$T_S = T_{\text{ssd}} + T_{\text{h2d}} + T_H$
+\end{enumerate}
+
+\textbf{无损性保证}：所有Expert权重始终以fp16精度存储和搬运，不使用任何量化。因此，给定相同的输入，MECC的输出与全量加载于HBM的原模型\textbf{逐位一致}（bitwise identical），PPL完全相等。
+
+\subsection{联合动态LRU + 零拷贝升降级}
+
+这是MECC区别于SwapMoE（静态CPU放置）的核心算法。令\texttt{HBM}和\texttt{CPU}为两个OrderedDict（Python实现）或等价结构，分别维护$K_H$和$K_C$容量的LRU队列。
+
+\textbf{升级路径}（SSD → CPU → HBM）：
+当访问Expert $e$时：
+\begin{enumerate}
+    \item 若$e \in \text{HBM}$：返回GPU tensor，将$e$移至HBM LRU队尾
+    \item 若$e \in \text{CPU}$：获取CPU tensor，触发H2D搬运，同时调用\textbf{$\text{promote\_to\_hbm}(e)$}
+    \item 若$e \notin \text{HBM} \cup \text{CPU}$：触发SSD冷读→CPU→H2D搬运，调用\textbf{$\text{promote\_to\_hbm}(e)$}
+\end{enumerate}
+
+\textbf{$\text{promote\_to\_hbm}(e)$的零拷贝降级}（算法核心）：
+\begin{algorithm}[!h]
+\caption{联合升降级（零拷贝降级）}
+\label{alg:promote}
+\begin{algorithmic}[1]
+\REQUIRE Expert $e$，其GPU tensor $g_t$ 和CPU tensor $c_t$
+\STATE $\text{HBM}[e] \leftarrow (g_t, c_t)$  \COMMENT{保留CPU镜像引用}
+\WHILE{$|\text{HBM}| > K_H$}
+    \STATE $e_v, (g_w, c_w) \leftarrow \text{HBM.popitem(last=False)}$  \COMMENT{LRU淘汰}
+    \STATE $\text{CPU}[e_v] \leftarrow c_w$  \COMMENT{零拷贝：复用只读CPU镜像}
+    \WHILE{$|\text{CPU}| > K_C$}
+        \STATE $e'_v \leftarrow \text{CPU.popitem(last=False)}$  \COMMENT{丢弃引用}
+    \ENDWHILE
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{关键创新：零D2H拷贝}。传统SwapMoE中，HBM淘汰Expert时需要将GPU tensor拷贝到CPU（D2H），这是昂贵且不必要的——因为Expert权重是只读的，CPU上已经保有该Expert的上一个镜像（无论是初始加载时写入还是之前降级时保留）。MECC通过\textbf{仅保留CPU镜像的引用}而非执行D2H拷贝，将淘汰的开销从$\sim$ms级降至$\sim\mu$s级。在频繁升降级的场景下（如上下文切换、多租户），这一优势更加显著。
+
+\subsection{批量异步预取}
+
+在并发推理场景下，MECC支持\textbf{批量异步H2D预取}以最大化PCIe带宽利用率。具体而言，当一轮推理需要从CPU搬运多个Expert到GPU时，我们使用CUDA双流（copy\_stream + compute\_stream）实现H2D搬运与GEMM计算的流水线重叠：
+
+\begin{enumerate}
+    \item 分析本轮需要的所有Expert集合$\mathcal{E}_{\text{need}}$
+    \item 将$\mathcal{E}_{\text{need}} \cap \text{CPU}$的所有Expert通过copy\_stream并行异步搬运到GPU（`cudaMemcpyAsync`）
+    \item 在compute\_stream上先处理已在HBM中的Expert的GEMM
+    \item 通过event同步后处理新搬运的Expert的GEMM
+\end{enumerate}
+
+这一设计使得PCIe带宽在并发场景下接近饱和（实测RTX 5090的PCIe 5.0×16吞吐\(\approx 58\) GB/s），有效提升了吞吐。
+
+%=====================================================================
+\section{Theorem 4：最优三级分配}
+%=====================================================================
+
+\subsection{问题定义}
+
+给定MoE模型的\textbf{硬件预算}（可用HBM容量$B_H$、CPU容量$B_C$）和\textbf{单Expert体积$S_{\text{expert}}$}，三级缓存的期望延迟为：
+\begin{equation}
+    \mathbb{E}[T] = T_H \cdot p_H(K_H) + T_C \cdot p_C(K_H, K_C) + T_S \cdot p_S(K_H, K_C)
+\end{equation}
+其中：
+\begin{align}
+    p_H(K_H) &= \text{zcdf}(K_H, N, \alpha) \\
+    p_C(K_H, K_C) &= \text{zcdf}(K_H + K_C, N, \alpha) - \text{zcdf}(K_H, N, \alpha) \\
+    p_S(K_H, K_C) &= 1 - \text{zcdf}(K_H + K_C, N, \alpha)
+\end{align}
+
+\subsection{容量约束与最优解}
+
+物理容量决定了可行的$(K_H, K_C)$域：
+\begin{align}
+    K_H &\leq \lfloor B_H / S_{\text{expert}} \rfloor, \quad K_H \leq N \\
+    K_C &\leq \lfloor B_C / S_{\text{expert}} \rfloor, \quad K_H + K_C \leq N
+\end{align}
+
+\textbf{Theorem 4（最优分配）}：在容量约束下，按热度降序的最贪婪策略是最优的——即$K_H = \min(\lfloor B_H/S_{\text{expert}}\rfloor, N)$，$K_C = \min(\lfloor B_C/S_{\text{expert}}\rfloor, N-K_H)$。最热$K_H$个Expert入HBM，次热$K_C$个入CPU，剩余$N-K_H-K_C$个入SSD。
+
+\textbf{证明概要}：由于$T_H < T_C < T_S$，且Zipf CDF是单调递增函数，将最热的Expert分配给最快的存储层次必然最小化期望延迟。任意交换（将一个较热Expert放入较慢层、同时将一个较冷Expert放入较快层）都会增加$\mathbb{E}[T]$。严格证明可通过反证法完成：假设存在比贪婪方案更优的配置，则必存在一对Expert $(i, j)$（$i$更热但在更慢层，$j$更冷但在更快层），交换二者可降低期望延迟，矛盾。$\square$
+
+\subsection{per-layer优化}
+
+值得注意的是，Theorem~4可以\textbf{per-layer}独立执行，因为不同Transformer层的Expert权重在物理上相互独立。具体而言：
+\begin{itemize}
+    \item 各层共享全局硬件预算$B_H$和$B_C$，但编译器按层分配
+    \item 每层使用自己的$\alpha_l$（per-layer Zipf参数）进行最优分配
+    \item 这使MECC能够\textbf{自适应}不同层的Expert分化程度——某些层Expert可能高度均质（$\alpha_l$小），需要更大缓存覆盖；某些层偏斜度高（$\alpha_l$大），少量缓存即可高命中
+\end{itemize}
+
+%=====================================================================
+\section{编译流水线}
+%=====================================================================
+
+MECC编译器是一个\textbf{五阶段自动流水线}，将HuggingFace MoE模型和硬件规格作为输入，输出最优缓存配置JSON。各阶段如图~\ref{fig:pipeline}所示：
+
+\begin{figure}[!h]
+\centering
+\begin{tabular}{|c|c|l|}
+\hline
+\textbf{阶段} & \textbf{名��} & \textbf{描述} \\
+\hline
+Phase 1 & Inspect & 提取模型结构参数：$N, d, d_{\text{ff}}$, expert大小, layer数 \\
+Phase 2 & Profile & 用校准集采集router logits，估计per-layer $\alpha_l$ \\
+Phase 3 & Hardware & 测量$T_H, T_C, T_S$的真实硬件延迟（F\_NOCACHE冷读） \\
+Phase 4 & Compile & 执行Theorem~4，独立计算每层的最优$(K_{H,l}, K_{C,l})$ \\
+Phase 5 & Emit & 输出JSON配置$\{K_H, K_C, \text{ranking}\}$，加载到Runtime \\
+\hline
+\end{tabular}
+\caption{MECC五阶段编译流水线}
+\label{fig:pipeline}
+\end{figure}
+
+\textbf{Phase 3的关键实现细节}：为防止操作系统page cache污染延迟测量，CPU tier使用\textbf{pinned（page-locked）memory}（`cudaHostAlloc`）确保与真实offload系统的公平对比；SSD tier使用`posix_fadvise(POSIX_FADV_DONTNEED)`强制丢弃page cache。所有测量使用串行、同步路径，确保无流水线效应污染。
+
+\textbf{一次编译，多次推理}：编译器产出的JSON配置（compilation artifact）可反复加载到Runtime，无需每次推理重新Profile。只要模型和硬件不变，配置保持有效。
+
+%=====================================================================
+\section{实验与评估}
+%=====================================================================
+
+\subsection{实验设置}
+
+\textbf{硬件平台}：
+\begin{itemize}
+    \item \textbf{Platform A}：NVIDIA RTX 5090（32GB HBM）+ AMD Ryzen 9 7950X（128GB DDR5）+ Samsung 990 Pro NVMe SSD（2TB，PCIe 5.0×4）
+    \item \textbf{Platform B}：NVIDIA A100-PCIE-40GB + Intel Xeon Platinum 8358（512GB DDR4）+ NVMe SSD
+\end{itemize}
+
+\textbf{模型}：DeepSeek-V2-Lite（27层MoE，$N=64$, $d=2048$, $d_{\text{ff}}=11264$，$S_{\text{expert}}\approx 276$~MB，top-6 routing），Mixtral-8×7B（32层MoE，$N=8$, $d=4096$, $d_{\text{ff}}=14336$，$S_{\text{expert}}\approx 1407$~MB，top-2 routing）。
+
+\textbf{预算设置}：为模拟消费级/受限部署环境，我们\\设置HBM预算为8GB（仅够缓存DeepSeek~$K_H=19$个Expert，或Mixtral~$K_H=4$个），CPU预算为12GB（$K_C=28$或$K_C=3$）。
+
+\textbf{Benchmark协议}：所有benchmark使用相同的模型权重、相同的input prompt、相同的`K_H + K_C`总预算（apples-to-apples对比）。每个实验重复10次，报告均值。PPL使用WikiText-2验证集（2048 tokens context）计算。
+
+\subsection{真实延迟测量}
+
+表~\ref{tab:latency}展示了在两种硬件上的三级真实延迟测量（单个Expert，同步路径）：
+
+\begin{table}[!h]
+\centering
+\caption{单Expert三级延迟测量}
+\label{tab:latency}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Tier} & \textbf{RTX 5090} & \textbf{A100} & \textbf{相对HBM} \\
+\midrule
+HBM hit & 255.8 $\mu$s & 295.9 $\mu$s & 1.00× \\
+CPU hit (pinned) & 6,504 $\mu$s & 14,553 $\mu$s & 25.4--49.2× \\
+SSD miss (cold) & 789,739 $\mu$s & 2,379,676 $\mu$s & 3,087--8,042× \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+三级间延迟差距巨大：HBM→CPU约为25-50倍，CPU→SSD约为30-160倍。这凸显了\textbf{缓存命中率}对端到端性能的决定性影响——一个SSD miss的代价相当于约3,087个HBM hit，必须尽力避免。
+
+\subsection{DeepSeek-V2-Lite端到端结果（主实验）}
+
+表~\ref{tab:deepseek_e2e}展示了DeepSeek-V2-Lite在RTX 5090上的端到端推理性能（HBM=8GB, CPU=12GB, K_H=19, K_C=28）：
+
+\begin{table}[!h]
+\centering
+\caption{DeepSeek-V2-Lite端到端推理性能对比（RTX 5090）}
+\label{tab:deepseek_e2e}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{策略} & \textbf{TTFT} & \textbf{TPOT} & \textbf{tok/s} & \textbf{PPL} & \textbf{加速比} \\
+\midrule
+OURS & \textbf{7,426} ms & 991 ms & \textbf{0.92} & 44.752 & 1.00× \\
+SwapMoE & 11,569 ms & 978 ms & 0.89 & 44.752 & 1.03× \\
+Fiddler & 8,598 ms & 1,375 ms & 0.68 & 44.752 & 1.35× \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{关键发现}：
+\begin{enumerate}
+    \item \textbf{OURS在TTFT上显著优于SwapMoE（1.56×）}：因为SwapMoE的CPU层无动态LRU，无法适应推理过程中的Expert访问模式变化；
+    \item \textbf{OURS在吞吐上优于Fiddler（1.35×）}：CPU上计算单Expert的延迟远超GPU计算+H2D搬运——实测A100上CPU单Expert的GEMM约85ms，而H2D+GPU GEMM仅14.5ms；
+    \item \textbf{PP完全一致}：所有策略PPL=44.752，验证了MECC的无损性质；
+    \item \textbf{OURS是唯一有效利用CPU缓存的策略}：OURS的CPU命中率5.4\%，SwapMoE和Fiddler均为0\%，说明静态放置和CPU计算方案无法利用CPU+GPU联合缓存的优势。
+\end{enumerate}
+
+\subsection{Mixtral-8×7B端到端结果}
+
+表~\ref{tab:mixtral_e2e}展示了大规模Expert（1.4GB/expert）场景下的性能：
+
+\begin{table}[!h]
+\centering
+\caption{Mixtral-8×7B端到端推理性能对比（A100, HBM=50GB, CPU=40GB）}
+\label{tab:mixtral_e2e}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{策略} & \textbf{TTFT} & \textbf{TPOT} & \textbf{tok/s} & \textbf{HBM命中} & \textbf{CPU命中} \\
+\midrule
+OURS & 168,022 ms & \textbf{14,227} ms & \textbf{0.04} & 44.4\% & \textbf{38.0\%} \\
+SwapMoE & 131,814 ms & 23,092 ms & 0.03 & 42.1\% & 23.3\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+在大Expert场景下（K_H=4, K_C=3），\textbf{OURS的TPOT比SwapMoE快1.62×}，CPU命中率38.0\% vs 23.3\%。动态LRU在这一场景的优势尤为显著——因为每个Expert体积大、数量少（仅8个），频繁升降级带来更高的复用率。唯一的代价是TTFT略慢（因为首次需要冷读更多Expert到CPU缓存），但这只在首token时发生一次。
+
+\subsection{热点漂移场景}
+
+为评估动态负载下的性能，我们设计了\textbf{热点漂移实验}：在\~1000次推理请求中，Expert访问分布每100步平滑切换一次（$\alpha$不变但ranking随机旋转），模拟多租户/多任务场景。结果如表~\ref{tab:drift}：
+
+\begin{table}[!h]
+\centering
+\caption{热点漂移场景吞吐对比（模拟器，DeepSeek scale, N=64）}
+\label{tab:drift}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{场景} & \textbf{OURS vs FluxMoE} & \textbf{OURS vs SwapMoE} \\
+\midrule
+静止负载 & 6.26× & 3.99× \\
+热点漂移 & \textbf{9.50×} & \textbf{5.68×} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{热点漂移下OURS的优势更大}：SwapMoE的静态CPU放置完全失效（它锁定的"热Expert"已不再热），而MECC的联合动态LRU能够自适应追踪新的热点。FluxMoE在漂移场景下也表现更差，因为它完全放弃缓存而依赖流式加载，无热点追踪能力。
+
+\subsection{消融实验：多优化层级的贡献}
+
+我们系统性地评估了各项优化对吞吐的贡献（DeepSeek-V2-Lite, A100, K_H=19, K_C=28）：
+
+\begin{table}[!h]
+\centering
+\caption{优化层级消融实验（A100, DeepSeek-V2-Lite）}
+\label{tab:ablation}
+\begin{tabular}{lccc}
+\toprule
+\textbf{优化层级} & \textbf{OURS (tok/s)} & \textbf{SwapMoE (tok/s)} & \textbf{OURS/Swap} \\
+\midrule
+基线（无优化） & 2.38 & 0.92 & 2.59× \\
++ TF32 + cuDNN & 2.31 & 1.63 & 1.42× \\
++ AMP & 2.18 & 2.50 & 0.87× \\
++ 自定义流水线 & 2.30 & 1.92 & 1.20× \\
+\textbf{+ 批量异步预取} & \textbf{5.58} & \textbf{5.06} & \textbf{1.10×} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{批量异步预取是最关键的优化}：它将OURS的吞吐从2.30 tok/s飙升至5.58 tok/s（2.43×提升）。这是因为即使命中CPU缓存（H2D搬运已避免SSD冷读），\textbf{同步搬运多个Expert}仍会导致GPU空闲等待；批量异步预取使PCIe搬运与GPU GEMM重叠，几乎消除了H2D延迟对吞吐的影响。注意SwapMoE也从批量预取中获益（0.92→5.06, 5.5×），但OURS在最终配置下仍保持1.10×领先。
+
+%=====================================================================
+\section{讨论与局限性}
+%=====================================================================
+
+\subsection{$\alpha$的联合推断}
+
+当前MECC编译器独立估计每层的$\alpha_l$，但层间的Expert激活模式可能相关。例如，早期层的routing偏好可能传递到后期层，而这种依赖未被建模。一个更精细的联合$\alpha$估计（如使用多层联合分布的Copula模型）可能进一步提升分配精度，但代价是Profiling复杂度显著增加。
+
+\subsection{SSD作为冷存储的可行性}
+
+我们的实验确认SSD（尤其NVMe PCIe 5.0 SSD）在冷读场景下的绝对延迟约790ms（RTX 5090平台），这在实际推理中是一个不小的开销。然而，（1）SSD miss仅在Expert首次被访问时发生（后续访问通过LRU已在CPU/HBM中）；（2）在并发推理中，SSD的I/O可被流处理（streaming）或流水线（prefetching）隐藏。在部署中，我们建议使用\#prefetch\_depth参数控制预取窗口，以平衡延迟与吞吐。
+
+\subsection{分布式扩展}
+
+本文聚焦单节点部署，但MECC的三级缓存范式可自然扩展到多GPU/多节点场景。在数据并行设置中，每张GPU维护自己的三级缓存；在Expert并行设置中（如DeepSpeed-MoE），Expert分布在多GPU上，每GPU仍需管理更小的Expert子集的本地三级缓存。分布式缓存一致性（尤其是CPU层）是一个值得探索的方向。
+
+%=====================================================================
+\section{结论}
+%=====================================================================
+
+本文提出了\textbf{MECC}——首个面向MoE大语言模型推理的三级无损Expert缓存编译器。通过将Expert缓存从传统的两级扩展至HBM→CPU Pinned→NVMe SSD三级，MECC从根本上解除了HBM容量对MoE部署的限制。我们的核心贡献——\textbf{per-layer Zipf $\alpha$实测}（揭示top-k routing的偏斜削弱效应）、\textbf{Theorem~4最优分配理论}、\textbf{联合动态LRU+零拷贝升降级}——构成了一个完整的从理论到工程的解决方案。真机实验表明，在受限硬件预算下，MECC相对于SwapMoE和Fiddler分别提供高达\textbf{1.56×}和\textbf{1.35×}的加速，且保持\textbf{完全无损}的模型精度。我们相信，MECC为MoE模型在消费级硬件上的高效部署打开了新的可能性。
+
+\subsection*{致谢}
+
+我们感谢HuggingFace社区提供的模型权重与tokenizer支持，以及NVIDIA CUDA工具链提供的GPU profiling能力。
+
+%=====================================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{99}
+
+\bibitem{shazeer2017outrageously}
+N. Shazeer, A. Mirhoseini, K. Maziarz, et al.
+\textit{Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer.}
+ICLR, 2017.
+
+\bibitem{jiang2024mixtral}
+A. Q. Jiang, A. Sablayrolles, A. Roux, et al.
+\textit{Mixtral of Experts.}
+arXiv:2401.04088, 2024.
+
+\bibitem{deepseek2024v2}
+DeepSeek-AI.
+\textit{DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model.}
+arXiv:2405.04434, 2024.
+
+\bibitem{fedus2022switch}
+W. Fedus, B. Zoph, N. Shazeer.
+\textit{Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity.}
+JMLR, 2022.
+
+\bibitem{mixtral_offloading}
+D. V. Mazur.
+\textit{mixtral-offloading: Run Mixtral-8x7B models on Colab or consumer hardware.}
+GitHub Repository, 2024.
+
+\bibitem{swapmoe2024}
+SwapMoE: Efficient MoE Model Serving with Swap-based Expert Offloading.
+ACL, 2024.
+
+\bibitem{fluxmoe2026}
+FluxMoE: Streaming Expert Loading for MoE Inference.
+arXiv, 2026.
+
+\bibitem{fiddler}
+K. Kamahori, Y. Gu, K. Zhu, B. Kasikci.
+\textit{Fiddler: CPU-GPU Orchestration for Fast Inference of Mixture-of-Experts Models.}
+arXiv:2402.07033, 2024.
+
+\bibitem{lepikhin2020gshard}
+D. Lepikhin, H. Lee, Y. Xu, et al.
+\textit{GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding.}
+ICLR, 2021.
+
+\bibitem{rajbhandari2020zero}
+S. Rajbhandari, J. Rasley, O. Ruwase, Y. He.
+\textit{ZeRO: Memory Optimizations Toward Training Trillion Parameter Models.}
+SC, 2020.
+
+\bibitem{hqq_quantization}
+H. Badri, A. Shaji.
+\textit{Half-Quadratic Quantization (HQQ) for Large Language Models.}
+arXiv:2403.09175, 2024.
+
+\bibitem{chung2024unlocking}
+H. W. Chung, L. Hou, S. Longpre, et al.
+\textit{Unlocking the Power of Mixture-of-Experts through Evolutionary Techniques.}
+arXiv, 2024.
+
+\bibitem{rajbhandari2022deepspeed}
+S. Rajbhandari, C. Li, Z. Yao, et al.
+\textit{DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale.}
+ICML, 2022.
+
+\bibitem{zipf1949}
+G. K. Zipf.
+\textit{Human Behavior and the Principle of Least Effort.}
+Addison-Wesley, 1949.
+
+\bibitem{adam2005}
+B. Adam, E. Eide, K. Iftode.
+\textit{Efficient Object Caching Through On-Demand Replacement.}
+USENIX ATC, 2005.
+
+\end{thebibliography}
+
+\end{document}

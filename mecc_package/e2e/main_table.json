@@ -1,0 +1,40 @@
+{
+  "device": "cuda",
+  "mode": "smoke",
+  "model": "smoke-tiny-moe",
+  "compiled_plan": {
+    "model": "smoke",
+    "hardware": "rtx5090 (HBM_budget=0.0006GB, CPU_budget=0.0008GB)",
+    "alpha": 1.0,
+    "n_layers": 2,
+    "n_experts": 8,
+    "expert_mb": 0.2,
+    "k_h": 2,
+    "k_c": 3,
+    "hbm_hit_pct": 36.8,
+    "cpu_hit_pct": 30.7,
+    "ssd_hit_pct": 32.5,
+    "hbm_gb_used": 0.0,
+    "cpu_gb_used": 0.0
+  },
+  "config": {
+    "max_new_tokens": 6,
+    "prompt_len": 8,
+    "n_prompts": 2,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 30.01,
+      "tpot_ms": 32.9,
+      "tokens_per_s": 30.87,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 1.0,
+        "cpu": 1.7,
+        "ssd": 97.3,
+        "cpu_compute": 0.0
+      }
+    }
+  }
+}

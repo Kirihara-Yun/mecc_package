@@ -1,0 +1,7 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+======================================================================
+REAL MoE Expert Activation Profiling
+======================================================================
+Model  : google/switch-base-128
+Device : mps
+Fetching 3 files:   0%|          | 0/3 [00:00<?, ?it/s]Fetching 3 files:  33%|███▎      | 1/3 [39:22<1:18:44, 2362.15s/it]

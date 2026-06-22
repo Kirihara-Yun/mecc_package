@@ -1,0 +1,96 @@
+{
+  "device": "cuda",
+  "config": {
+    "n_experts": 96,
+    "expert_mb": 352.3,
+    "hidden": 4096,
+    "ffn": 14336,
+    "batch": 64,
+    "alpha": 1.2,
+    "requests": 600,
+    "k_h": 8,
+    "k_c": 16,
+    "phases": 4,
+    "fast_fraction": 0.25
+  },
+  "workloads": [
+    {
+      "workload": "stationary",
+      "results": [
+        {
+          "policy": "FluxMoE",
+          "hbm_hit_pct": 0.0,
+          "cpu_hit_pct": 76.2,
+          "ssd_hit_pct": 23.8,
+          "avg_lat_us": 324533.1,
+          "p50_us": 36362.6,
+          "p99_us": 1346367.8,
+          "wall_s": 194.7
+        },
+        {
+          "policy": "SwapMoE",
+          "hbm_hit_pct": 47.8,
+          "cpu_hit_pct": 29.5,
+          "ssd_hit_pct": 22.7,
+          "avg_lat_us": 278327.2,
+          "p50_us": 29397.9,
+          "p99_us": 1235891.1,
+          "wall_s": 167.0
+        },
+        {
+          "policy": "TieredLRU",
+          "hbm_hit_pct": 48.2,
+          "cpu_hit_pct": 27.0,
+          "ssd_hit_pct": 24.8,
+          "avg_lat_us": 301559.3,
+          "p50_us": 28627.8,
+          "p99_us": 1200894.5,
+          "wall_s": 180.9
+        }
+      ],
+      "speedup": {
+        "vs_flux": 1.076,
+        "vs_swap": 0.923
+      }
+    },
+    {
+      "workload": "drift",
+      "results": [
+        {
+          "policy": "FluxMoE",
+          "hbm_hit_pct": 0.0,
+          "cpu_hit_pct": 56.0,
+          "ssd_hit_pct": 44.0,
+          "avg_lat_us": 534971.6,
+          "p50_us": 31174.9,
+          "p99_us": 1217223.2,
+          "wall_s": 321.0
+        },
+        {
+          "policy": "SwapMoE",
+          "hbm_hit_pct": 48.2,
+          "cpu_hit_pct": 14.5,
+          "ssd_hit_pct": 37.3,
+          "avg_lat_us": 447314.9,
+          "p50_us": 29713.8,
+          "p99_us": 1197121.6,
+          "wall_s": 268.4
+        },
+        {
+          "policy": "TieredLRU",
+          "hbm_hit_pct": 48.2,
+          "cpu_hit_pct": 24.7,
+          "ssd_hit_pct": 27.2,
+          "avg_lat_us": 327222.2,
+          "p50_us": 28498.1,
+          "p99_us": 1186007.9,
+          "wall_s": 196.3
+        }
+      ],
+      "speedup": {
+        "vs_flux": 1.635,
+        "vs_swap": 1.367
+      }
+    }
+  ]
+}

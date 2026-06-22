@@ -1,0 +1,74 @@
+{
+  "projection_expert_mb": 352.3,
+  "hardware_latencies_us": {
+    "A100-PCIe4-NVMeGen4": {
+      "T_HBM": 120,
+      "T_CPU": 13892.6,
+      "T_SSD": 63144.6
+    },
+    "H100-PCIe5-NVMeGen5": {
+      "T_HBM": 80,
+      "T_CPU": 6969.3,
+      "T_SSD": 31625.3
+    },
+    "Apple-M-UMA(measured)": {
+      "T_HBM": 1919.7,
+      "T_CPU": 6068.7,
+      "T_SSD": 36923.5
+    }
+  },
+  "workloads": [
+    {
+      "workload": "stationary",
+      "projections": {
+        "A100-PCIe4-NVMeGen4": {
+          "flux_us": 25614.5,
+          "swap_us": 18489.5,
+          "ours_us": 19468.7,
+          "speedup_vs_flux": 1.316,
+          "speedup_vs_swap": 0.95
+        },
+        "H100-PCIe5-NVMeGen5": {
+          "flux_us": 12837.4,
+          "swap_us": 9273.1,
+          "ours_us": 9763.3,
+          "speedup_vs_flux": 1.315,
+          "speedup_vs_swap": 0.95
+        },
+        "Apple-M-UMA(measured)": {
+          "flux_us": 13412.2,
+          "swap_us": 11089.5,
+          "ours_us": 11720.9,
+          "speedup_vs_flux": 1.144,
+          "speedup_vs_swap": 0.946
+        }
+      }
+    },
+    {
+      "workload": "drift",
+      "projections": {
+        "A100-PCIe4-NVMeGen4": {
+          "flux_us": 35563.4,
+          "swap_us": 25625.2,
+          "ours_us": 20664.6,
+          "speedup_vs_flux": 1.721,
+          "speedup_vs_swap": 1.24
+        },
+        "H100-PCIe5-NVMeGen5": {
+          "flux_us": 17817.9,
+          "swap_us": 12845.3,
+          "ours_us": 10362.0,
+          "speedup_vs_flux": 1.72,
+          "speedup_vs_swap": 1.24
+        },
+        "Apple-M-UMA(measured)": {
+          "flux_us": 19644.8,
+          "swap_us": 15577.7,
+          "ours_us": 12467.5,
+          "speedup_vs_flux": 1.576,
+          "speedup_vs_swap": 1.249
+        }
+      }
+    }
+  ]
+}

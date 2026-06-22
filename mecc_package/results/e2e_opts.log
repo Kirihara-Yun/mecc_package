@@ -1,0 +1,80 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] cudnn.benchmark + TF32 enabled
+----------------------------------------------------------------------
+COMPILED PLAN  model=deepseek-ai/DeepSeek-V2-Lite
+  α=0.73  layers=26  experts/layer=64  expert=16.5MB
+  per-layer  K_H=19 (HBM)  K_C=45 (CPU)  SSD=0
+  total HBM for experts ≈ 7.96GB | CPU ≈ 18.85GB
+  predicted hit  HBM=61.9%  CPU=38.1%  SSD=0.0%
+----------------------------------------------------------------------
+  [model_type] deepseek
+
+[materialize] streaming 1664 experts → /tmp/mecc_store
+  [store] all 1664 experts already materialized, skip.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 5368362c-834f-4d14-8edc-087fd125e044)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: cd394a4e-4614-482c-8168-4912e9382313)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: b28b76a3-e6b0-4ece-a61b-b5d8983c0d0b)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 0098ef91-2473-4c25-8969-9de19d0929d5)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 9f0d80f7-1461-404b-a6fb-8cd01e0bff42)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 1afc10d1-1afe-4d81-b928-df9d7f6933f9)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] 27 layers, MoE layers: 1..26, 64 routed + 2 shared experts
+  [build] loading full model (fp16, eager attn, ~30GB)...
+2026-06-19 12:17:23.351022: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-06-19 12:17:23.401801: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-06-19 12:17:24.654865: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:01<00:05,  1.81s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:03<00:03,  1.95s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:06<00:02,  2.30s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:07<00:00,  1.85s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:07<00:00,  1.93s/it]
+  [build] unloaded routed experts, cuda mem free
+  [build] unloaded routed experts, cuda mem free
+  [build] trunk + gate → cuda
+  [build] ours: 26 MoE layers, per-layer K_H=19 (GPU) + K_C=45 (CPU), shared experts on GPU
+  TTFT=3881.52ms  TPOT=388.06ms  throughput=2.31 tok/s  PPL=exact(lossless)
+  hit: HBM=47.3% CPU=52.7% SSD=0.0% CPUcompute=0.0%
+
+======================================================================
+[POLICY = swapmoe]
+======================================================================
+  [build] 27 layers, MoE layers: 1..26, 64 routed + 2 shared experts
+  [build] loading full model (fp16, eager attn, ~30GB)...
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:01<00:05,  1.81s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:04<00:04,  2.37s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:06<00:02,  2.34s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  2.11s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  2.16s/it]
+  [build] unloaded routed experts, cuda mem free
+  [build] unloaded routed experts, cuda mem free
+  [build] trunk + gate → cuda
+  [build] swapmoe: 26 MoE layers, per-layer K_H=19 (GPU) + K_C=45 (CPU), shared experts on GPU
+  TTFT=5973.91ms  TPOT=784.63ms  throughput=1.63 tok/s  PPL=exact(lossless)
+  hit: HBM=57.6% CPU=30.2% SSD=12.2% CPUcompute=0.0%
+
+======================================================================
+[POLICY = fiddler]
+======================================================================
+  [build] 27 layers, MoE layers: 1..26, 64 routed + 2 shared experts
+  [build] loading full model (fp16, eager attn, ~30GB)...
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:02<00:06,  2.27s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:04<00:04,  2.26s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:07<00:02,  2.56s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  2.13s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  2.23s/it]
+  [build] unloaded routed experts, cuda mem free
+  [build] unloaded routed experts, cuda mem free
+  [build] trunk + gate → cuda
+  [build] fiddler: 26 MoE layers, per-layer K_H=19 (GPU) + K_C=45 (CPU), shared experts on GPU
+  TTFT=8161.48ms  TPOT=895.91ms  throughput=0.99 tok/s  PPL=exact(lossless)
+  hit: HBM=29.1% CPU=0.0% SSD=0.0% CPUcompute=70.9%
+
+======================================================================
+MAIN TABLE → main_table_opts.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours          3881.52     388.06      2.31 exact(lossless)
+swapmoe       5973.91     784.63      1.63 exact(lossless)
+fiddler       8161.48     895.91      0.99 exact(lossless)
+  OURS speedup: vs swapmoe 1.417× | vs fiddler 2.333×
+======================================================================

@@ -1,0 +1,30 @@
+{
+  "model": "google/switch-base-8",
+  "n_experts_per_layer": 8,
+  "n_routed_tokens": 1734,
+  "n_active_experts": 8,
+  "top1_share_pct": 17.01,
+  "top10_coverage_pct": 100.0,
+  "top25pct_coverage_pct": 31.55,
+  "global_zipf_alpha": 0.352,
+  "per_layer_alpha": {
+    "encoder.block.1.layer.1.mlp.router": 0.535,
+    "encoder.block.3.layer.1.mlp.router": 0.487,
+    "encoder.block.5.layer.1.mlp.router": 0.388,
+    "encoder.block.7.layer.1.mlp.router": 1.449,
+    "encoder.block.9.layer.1.mlp.router": 1.083,
+    "encoder.block.11.layer.1.mlp.router": 1.931,
+    "decoder.block.11.layer.2.mlp.router": 1.68
+  },
+  "expert_counts_sorted_desc": [
+    295,
+    252,
+    249,
+    233,
+    215,
+    211,
+    171,
+    108
+  ],
+  "note": "Switch-Transformer top-1 routing on 16 diverse English sentences. Original work ASSUMED alpha=1.2; this is a MEASURED estimate."
+}

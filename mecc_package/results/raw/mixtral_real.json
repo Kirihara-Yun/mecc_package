@@ -1,0 +1,58 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "A100 80GB",
+  "run_time": "2026-06-21T10:15:48+08:00",
+  "run_time_note": "backfilled(approx, from file mtime)",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=50.0GB, CPU_budget=40.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 4,
+    "k_c": 3,
+    "hbm_hit_pct": 76.7,
+    "cpu_hit_pct": 18.7,
+    "ssd_hit_pct": 4.6,
+    "hbm_gb_used": 42.0,
+    "cpu_gb_used": 31.5
+  },
+  "config": {
+    "max_new_tokens": 16,
+    "prompt_len": 64,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 168022.18,
+      "tpot_ms": 14226.94,
+      "tokens_per_s": 0.04,
+      "ppl": 24.569,
+      "hit_pct": {
+        "hbm": 44.4,
+        "cpu": 38.0,
+        "ssd": 17.6,
+        "cpu_compute": 0.0
+      },
+      "speedup_vs": {
+        "swapmoe": 1.333
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 131814.36,
+      "tpot_ms": 23092.2,
+      "tokens_per_s": 0.03,
+      "ppl": 36.116,
+      "hit_pct": {
+        "hbm": 42.1,
+        "cpu": 23.3,
+        "ssd": 34.5,
+        "cpu_compute": 0.0
+      }
+    }
+  }
+}

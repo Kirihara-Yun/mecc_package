@@ -1,0 +1,50 @@
+START opt4 2026年 06月 22日 星期一 06:46:04 CST
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer adaptive: K_H∈[2..3]  K_C∈[2..6]  α∈[0.55..1.39]
+  total HBM=67 slots  CPU=121 slots
+  total HBM for experts ≈ 21.0GB | CPU ≈ 42.0GB
+  predicted hit  HBM=56.3%  CPU=33.8%  SSD=9.9%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store
+  [store] all 256 experts already materialized, skip.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 9a5b219d-9c68-4b86-8418-55a4b782c361)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: e82d3d25-a635-4686-b693-d946f0fa4763)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 890984c9-111d-4137-8c57-c8b3fff4d52f)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 32cb741c-cada-4244-bf6e-9e4b5b45b6bd)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: c54135b4-da3d-424b-8024-4db55ac521dd)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 4c943b8d-0252-49b0-8cb2-cdd33691ffb9)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-06-22 06:46:32.248919: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-06-22 06:46:32.301266: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-06-22 06:46:33.627677: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[2..3] K_C∈[2..6], total HBM=67 slots
+  TTFT=239390.61ms  TPOT=20526.95ms  throughput=0.02 tok/s  PPL=exact(lossless)
+  hit: HBM=38.1% CPU=26.4% SSD=35.5% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /data/mecc_ablation/04_per_layer_adaptive.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours        239390.61   20526.95      0.02 exact(lossless)
+======================================================================
+DONE opt4 2026年 06月 22日 星期一 07:10:32 CST

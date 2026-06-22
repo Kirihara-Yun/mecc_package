@@ -1,0 +1,11 @@
+=== opt-1: 零拷贝 HBM 淘汰 ===
+修改两个文件:
+
+1. e2e/tiered_engine.py:
+   - self.gpu 存储 (gpu_ws, cpu_ws) 对
+   - warmup 时保留 CPU 镜像
+   - _evict_gpu_if_needed 复用 CPU 镜像 (不执行 D2H 拷贝)
+
+2. e2e/policy_plugin.py:
+   - OursPolicy.access: 存入 (g, ws_cpu) 对
+   - 所有读取 cache.gpu[uid] 的地方取 [0]

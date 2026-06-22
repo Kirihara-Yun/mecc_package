@@ -1,0 +1,16 @@
+# MECC — MoE Expert Cache Compiler
+# ============================================================
+# 分层依赖：按你要做的事安装对应层级。
+#
+# [L0] 文档 / 适用性自检 / 编译器模拟        —— 仅需标准库 + numpy
+#      python3 scripts/check_env.py --applies ...   # 连 numpy 都不需要
+#      python3 compile.py / scripts/tiered_cache.py  # 需要 numpy
+#
+# [L1] GPU 端到端真实实验（e2e/）             —— 见 e2e/requirements_e2e.txt
+#      torch>=2.4 transformers safetensors accelerate huggingface_hub datasets sentencepiece
+#      注意 5090 (sm_120/Blackwell) 需 CUDA 12.4+ 的 torch：
+#        pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu124
+# ============================================================
+
+# L0 最小依赖（CPU 上完全可运行）
+numpy>=1.24

@@ -1,0 +1,56 @@
+START 2026年 06月 21日 星期日 18:29:24 CST
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=2 (HBM)  K_C=3 (CPU)  SSD=3
+  total HBM for experts ≈ 21.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=55.2%  CPU=28.8%  SSD=16.0%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store
+  [store] all 256 experts already materialized, skip.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 1160120d-d4bc-4918-8c7c-87cc02bd1e83)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 33837f8e-add4-4cc0-9cfc-b397665df8ee)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: ba7e8f83-2a9f-49d7-922c-5a5f9dada289)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 5694c2c0-da0e-4fad-9337-bab897664702)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: e120ff92-ea60-49d7-b921-1ea24e2f45c3)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 40d06148-e4ca-4ecc-a2a0-02f28319454b)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-06-21 18:29:51.979429: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-06-21 18:29:52.029317: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-06-21 18:29:53.244415: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+Traceback (most recent call last):
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 376, in <module>
+    main()
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 341, in main
+    results = {p: run_policy(p, args, plan, store, device, prompts, ppl_text,
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 341, in <dictcomp>
+    results = {p: run_policy(p, args, plan, store, device, prompts, ppl_text,
+  File "/home/qinzy/mecc_package/e2e/run_e2e.py", line 186, in run_policy
+    model, caches = MT.build_tiered_model(
+  File "/home/qinzy/mecc_package/e2e/mixtral_tiered.py", line 205, in build_tiered_model
+    cache = LayerExpertCache(L, store, ranked, k_h, k_c, device,
+  File "/home/qinzy/mecc_package/e2e/tiered_engine.py", line 226, in __init__
+    self.gpu[uid] = self.store.load_to_cpu(uid, cold=False).to(device)
+  File "/home/qinzy/mecc_package/e2e/tiered_engine.py", line 63, in to
+    self.w3.to(device, non_blocking=non_blocking),
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 112.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 1.62 MiB is free. Process 932226 has 56.40 GiB memory in use. Process 938454 has 13.92 GiB memory in use. Including non-PyTorch memory, this process has 8.79 GiB memory in use. Of the allocated memory 8.35 GiB is allocated by PyTorch, and 13.49 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+DONE 2026年 06月 21日 星期日 18:30:14 CST
