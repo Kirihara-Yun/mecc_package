@@ -1,0 +1,14 @@
+# MECC 端到端框架依赖 (5090 / Linux CUDA)
+# 安装: pip install -r requirements_e2e.txt
+#
+# 注意 torch: 5090 是 Blackwell (sm_120), 需 CUDA 12.4+ 的 torch。
+# 若 pip 装的 torch 不识别 sm_120, 用官方 nightly/cu124+:
+#   pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu124
+torch>=2.4.0
+transformers>=4.42.0
+safetensors>=0.4.3
+accelerate>=0.30.0
+huggingface_hub>=0.23.0
+datasets>=2.19.0
+numpy>=1.24.0
+sentencepiece>=0.2.0
