@@ -261,6 +261,8 @@ def main():
     ap.add_argument("--skip_ppl", action="store_true")
     ap.add_argument("--cold_ssd", action="store_true", default=True, help="SSD 真冷读 (默认开)")
     ap.add_argument("--warm_ssd", dest="cold_ssd", action="store_false")
+    ap.add_argument("--uniform", action="store_true", default=False,
+                    help="统一 per-layer 分配 (不生成随机 per_layer_alpha, 与之前 A100 实验一致)")
     ap.add_argument("--smoke", action="store_true", help="本机自检: 微型随机 MoE, 不下载")
     ap.add_argument("--out", default="main_table.json")
     args = ap.parse_args()
@@ -311,10 +313,15 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.state_path_resolved, trust_remote_code=True)
 
     # 生成 per-layer α (模拟真实 profiling; 真实场景用 profile_deepseek.py 等的产出)
+    # --uniform 跳过 per-layer adaptive, 使用统一分配 (与之前 A100 Mixtral 成功实验一致)
     import random; random.seed(42)
     cfg = AutoConfig.from_pretrained(args.state_path_resolved, trust_remote_code=True)
     n_layers = cfg.num_hidden_layers
-    per_layer_alpha = [max(0.5, min(2.0, random.gauss(args.alpha, 0.3))) for _ in range(n_layers)]
+    if getattr(args, 'uniform', False):
+        per_layer_alpha = None
+        print("  [compile] uniform allocation (no per-layer alpha)")
+    else:
+        per_layer_alpha = [max(0.5, min(2.0, random.gauss(args.alpha, 0.3))) for _ in range(n_layers)]
     plan = compile_plan(args.model, args.hbm_budget, args.cpu_budget,
                         alpha=args.alpha, profile_path=args.profile,
                         per_layer_alpha=per_layer_alpha)

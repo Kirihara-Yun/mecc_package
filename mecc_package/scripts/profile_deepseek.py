@@ -119,6 +119,7 @@ def main():
 
     expert_counts = Counter()
     per_layer = {}  # layer_key -> Counter
+    per_layer_trace = {}  # layer_key -> [ [expert_ids per token], ... ]  (M3 用)
     n_tokens = 0  # 被路由的 token 总数
 
     print(f"Profiling {len(texts)} sentences (max_length={args.max_length})...")
@@ -133,7 +134,11 @@ def main():
     def make_gate_hook(layer_key):
         def hook(_mod, _inp, out):
             topk_idx = out[0]  # (tokens, top_k)
-            # 展平所有被选中的 expert id
+            # 逐 token 记录选中的 expert id 列表 (M3 共现统计需要)
+            token_experts = topk_idx.tolist()  # list of [e1, e2, ...] per token
+            per_layer_trace.setdefault(layer_key, [])
+            per_layer_trace[layer_key].extend(token_experts)
+            # 展平所有被选中的 expert id 用于计数
             eids = topk_idx.reshape(-1).tolist()
             per_layer.setdefault(layer_key, Counter())
             for e in eids:
@@ -208,6 +213,12 @@ def main():
               f"mean={sum(vals)/len(vals):.2f}  (n={len(vals)} MoE layers)")
     print("=" * 70)
 
+    # ── 准备 per_layer_counts (compile_config 期望格式) ──
+    per_layer_counts = {}
+    # 为每层生成完整长度的计数列表
+    for k, ctr in per_layer.items():
+        per_layer_counts[k] = [ctr.get(i, 0) for i in range(n_experts)]
+
     result = {
         "model": args.model,
         "n_layers": len(handles),
@@ -222,10 +233,13 @@ def main():
         "top25pct_coverage_pct": round(top25pct_cov, 2),
         "global_zipf_alpha": round(global_alpha, 3) if global_alpha else None,
         "per_layer_alpha": layer_alphas,
+        "per_layer_counts": per_layer_counts,
+        "per_layer_trace": {k: v for k, v in per_layer_trace.items()},
         "expert_counts_sorted_desc": srt[:40],
         "note": "DeepSeek-V2-Lite decoder-only MoE (top-6 routing, 64 routed + 2 shared experts). "
                 "Hooked MoEGate.forward output topk_idx. "
-                "Each token selects top_k experts; all selections counted equally.",
+                "Each token selects top_k experts; all selections counted equally. "
+                "per_layer_trace added for M3 routing-aware joint placement.",
     }
     json.dump(result, open(args.out, "w"), indent=2, ensure_ascii=False)
     print(f"Saved → {args.out}")
