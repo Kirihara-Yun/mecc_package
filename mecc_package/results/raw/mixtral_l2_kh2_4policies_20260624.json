@@ -1,0 +1,150 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=30.0GB, CPU_budget=40.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 2,
+    "k_c": 3,
+    "per_layer_k_h": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "per_layer_k_c": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 55.2,
+    "cpu_hit_pct": 28.8,
+    "ssd_hit_pct": 16.0,
+    "hbm_gb_used": 21.0,
+    "cpu_gb_used": 31.5
+  },
+  "config": {
+    "max_new_tokens": 16,
+    "prompt_len": 32,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 178041.54,
+      "tpot_ms": 13688.18,
+      "tokens_per_s": 0.04,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 44.8,
+        "cpu": 38.6,
+        "ssd": 16.7,
+        "cpu_compute": 0.0
+      },
+      "speedup_vs": {
+        "swapmoe": 2.0,
+        "fiddler": 2.0,
+        "naive": 2.0
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 256908.64,
+      "tpot_ms": 29622.73,
+      "tokens_per_s": 0.02,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 44.0,
+        "cpu": 12.0,
+        "ssd": 44.0,
+        "cpu_compute": 0.0
+      }
+    },
+    "fiddler": {
+      "ttft_ms": 308237.15,
+      "tpot_ms": 27140.23,
+      "tokens_per_s": 0.02,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 52.7,
+        "cpu": 0.0,
+        "ssd": 37.2,
+        "cpu_compute": 10.1
+      }
+    },
+    "naive": {
+      "ttft_ms": 288912.18,
+      "tpot_ms": 33593.67,
+      "tokens_per_s": 0.02,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 49.0,
+        "cpu": 0.0,
+        "ssd": 51.0,
+        "cpu_compute": 0.0
+      }
+    }
+  }
+}
