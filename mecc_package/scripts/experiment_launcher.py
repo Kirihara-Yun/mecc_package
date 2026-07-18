@@ -22,6 +22,21 @@ E2E = ROOT / "mecc_package" / "e2e"
 CONFIG_KEYS = {"smoke", "model", "state_path", "store_root", "hbm_budget",
                "cpu_budget", "alpha", "prompt_len", "max_new_tokens",
                "n_prompts", "policies", "platform", "skip_ppl"}
+CONFIG_DEFAULTS = {
+    "smoke": False,
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "state_path": None,
+    "store_root": "/tmp/mecc_store",
+    "hbm_budget": 22.0,
+    "cpu_budget": 40.0,
+    "alpha": 1.0,
+    "prompt_len": 64,
+    "max_new_tokens": 64,
+    "n_prompts": 8,
+    "policies": "all",
+    "platform": None,
+    "skip_ppl": False,
+}
 
 
 def unit_name(run_id: str) -> str:
@@ -130,14 +145,15 @@ def load_config(path: str) -> dict:
 
 
 def apply_config(args: argparse.Namespace) -> argparse.Namespace:
-    if not getattr(args, "config", None):
-        if not args.platform:
-            raise ValueError("--platform is required when --config is not used")
-        return args
-    value = load_config(args.config)
+    value = load_config(args.config) if getattr(args, "config", None) else {}
     for key in CONFIG_KEYS:
-        if key in value:
-            setattr(args, key, value[key])
+        # Parser uses None to mean "not explicitly supplied".  Therefore an
+        # explicit CLI value wins over the config, and the built-in default is
+        # only used when neither source provides the key.
+        if getattr(args, key, None) is None:
+            setattr(args, key, value.get(key, CONFIG_DEFAULTS[key]))
+    if not args.platform:
+        raise ValueError("--platform is required when --config is not used")
     return args
 
 
@@ -266,20 +282,20 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--gpu", default="0")
     run.add_argument("--allow-concurrent", action="store_true")
     run.add_argument("--dry-run", action="store_true")
-    run.add_argument("--smoke", action="store_true")
-    run.add_argument("--model", default="mistralai/Mixtral-8x7B-Instruct-v0.1")
-    run.add_argument("--state-path")
-    run.add_argument("--store-root", default="/tmp/mecc_store")
-    run.add_argument("--hbm-budget", type=float, default=22.0)
-    run.add_argument("--cpu-budget", type=float, default=40.0)
-    run.add_argument("--alpha", type=float, default=1.0)
-    run.add_argument("--prompt-len", type=int, default=64)
-    run.add_argument("--max-new-tokens", type=int, default=64)
-    run.add_argument("--n-prompts", type=int, default=8)
-    run.add_argument("--policies", default="all")
-    run.add_argument("--platform")
+    run.add_argument("--smoke", action="store_true", default=None)
+    run.add_argument("--model", default=None)
+    run.add_argument("--state-path", default=None)
+    run.add_argument("--store-root", default=None)
+    run.add_argument("--hbm-budget", type=float, default=None)
+    run.add_argument("--cpu-budget", type=float, default=None)
+    run.add_argument("--alpha", type=float, default=None)
+    run.add_argument("--prompt-len", type=int, default=None)
+    run.add_argument("--max-new-tokens", type=int, default=None)
+    run.add_argument("--n-prompts", type=int, default=None)
+    run.add_argument("--policies", default=None)
+    run.add_argument("--platform", default=None)
     run.add_argument("--config", help="explicit L0/L1/L2 JSON config")
-    run.add_argument("--skip-ppl", action="store_true")
+    run.add_argument("--skip-ppl", action="store_true", default=None)
     resume_cmd = sub.add_parser("resume-from-store", help="rerun a prior command with its store")
     resume_cmd.add_argument("from_run")
     resume_cmd.add_argument("run_id")
