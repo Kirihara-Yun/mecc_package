@@ -41,7 +41,7 @@ from store_manifest import (expected_manifest, validate_store, write_manifest,
                             write_pending_manifest)
 from result_schema import atomic_write_result
 
-POLICIES = ["ours", "swapmoe", "fiddler", "naive"]
+POLICIES = ["ours", "swapmoe", "fiddler", "naive", "flashmoe_rf_adaptation"]
 
 
 def get_device():
@@ -423,7 +423,7 @@ def _compute_speedups(results):
     # speedup vs baselines (按 throughput)
     if "ours" in results:
         ours_tps = results["ours"]["tokens_per_s"]
-        for b in ("swapmoe", "fiddler", "naive"):
+        for b in ("swapmoe", "fiddler", "naive", "flashmoe_rf_adaptation"):
             if b in results and results[b]["tokens_per_s"] > 0:
                 results["ours"].setdefault("speedup_vs", {})[b] = round(
                     ours_tps / results[b]["tokens_per_s"], 3)

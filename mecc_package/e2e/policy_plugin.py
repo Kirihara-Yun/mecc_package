@@ -162,6 +162,65 @@ class NaivePolicy(CachePolicy):
         return cache._to_gpu(src)
 
 
+@register
+class FlashMoeRFAdaptationPolicy(CachePolicy):
+    """Paper-derived FlashMoE mechanism adaptation, not the authors' trained model.
+
+    HBM remains an LRU cache.  The CPU expert cache uses the public FlashMoE
+    features (inverse recency and cumulative frequency), combined with equal
+    deterministic weights because the paper's trained FFN parameters/code are
+    unavailable.  The lowest predicted-reuse score is evicted to SSD.
+    """
+    name = "flashmoe_rf_adaptation"
+
+    @staticmethod
+    def _record_access(cache: "LayerExpertCache", uid) -> None:
+        cache._flash_clock = getattr(cache, "_flash_clock", 0) + 1
+        cache._flash_last = getattr(cache, "_flash_last", {})
+        cache._flash_frequency = getattr(cache, "_flash_frequency", {})
+        cache._flash_last[uid] = cache._flash_clock
+        cache._flash_frequency[uid] = cache._flash_frequency.get(uid, 0) + 1
+
+    @staticmethod
+    def _evict_cpu(cache: "LayerExpertCache") -> None:
+        while len(cache.cpu) > cache.k_c:
+            max_frequency = max(cache._flash_frequency.values(), default=1)
+
+            def reuse_score(candidate) -> float:
+                last = cache._flash_last.get(candidate, 0)
+                recency = max(1, cache._flash_clock - last + 1)
+                inverse_recency = 1.0 / recency
+                frequency = cache._flash_frequency.get(candidate, 0) / max_frequency
+                return 0.5 * inverse_recency + 0.5 * frequency
+
+            victim = min(cache.cpu, key=lambda candidate: (reuse_score(candidate), candidate))
+            del cache.cpu[victim]
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        self._record_access(cache, uid)
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.hits[0] += 1
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            ws_cpu = cache.cpu.pop(uid)
+            g = cache._to_gpu(ws_cpu)
+            cache.hits[1] += 1
+        else:
+            ws_cpu = cache._load_from_ssd(uid).pin()
+            g = cache._to_gpu(ws_cpu)
+            cache.hits[2] += 1
+        cache.gpu[uid] = (g, ws_cpu)
+        cache.gpu.move_to_end(uid)
+        while len(cache.gpu) > cache.k_h:
+            ev_uid, (_ev_gpu, ev_cpu) = cache.gpu.popitem(last=False)
+            if cache.k_c > 0 and ev_cpu is not None:
+                cache.cpu[ev_uid] = ev_cpu
+                cache.cpu.move_to_end(ev_uid)
+                self._evict_cpu(cache)
+        return g
+
+
 # ── ours_io: OURS + 并行 SSD I/O ────────────────────────────
 
 @register
@@ -189,6 +248,7 @@ class OursIOPolicy(CachePolicy):
 
 # ── 注册预定义策略组 ──
 
-BASELINE_POLICIES = ["ours", "swapmoe", "fiddler", "naive"]
+BASELINE_POLICIES = ["ours", "swapmoe", "fiddler", "naive",
+                     "flashmoe_rf_adaptation"]
 OUR_POLICIES = ["ours", "ours_io"]
-COMPETITOR_POLICIES = ["swapmoe", "fiddler", "naive"]
+COMPETITOR_POLICIES = ["swapmoe", "fiddler", "naive", "flashmoe_rf_adaptation"]
