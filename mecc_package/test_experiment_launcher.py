@@ -75,6 +75,22 @@ class ExperimentLauncherTest(unittest.TestCase):
             path = Path(tmp) / "bad.json"; path.write_text(__import__("json").dumps(bad))
             with self.assertRaises(ValueError): launcher.load_config(str(path))
 
+    def test_explicit_cli_values_override_config(self):
+        config = launcher.E2E / "configs" / "l2_mixtral_main.json"
+        args = launcher.parser().parse_args([
+            "run", "override", "--config", str(config),
+            "--store-root", "/data/custom", "--max-new-tokens", "2",
+            "--n-prompts", "1", "--policies", "flashmoe_rf_adaptation",
+            "--skip-ppl",
+        ])
+        merged = launcher.apply_config(args)
+        self.assertEqual(merged.store_root, "/data/custom")
+        self.assertEqual(merged.max_new_tokens, 2)
+        self.assertEqual(merged.n_prompts, 1)
+        self.assertEqual(merged.policies, "flashmoe_rf_adaptation")
+        self.assertTrue(merged.skip_ppl)
+        self.assertEqual(merged.platform, "a100-80g")
+
     def test_resume_retargets_output_and_preserves_store(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
             launcher, "active_units", return_value=[]
