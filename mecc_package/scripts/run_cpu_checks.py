@@ -21,7 +21,9 @@ def main():
     args = ap.parse_args()
     run([sys.executable, "-m", "unittest",
          "mecc_package/test_experiment_launcher.py",
-         "mecc_package/test_theory_counterexamples.py"])
+         "mecc_package/test_theory_counterexamples.py",
+         "mecc_package/test_verify_claims.py"])
+    run([sys.executable, "-m", "unittest", "test_compiler.py"], PKG)
     run([sys.executable, "-m", "unittest",
          "test_async_ssd_read.py", "test_cache_consistency.py",
          "test_result_schema.py", "test_store_manifest.py",

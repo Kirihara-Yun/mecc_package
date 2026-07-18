@@ -166,6 +166,14 @@ def _text_claim_violations(rel, text):
             violations.append((lineno, "TH006_REFUTED",
                                "TH-006 普遍包含性已被反例推翻"))
         if (rel.endswith("mecc_paper.tex")
+                and (re.search(r"边际收益\s*=\s*.*边际收益", line)
+                     or re.search(r"独立计算每层.*最优.*k_?\{?h", lower)
+                     or ("theorem" in lower and "共享预算" in line
+                         and not any(word in lower for word in
+                                     ("不覆盖", "不适用", "不可兑换"))))):
+            violations.append((lineno, "TH004_SCOPE",
+                               "TH-004 仅证明不可兑换的独立 tier 容量上限下按秩填满"))
+        if (rel.endswith("mecc_paper.tex")
                 and re.search(r"7,?426|11,?569|8,?598|1\.56\s*[×倍]", line)
                 and not any(word in lower for word in ("todo", "x1", "d4", "不可追溯"))):
             violations.append((lineno, "X1_UNVERIFIED_TABLE",

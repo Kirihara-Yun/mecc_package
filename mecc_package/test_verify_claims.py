@@ -11,8 +11,8 @@ SPEC.loader.exec_module(VERIFY)
 
 
 class TextClaimRuleTests(unittest.TestCase):
-    def violations(self, text):
-        return VERIFY._text_claim_violations("example.md", text)
+    def violations(self, text, rel="example.md"):
+        return VERIFY._text_claim_violations(rel, text)
 
     def test_rejects_unverified_swapmoe_quality_identity(self):
         found = self.violations("SwapMoE 2-bit 有损 PPL 36.12")
@@ -29,6 +29,14 @@ class TextClaimRuleTests(unittest.TestCase):
     def test_rejects_wrong_mixtral_main_platform(self):
         found = self.violations("Mixtral 主结果来源 RTX 5090")
         self.assertEqual(found[0][1], "M5_PLATFORM")
+
+    def test_rejects_theorem4_scope_expansion_in_paper(self):
+        rel = "mecc_package/paper/mecc_paper.tex"
+        found = self.violations(
+            r"Phase 4 独立计算每层最优 $K_{H,l}$", rel)
+        self.assertEqual(found[0][1], "TH004_SCOPE")
+        self.assertFalse(self.violations(
+            "Theorem 4 不覆盖共享预算。", rel))
 
 
 if __name__ == "__main__":

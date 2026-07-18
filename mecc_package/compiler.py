@@ -239,10 +239,10 @@ def latency_us(sz_gb: float, bw_gbs: float, lat_us: float) -> float:
 
 
 def optimize(model: ModelSpec, hw: HardwareSpec) -> CompileConfig:
-    """Theorem 4: 给定模型+硬件, 计算最优三级分配。
+    """Theorem 4: 给定两个独立 tier 容量上限，计算按秩三级放置。
 
     策略: HBM放最热专家, CPU放次热, SSD放剩余。
-    最优 K_H: 满足 HBM边际收益 = CPU边际收益 (近似)
+    K_H/K_C 分别填满不可兑换的 HBM/CPU 槽位上限；不覆盖共享成本预算。
     """
     alpha = model.alpha; esz = model.expert_size_gb
 
