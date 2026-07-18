@@ -1,0 +1,16 @@
+{
+  "level": "L1",
+  "smoke": false,
+  "model": "deepseek-ai/DeepSeek-V2-Lite",
+  "platform": "a100-80g",
+  "state_path": null,
+  "store_root": "/data/mecc_store_deepseek",
+  "hbm_budget": 22.0,
+  "cpu_budget": 40.0,
+  "alpha": 1.0,
+  "prompt_len": 64,
+  "max_new_tokens": 64,
+  "n_prompts": 8,
+  "policies": "all",
+  "skip_ppl": false
+}

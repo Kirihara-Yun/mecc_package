@@ -43,6 +43,10 @@ MECC 把 MoE expert 缓存拆成两个阶段：
 
 两者共享同一套方法论与编译器（`compiler.py`），但 `e2e/` 是为「出论文主表」服务的独立扁平脚本集，`mecc_framework/` 是为「工程化复用」服务的库。
 
+两套实现的公共语义由 `e2e/test_cache_consistency.py` 守护：四个 active baseline 在同一微型
+trace、相同初始放置和相同 K_H/K_C 下，逐次比较 HBM/CPU/static-CPU 驻留与四类命中计数。
+该测试只验证缓存状态机一致性，不把微型 trace 的性能作为实验结论。
+
 ---
 
 ## 3. 核心库 `mecc_framework/` 模块结构
@@ -100,11 +104,13 @@ gate 选中 expert e（第 L 层）
 | policy | HBM(K_H) | CPU(K_C) | miss 行为 | 角色 |
 |--------|----------|----------|-----------|------|
 | **`ours`** | 动态 LRU | 动态 LRU（与 HBM 联合升降级） | 落 SSD | **本文方法** |
-| `swapmoe` | 动态 | **静态** top-K_C 驻留 | 落 SSD | 主对手 |
+| `swapmoe`（显示名 `swapmoe_fp16`） | 动态 | **静态** top-K_C 驻留 | 落 SSD | 同预算、同精度的机制对照 |
 | `fiddler` | 常驻 | — | miss 时**在 CPU 上算 expert**（搬激活而非权重） | CPU-GPU 协同 |
 | `naive` | 不常驻 | — | 每次从 CPU/SSD **流式**搬权重 | 全 offload 下界 |
 
-所有策略**全程 fp16 无损**（PPL 对齐原模型），这是相对 SwapMoE/EdgeMoE 量化方案的核心卖点。
+当前四策略 harness 全程使用同一 fp16 store；其中 `swapmoe` 是 **SwapMoE-style 静态 CPU
+机制的同预算 fp16 适配**，不是外部论文量化实现。未来若重建可追溯的低比特系统基线，必须用
+独立 id `swapmoe_quantized`、独立命令和独立结果行，不能与当前 `swapmoe` 合并。
 
 ---
 

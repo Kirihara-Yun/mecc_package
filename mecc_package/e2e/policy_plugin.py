@@ -90,7 +90,7 @@ class OursPolicy(CachePolicy):
                 cache.hits[1] += 1                       # 预取命中 = CPU hit
             else:
                 # M2: pin 后 H2D 走 DMA (~12GB/s vs ~6GB/s staged)
-                ws_cpu = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
+                ws_cpu = cache._load_from_ssd(uid).pin()
                 g = cache._to_gpu(ws_cpu)
                 cache.hits[2] += 1
         cache.gpu[uid] = (g, ws_cpu)

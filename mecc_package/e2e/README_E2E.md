@@ -30,9 +30,13 @@
 | policy | 机制 | 角色 |
 |---|---|---|
 | `ours` | HBM(K_H)+CPU(K_C) 联合**动态** LRU + 升降级，其余 SSD | **本文方法** |
-| `swapmoe` | 仅 HBM(K_H) 动态；CPU 驻留**静态** top-K_C；其余 SSD | 主对手 |
+| `swapmoe`（`swapmoe_fp16`） | 仅 HBM(K_H) 动态；CPU 驻留**静态** top-K_C；其余 SSD；同一 fp16 store | 同预算机制对照 |
 | `fiddler` | HBM(K_H) 常驻；miss 时在 **CPU 上算 expert**（搬激活） | CPU-GPU 协同 |
 | `naive` | 不常驻 expert，每次从 CPU/SSD **流式**搬权重 | 全 offload 下界 |
+
+`swapmoe` 是为兼容历史 JSON 保留的策略 id，准确身份是 SwapMoE-style 静态 CPU 策略的
+fp16 三层适配，不是独立 2-bit 实现。量化 baseline 预留名为 `swapmoe_quantized`，在版本、
+命令与质量证据可追溯前保持 inactive（见 PROVENANCE X6）。
 
 ---
 
@@ -98,7 +102,10 @@ python run_e2e.py \
 ```
 
 **首次运行**会把 256 个 expert（32 层 × 8）流式物化到 `STORE_ROOT`（~90GB fp16，幂等可断点续跑），
-之后四策略复用同一份 store。结束输出 `main_table_5090.json` 与终端主表。
+完成后原子写入 `STORE_ROOT/manifest.json`，记录模型、snapshot revision、源文件清单和 expert
+布局。后续运行只有在 manifest 与全部 expert 文件均通过校验后才复用该 store；有数据但没有
+manifest 的历史目录会被拒绝，需人工核实来源后迁移或改用新目录。结束输出
+`main_table_5090.json` 与终端主表。
 
 ---
 

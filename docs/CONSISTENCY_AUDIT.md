@@ -22,7 +22,7 @@
 | CA-002 | PAPER_WRITING 平台规则 | A100 80GB | §2/§4 检查清单采信 A100，§5 雷区表曾要求统一 RTX 5090 | **resolved** | §5 已修正为 A100 |
 | CA-003 | 1.33× 与 1.62× | 1.33×=JSON 综合/吞吐口径；约1.62×=TPOT 比 | 多处写 1.6× 但未总是明确指标 | confirmed | 所有出现处强制带指标名；默认主 claim 用 1.33× |
 | CA-004 | Expert 体积 | 336MB=实际加载张量；1407MB=论文理论三矩阵口径 | 论文与 JSON | explained | 两者可保留，但必须标口径，不直接比较 |
-| CA-005 | 当前 e2e `swapmoe` 数值路径 | 当前实现没有量化，使用与 OURS 相同的 fp16 store | EXPERIMENTS 称其 2-bit 有损；ARCHITECTURE 又称四策略全 fp16 | **critical discrepancy** | 在来源厘清前拆分“fp16 策略模拟”与“外部 2-bit 质量基线”，禁止混成一个实现 |
+| CA-005 | 当前 e2e `swapmoe` 数值路径 | 当前实现没有量化，使用与 OURS 相同的 fp16 store | EXPERIMENTS 曾称其 2-bit 有损 | **resolved (naming split)** | 历史 id 保留、显示名定为 `swapmoe_fp16`；外部低比特基线预留独立 inactive id `swapmoe_quantized` |
 | CA-006 | 主 JSON 的 SwapMoE PPL | JSON 确有 36.116，但当前 fp16 `swapmoe` 代码不能解释该差异 | `mixtral_real.json` vs `tiered_engine.py`/`policy_plugin.py` | **repository-untraceable** | M2b 已降为 unverified；仓库历史和日志均无独立量化命令，除非取得外部原始记录或重建独立 baseline，否则不得恢复主 claim |
 | CA-007 | “同精度下更快”措辞 | 当前主表写的是 OURS fp16 vs 被标作 2-bit 的 36.116 基线，并非同精度 | README/APPLICABILITY/论文示例 | confirmed wording error | 分开写“OURS 无损”和“相对该有损基线的速度/质量折中”；同精度加速需 fp16 baseline 证据 |
 | CA-008 | SwapMoE 存储层级 | 当前 e2e 模拟为动态 HBM + 静态 CPU + SSD fallback | STRATEGY 称原工作 HBM+CPU 无 SSD，ARCHITECTURE 表写其余落 SSD | explained but naming-risk | 明确“相关工作原语义”与“本 harness 在同容量约束下的适配语义” |
@@ -38,7 +38,7 @@
 | `fiddler` | 热 expert 常驻/缓存 | 冷 expert 在 CPU 计算 | 是 | fp16 | `e2e/policy_plugin.py:FiddlerPolicy` |
 | `naive` | 无持久快层优势 | 无动态 CPU 缓存 | 是 | fp16 | `e2e/policy_plugin.py:NaivePolicy` |
 
-当前 harness 的 `swapmoe` 更准确的名称是“**SwapMoE-style 静态 CPU 策略的 fp16
+当前 harness 的 `swapmoe` 推荐显示名为 `swapmoe_fp16`，准确身份是“**SwapMoE-style 静态 CPU 策略的 fp16
 同预算适配**”。第三方 `mixtral_offloading` 中确有 HQQ 2-bit 实现，但当前
 `run_e2e.py` 没有调用该实现。除非找到主 JSON 的原始生成 revision/命令证明量化路径，
 不能把 36.116 自动归因给当前 `swapmoe` policy。
@@ -66,7 +66,8 @@
 5. 后续二选一：
    - 找到独立 2-bit baseline：拆分 policy id、命令、结果和论文行；
    - 找不到：保留原 JSON 作为历史未核实数据，移出主 claim，当前 fp16 harness 重建质量对照。
-6. 为四策略增加微型 trace 语义测试，机器验证 HBM/CPU/SSD 行为与上表一致。
+6. [已完成] `e2e/test_cache_consistency.py` 用共同微型 trace 逐访问验证四策略的
+   HBM/CPU/static-CPU 驻留与命中类别在核心库和 e2e 之间一致。
 
 ## 6. 关闭条件
 

@@ -64,9 +64,9 @@ MECC 的端到端延迟由 [`THEORY.md §5`](./THEORY.md) 的取数延迟模型�
 | 字段 | 内容 |
 |------|------|
 | **维度** | B 工程 |
-| **id** | `async_ssd_read`（OPTIMIZATION §6.2 已登记） |
+| **id** | `async_ssd_read`（已实现候选；因未运行正式 L2，状态 `parked`） |
 | **机理** | 现状：SSD miss 时「冷读盘 → CPU → H2D → 计算」是**串行**的，冷读 ~10–100ms 直接压在关键路径上（`ARCHITECTURE.md §4` 标注的瓶颈）。本方法把 SSD 冷读放到独立 I/O 线程/`aio`，与**当前 token 的 HBM/CPU 命中专家的 GEMM 计算**及 PCIe 搬运 overlap，用"读完成屏障"保证数据就绪后才参与聚合。目标是把 \(T_S\) 的可见部分从「全量串行」降到「仅暴露未被计算掩盖的尾部」。 |
-| **改哪（代码锚点）** | 读路径 `mecc_framework/base/store.py:ExpertSSDStore`（真冷读）；调度与屏障 `mecc_framework/cache/swap.py:AsyncSwapEngine`（已有 `_copy_stream`，需新增 SSD 读线程 + 完成事件）；引擎侧 `cache/engine.py:_access_ours` 的 miss 分支接预取/屏障。e2e 侧对应 `e2e/tiered_engine.py`。 |
+| **改哪（代码锚点）** | 当前候选落在论文主表路径：`e2e/tiered_engine.py:submit_load_to_cpu/prefetch_ssd_batch/_load_from_ssd` 提交 Future 并在消费时等待；`e2e/policy_plugin.py:OursPolicy` 消费。保持 expert 遍历/聚合顺序不变。核心库对应接入留待该候选取得 L2 正收益后再统一，避免扩大未验证改动。 |
 | **预期指标方向** | TPOT ↓ / tokens·s ↑（SSD 命中率 \(h_S\) 不变，但 \(T_S\) 的有效暴露下降）；PPL **不变**（无损）。 |
 | **验证路径** | L0 冒烟（`run_e2e.py --smoke`）确认读完成屏障没把链路改坏、PPL 仍 PASS → **L2 真机消融**（在真实 Mixtral、cold SSD 上 vs baseline，看 tok·s delta）。**L0 的 tok/s 不算收益**（铁律 3）。 |
 | **风险与回退** | ① 读完成屏障若缺失 → 用到未就绪权重 → **破坏无损/正确性**（最高风险）；② overlap 收益取决于「同 step 内有足够的计算/HBM 命中可掩盖冷读」，若 batch 太小或 \(h_S\) 太高，掩盖不足、收益趋零；③ I/O 线程与 PCIe copy_stream 争用。**回退判据**：L2 tok·s 未正向或 PPL 偏移即回退（铁律 1/2）。 |
@@ -118,7 +118,7 @@ MECC 的端到端延迟由 [`THEORY.md §5`](./THEORY.md) 的取数延迟模型�
 | **预期指标方向** | 在 drift 场景下 \(h_S\) ↓；稳态无 drift 时应**至少不劣化**（净收益须 > 运行期统计/再分配开销）；PPL **不变**。 |
 | **验证路径** | L1 观察"drift 注入下 OURS 对静态 α 的相对优势"（算法上界）→ **L2 兑现**。需专门构造/标注 drift workload，否则收益不可见。 |
 | **风险与回退** | ① 运行期统计 + 再分配有**额外开销**，可能吃掉收益（典型"自适应反而更慢"）；② 频繁再分配引发**颠簸（thrashing）**——须加滞后/冷却；③ 与 TH-006 的稳态分析耦合，理论上界未定。**回退判据**：稳态场景净收益为负或出现颠簸 → 回退或仅在检测到 drift 时启用。 |
-| **THEORY 关系** | 对应 **TH-006（联合 LRU 包含性 / 自适应优势，conjecture）** 与 **P6** 的"drift 越大优势越大"——本方法正是把该猜想往工程上推。若实现并验证，可反哺 THEORY §4.3 的经验衔接（但**理论证明仍须独立完成**，不得用实验代替证明，见 `THEORY.md §9` 越界禁令）。 |
+| **THEORY 关系** | TH-006 的普遍包含版本已被反例推翻；本方法只能检验特定 drift 分布下的经验收益。若要形成理论，须另立带 IRM/Zipf 稳态或 drift 条件的期望命题，实验不能替代证明。 |
 | **落盘提醒** | drift workload 的定义、α 更新轨迹建议一并落 `results/raw/`；主 JSON 带 `platform` + `run_time`。 |
 
 ---

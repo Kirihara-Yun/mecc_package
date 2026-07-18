@@ -177,3 +177,7 @@
 4. 文件落到 `results/`（主表级）或 `results/raw/`（中间产物）；**不要删旧文件**（`*_old.json` 是论文证据备份）。
 5. 在 [`docs/PROVENANCE.md`](../../docs/PROVENANCE.md) 的溯源表登记：文件 → 产生脚本/命令 → **平台 + 运行时间** → 它支撑哪条 claim → 状态。
 6. 跑 `python3 scripts/verify_claims.py` 做一致性体检（见该脚本）。
+
+正式 e2e harness 在落盘前调用 `e2e/result_schema.py` 校验上述 Schema A，并通过同目录
+临时文件 + `os.replace` 原子发布最终 JSON。校验或运行失败时不会覆盖既有结果，也不会留下
+可被误认作完整主表的目标文件。

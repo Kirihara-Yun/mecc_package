@@ -1,0 +1,11 @@
+{
+  "level": "L0",
+  "smoke": true,
+  "platform": "cpu-local",
+  "store_root": "/tmp/mecc_store_smoke",
+  "prompt_len": 8,
+  "max_new_tokens": 2,
+  "n_prompts": 4,
+  "policies": "all",
+  "skip_ppl": false
+}

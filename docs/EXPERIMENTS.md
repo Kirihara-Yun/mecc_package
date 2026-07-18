@@ -166,6 +166,29 @@ bash run_5090.sh full
 
 ## 5. Agent 执行 SOP（每次实验都按此走）
 
+长时实验优先通过持久 launcher 启动，避免 SSH/Codex 断连终止作业：
+
+```bash
+python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
+  --platform a100-80g --gpu 0 --state-path <模型目录> --store-root <NVMe目录>
+python3 mecc_package/scripts/experiment_launcher.py status <run-id>
+python3 mecc_package/scripts/experiment_launcher.py stop <run-id>
+python3 mecc_package/scripts/experiment_launcher.py resume-from-store <旧run-id> <新run-id>
+```
+
+每次运行在 `mecc_package/results/runs/<run-id>/` 留下包含 commit、稳定 config fingerprint、环境快照和完整命令的
+`run.json`、`run.log` 和
+`result.json`。launcher 默认拒绝已有 MECC 作业或同名目录；只有明确分配了互不冲突的
+GPU 后才可使用 `--allow-concurrent`。可先加 `--dry-run` 核对完整命令和元数据。
+L0/L1/L2 的显式模板位于 `mecc_package/e2e/configs/`，例如：
+
+```bash
+python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
+  --config mecc_package/e2e/configs/l2_mixtral_main.json --dry-run
+```
+
+复制模板后只修改机器相关路径与预算；`level` 与 `smoke` 语义不一致时 launcher 会拒绝启动。
+
 ```
 1. 读 APPLICABILITY.md + 本文件 §0，按"实验回答什么问题"确定级别（L0/L1/L2/消融），
    再去 §7.4 选模型实例、§7.3 选平台、§7.1 选策略集合、§7.2 选要采的指标。
@@ -201,7 +224,8 @@ bash run_5090.sh full
 | 策略 id | 类别 | 是否无损 | 一句话 | status | 实现位置 |
 |---------|------|----------|--------|--------|----------|
 | `ours` | MECC 本方法 | 无损 | 编译式三级放置 + 四策略协同 | active | `e2e/run_e2e.py` |
-| `swapmoe` | 内存换页 + 量化 | 有损(如2-bit) | 按需换入 + 低比特 | active | 同上 |
+| `swapmoe` | SwapMoE-style 机制对照 | **无损 fp16** | 同三层预算；HBM 动态、CPU 静态 top-K_C、SSD fallback | active | 同上；显示名 `swapmoe_fp16`，保留 id 兼容历史 JSON |
+| `swapmoe_quantized` | 外部量化系统对照 | 有损（待实现/核验） | 独立低比特速度—质量基线，不与 `swapmoe` 共用结果 | inactive | 尚无可追溯实现与结果，PROVENANCE X6 |
 | `fiddler` | CPU 协同计算 | 无损 | 部分专家 CPU 上算 | active | 同上 |
 | `naive` | 朴素基线 | 无损 | 无优化按需加载 | active | 同上 |
 | `<新baseline>` | <类别> | <是/否> | <一句话> | active/inactive | <文件:函数> |

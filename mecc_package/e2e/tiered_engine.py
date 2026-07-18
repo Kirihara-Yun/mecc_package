@@ -28,7 +28,7 @@ import os
 import sys
 import fcntl
 from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
@@ -176,6 +176,10 @@ class SSDExpertStore:
             results[futures[f]] = f.result()
         return results
 
+    def submit_load_to_cpu(self, uid: ExpertUID, cold: bool = True) -> Future:
+        """Submit one SSD read; callers must wait on Future.result() before use."""
+        return self._io_pool.submit(self._load_one, uid, cold)
+
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -219,7 +223,7 @@ class LayerExpertCache:
         self._copy_stream = torch.cuda.Stream() if device.type == "cuda" else None
         self._pending_copy: Optional[torch.cuda.Event] = None  # 上一个异步拷贝的完成信号
         self._prefetch_buf: Dict[ExpertUID, ExpertWeights] = {}  # 批量预取的临时 GPU 缓存
-        self._ssd_preload_buf: Dict[ExpertUID, ExpertWeights] = {}  # 并行 SSD I/O 临时缓冲
+        self._ssd_preload_buf: Dict[ExpertUID, Future] = {}  # 异步 SSD I/O；消费时设完成屏障
 
         # ── 编译期静态放置 (warm-up): 最热 K_H 入 GPU (保留 CPU 镜像, 支持零拷贝淘汰) ──
         for uid in ranked_uids[:self.k_h]:
@@ -288,19 +292,24 @@ class LayerExpertCache:
         return None
 
     def prefetch_ssd_batch(self, uids: List[ExpertUID], is_prefill: bool = True):
-        """并行 SSD 预取 (policy 插件可选调用): prefill 阶段用 ThreadPool 批量读。"""
+        """提交 SSD 预取但不等待；expert 消费时才在 Future.result() 建屏障。"""
+        for future in self._ssd_preload_buf.values():
+            future.cancel()
         self._ssd_preload_buf.clear()
-        if not is_prefill:
+        if not is_prefill or self._policy_plugin.name not in ("ours", "ours_io"):
             return
         ssd_miss = [uid for uid in uids if uid not in self.gpu
                     and uid not in self.cpu and uid not in self.static_cpu]
         if ssd_miss:
-            self._ssd_preload_buf = self.store.batch_load_to_cpu(ssd_miss, cold=self.cold_ssd)
+            self._ssd_preload_buf = {
+                uid: self.store.submit_load_to_cpu(uid, cold=self.cold_ssd)
+                for uid in ssd_miss
+            }
 
     def _load_from_ssd(self, uid: ExpertUID) -> ExpertWeights:
         """从 SSD 加载: 优先 _ssd_preload_buf, fallback 同步单读。"""
         if uid in self._ssd_preload_buf:
-            return self._ssd_preload_buf.pop(uid)
+            return self._ssd_preload_buf.pop(uid).result()  # correctness barrier
         return self.store.load_to_cpu(uid, cold=self.cold_ssd)
 
     def batch_prefetch(self, cpu_uids: List[ExpertUID]):

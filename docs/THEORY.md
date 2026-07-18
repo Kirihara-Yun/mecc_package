@@ -143,7 +143,17 @@ $$
 
 > **定理 T4（拟陈述）.** 在 A1–A2 与预算 (C) 下，使 ($\star$) 最小的分配满足贪心填满：先把 HBM 填到容量上限 $K_H^\star=\min(\lfloor\mathrm{hbm}/s\rfloor,N)$，再把 CPU 填到 $K_C^\star=\min(\lfloor\mathrm{cpu}/s\rfloor,N-K_H^\star)$，且 expert 按热度秩分配到 tier。
 
-**证明状态：`partial`（见注册表 TH-004）.** P3 的单调性给出了「填满边界最优」的方向，但**完整证明还需**：(i) 论证「按秩贪心」在两级预算耦合下仍全局最优（交换论证 exchange argument）；(ii) 处理 $K_H$ 的边际收益 $p_{K_H{+}1}(T_C{-}T_H)$ 与 $K_C$ 的边际收益 $p_{K_H{+}K_C{+}1}(T_S{-}T_C)$ 的比较——代码注释提到「HBM 边际收益 = CPU 边际收益」的 KKT 直觉，但当前实现是**容量贪心而非边际平衡**，二者在「预算恰好用尽」时一致、在「预算未用尽」时退化。**agent 若要把 T4 写进论文，必须补 (i)(ii) 并明确实现采用的是容量贪心版本。**
+**证明（TH-004，`proven`）.** 这里的硬件预算是两个独立上限
+$K_H\le B_H=\lfloor\mathrm{hbm}/s\rfloor$ 与
+$K_C\le B_C=\lfloor\mathrm{cpu}/s\rfloor$，并非可在 HBM/CPU 间兑换的共享预算。
+由 P3，未填满且仍有未缓存 expert 时，增加任一 tier 容量不增大目标，因此最优解可取
+$K_H=\min(B_H,N)$、$K_C=\min(B_C,N-K_H)$。再证按秩分配：若较高概率
+$p_i\ge p_j$ 的 expert 位于较慢 tier $b$，而较低概率 expert 位于较快 tier $a$，交换二者
+引起的目标变化为
+$(p_iT_a+p_jT_b)-(p_iT_b+p_jT_a)=(p_i-p_j)(T_a-T_b)\le0$。
+反复交换所有逆序对，即得到最热 $K_H$ 个放 HBM、随后 $K_C$ 个放 CPU 的全局最优排序。
+这证明了代码实际实现的“独立容量上限 + 按秩填满”版本。若未来改成 HBM/CPU 可兑换的
+共享成本预算，则需另立边际平衡命题，T4 不直接适用。$\qquad\blacksquare$
 
 ---
 
@@ -156,19 +166,34 @@ $$
 - **静态（swapmoe）**：CPU 池在编译期固定为热度秩 $[K_H, K_H{+}K_C)$ 的 expert，运行期不变。代码锚点：`engine.py:_warmup`（`static_cpu`），`_access_swapmoe`（HBM miss 后**不**回填 CPU，CPU 只读静态池）。
 - **联合动态（ours）**：HBM 与 CPU 是**一个联合 LRU 栈**——HBM 淘汰的 expert **降级**到 CPU（spill），CPU 命中的 expert **升级**回 HBM。代码锚点：`engine.py:_access_ours`（CPU 命中则 `cpu.pop` 升级）、`_evict_hbm_if_needed(spill_to_cpu=True)`（HBM 溢出降级到 CPU）。
 
-### 4.2 命题 P5（静态 CPU 在去重访问流下命中率塌缩）
+### 4.2 命题 P5（静态 CPU 命中率普遍趋零——已反驳）
 
-> **命题 P5.** 当 HBM 用动态 LRU 且其容量 $K_H$ 足以覆盖工作集的高频部分时，静态 CPU 池的命中率趋于 0。
+> **原命题 P5（refuted）.** 当 HBM 使用动态 LRU 时，静态 CPU 池命中率普遍趋于 0。
 
-**证明（直觉 + 形式）.** 静态 CPU 池装的是秩 $[K_H,K_H{+}K_C)$ 的「次热」expert。但这些次热 expert 一旦被访问，在动态 HBM 的 LRU 下会被提升进 HBM 并**长期驻留**（因为它们恰是仅次于最热的高频项）。于是后续对它们的访问都在 HBM 命中，**几乎不再回落到 CPU 池**；而真正落到 SSD 的是更冷的尾部，CPU 静态池对尾部无能为力。两头都不沾，故 CPU 命中 $\to 0$。形式化需对 LRU 栈在 Zipf 流下的稳态分布建模（见证明义务）。$\qquad\blacksquare$（直觉级）
+**反例.** 取 $N=3,K_H=1,K_C=1$，静态 CPU 保存 expert 1，并无限重复 trace
+$[1,2]$。每次访问 1 都从静态 CPU 命中并进入 HBM，随后的 2 又将其从 HBM 淘汰；因此
+静态 CPU 每两次访问命中一次，渐近命中率为 $1/2$，并不趋零。故“普遍塌缩”是错误的。
+真实实验中的低静态 CPU 命中只能作为特定访问分布、容量和初始放置下的经验现象；若要形成
+理论，必须显式给出 IRM/Zipf 参数、工作集与 $K_H$ 条件并证明定量界。
 
-代码佐证：`_access_swapmoe` 中 HBM miss 命中 `static_cpu` 计 `hits[1]`，但因上述提升效应，该分支命中频次极低 → 与实测 0% 一致。**证明状态 `partial`（TH-005）**：需补 LRU-Zipf 稳态命中的马氏链/计数论证。
+### 4.3 命题 P6（联合 LRU 的普遍包含性——已反驳）
 
-### 4.3 命题 P6（联合 LRU 的包含性 / 自适应优势）
+> **原命题 P6（refuted）.** 对任意 trace 和相同总容量，OURS 的
+> $(h_H+h_C)$ 不低于动态 HBM + 静态 CPU 拆分方案。
 
-> **命题 P6.** OURS 的「HBM 降级→CPU、CPU 命中→升级 HBM」使有效快层覆盖的是**运行期真实工作集的前 $K_H{+}K_C$ 个高频项**，而非编译期猜测的静态秩区间。当真实工作集与编译期 profile 存在偏移（drift）时，OURS 的 $(h_H{+}h_C)$ 不低于静态方案，且偏移越大优势越大。
+**反例（TH-006，`refuted`）.** 取 $N=3,K_H=1,K_C=1$，编译期排序为
+$[0,1,2]$，故初始 HBM 为 $\{0\}$、CPU 为 $\{1\}$。访问 trace $[2,1]$：
 
-**证明义务（TH-006，`conjecture`）.** 关键是论证联合 LRU 满足类似**栈式包含性质（stack inclusion property，Mattson 1970）**：容量 $K_H{+}K_C$ 的联合 LRU 命中集合 $\supseteq$ 任意把同样容量拆成「动态 $K_H$ + 静态 $K_C$」方案的命中集合。若该包含成立，则 $h_H^{ours}+h_C^{ours}\ge h_H^{swap}+h_C^{swap}$，从而 $h_S^{ours}\le h_S^{swap}$（更少落 SSD）——这正是 `ARCHITECTURE.md` §4「压低 SSD 命中率」的理论表述。**这是 MECC 最值得严格证明的命题**，建议优先攻关。
+1. 访问 2 时两方案均 SSD miss。OURS 将 2 升入 HBM、0 降到 CPU，并从 CPU 淘汰 1；
+   静态拆分将 2 升入 HBM，但静态 CPU 仍保留 1。
+2. 随后访问 1 时，OURS 发生 SSD miss，而静态方案 CPU hit。
+
+因此静态方案的快层命中集合并不总被联合 LRU 包含，原普遍包含命题为假。机器可复核穷举器
+为 `scripts/search_th006_counterexample.py`，回归测试固定了上述最小 witness。
+
+**收窄方向.** 实验中观察到的优势仍可能在 IRM/Zipf 稳态、足够长 horizon、或满足特定
+drift 条件时以**期望 miss 数**成立，但这需要新命题和独立证明；在完成前只能表述为经验观察，
+不能再借用 Mattson 的单一 LRU 容量栈性质推到“两种不同策略”的包含关系。
 
 ---
 
@@ -272,9 +297,9 @@ PPL 24.57 已 verified；历史对照 PPL 36.12 的具体 baseline 身份为 unv
 | TH-001 | 命中率 = 调和数比 $H_k/H_N$ | proposition | A2 | **proven** | §2.2 | `compiler.py:zcdf` |
 | TH-002 | 给定观测排序的有界离散 Zipf MLE | proposition | A2 | **proven** | §2.3 | `compiler.py:estimate_alpha` |
 | TH-003 | 期望延迟 $\mathcal{L}$ 对 $K_H,K_C$ 单调不增 | proposition | A1,A2 | **proven** | §3.1 | `compiler.py:optimize` |
-| TH-004 | 最优分配 = 容量贪心填满（"Theorem 4"）| theorem | A1,A2,(C) | **partial** | §3.2 | `compiler.py:optimize` |
-| TH-005 | 静态 CPU 池命中率塌缩→0 | proposition | A1,A2 | **partial** | §4.2 | `engine.py:_access_swapmoe` |
-| TH-006 | 联合 LRU 包含性 ⇒ $h_S^{ours}\le h_S^{swap}$ | theorem | A1,A2 | **conjecture** | §4.3 | `engine.py:_access_ours` |
+| TH-004 | 独立 tier 容量下最优分配 = 按秩贪心填满 | theorem | A1,A2,(C) | **proven** | §3.2 | `compiler.py:optimize` |
+| TH-005 | 静态 CPU 池命中率普遍塌缩→0 | proposition | A1,A2 | **refuted** | §4.2 | `engine.py:_access_swapmoe` |
+| TH-006 | 联合 LRU 普遍包含性 ⇒ $h_S^{ours}\le h_S^{swap}$ | theorem | A1,A2 | **refuted** | §4.3 | `engine.py:_access_ours`; `scripts/search_th006_counterexample.py` |
 | TH-007 | SSD 命中率主导端到端延迟 | proposition | A1 | **proven** | §5.1 | `compiler.py:optimize` |
 | TH-008 | 无损 / fp16 恒等 ⇒ PPL 不变 | theorem | A3 | **proven** | §6 | `engine.py`,`base/expert.py` |
 
@@ -284,9 +309,9 @@ PPL 24.57 已 verified；历史对照 PPL 36.12 的具体 baseline 身份为 unv
 
 | 优先级 | 目标 | 为什么重要 | 建议工具 |
 |--------|------|-----------|----------|
-| ★★★ | **TH-006**（联合 LRU 包含性）| MECC 相对 SwapMoE 的**结构性优势**全靠它；证成则 §4 从"直觉"升级为"定理" | 栈式包含性质（Mattson stack algorithm）、LRU 在 Zipf 流下的稳态分析 |
-| ★★ | **TH-005**（静态池塌缩）| 解释实测 "CPU 命中 0%"，与 TH-006 互补 | LRU-Zipf 马氏链稳态 / 计数论证 |
-| ★★ | **TH-004**（Theorem 4 全局最优）| 编译器的合法性背书；补交换论证 + 边际/容量两版关系 | 交换论证、KKT、凸/次模性 |
+| 已反驳 | **TH-006**（联合 LRU 普遍包含性）| 最小反例 $N=3,K_H=K_C=1$, trace $[2,1]$；保留为教训 | 若继续，另立带 IRM/Zipf 稳态或 drift 条件的期望命题 |
+| 已反驳 | **TH-005**（静态池普遍塌缩）| 周期 trace $[1,2]$ 下静态 CPU 渐近命中率 $1/2$ | 若继续，另立带分布与容量条件的定量命题 |
+| 已证明 | **TH-004**（独立容量下按秩填满）| P3 + 交换论证已闭合；不覆盖可兑换共享预算 | 若改预算模型则另立命题 |
 | ★ | **TH-002**（α MLE 严格性）| 让 profile 估计有理论保证；界定连续近似误差 | 离散 Zipf 对数似然、渐近正态 |
 
 ## 9.4 如何新增一条命题（给 agent 的 SOP 摘要）

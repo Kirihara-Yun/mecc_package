@@ -37,7 +37,8 @@
 | 术语 | 含义 |
 |------|------|
 | **ours** | 本文方法：HBM+CPU 联合动态 LRU，其余 SSD。 |
-| **swapmoe** | 主对手：仅 HBM 动态，CPU 驻留静态 top-K_C。 |
+| **swapmoe / swapmoe_fp16** | 历史策略 id / 推荐显示名：SwapMoE-style 静态 CPU 策略的同预算 fp16 三层适配；不是量化实现。 |
+| **swapmoe_quantized** | 预留的独立有损系统 baseline id；当前无可追溯实现，保持 inactive。 |
 | **fiddler** | miss 时在 CPU 上算 expert（搬激活而非权重）。 |
 | **naive** | 全 offload 下界：每次流式搬权重。 |
 

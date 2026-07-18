@@ -37,6 +37,9 @@ from compile_config import compile_plan, print_plan, MODEL_SPECS, MODEL_TYPE
 from tiered_engine import SSDExpertStore
 import mixtral_tiered as MT
 import deepseek_tiered as DT
+from store_manifest import (expected_manifest, validate_store, write_manifest,
+                            write_pending_manifest)
+from result_schema import atomic_write_result
 
 POLICIES = ["ours", "swapmoe", "fiddler", "naive"]
 
@@ -241,7 +244,29 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
     return agg
 
 
-def main():
+_STATUS_FILE = None
+
+def _phase(name, **details):
+    if not _STATUS_FILE:
+        return
+    value = {"phase": name, "updated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+             **details}
+    atomic_write_result_status(_STATUS_FILE, value)
+
+def atomic_write_result_status(path, value):
+    target = os.path.abspath(path); parent = os.path.dirname(target) or "."
+    os.makedirs(parent, exist_ok=True)
+    import tempfile
+    fd, temporary = tempfile.mkstemp(prefix=".status.", suffix=".tmp", dir=parent)
+    try:
+        with os.fdopen(fd, "w") as handle:
+            json.dump(value, handle, indent=2); handle.write("\n"); handle.flush(); os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary): os.unlink(temporary)
+
+def _main():
+    global _STATUS_FILE
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="mistralai/Mixtral-8x7B-Instruct-v0.1")
     ap.add_argument("--model_type", default="auto", choices=["auto", "mixtral", "deepseek"],
@@ -270,7 +295,10 @@ def main():
                     help="真实实验平台名称；未指定时从当前 torch device 自动检测")
     ap.add_argument("--smoke", action="store_true", help="本机自检: 微型随机 MoE, 不下载")
     ap.add_argument("--out", default="main_table.json")
+    ap.add_argument("--status_file", default=None, help="atomic phase-status JSON for persistent runs")
     args = ap.parse_args()
+    _STATUS_FILE = args.status_file
+    _phase("initializing")
 
     device = get_device()
     print("=" * 70)
@@ -292,6 +320,7 @@ def main():
 
     # ───────────── SMOKE: 本机微型自检 ─────────────
     if args.smoke:
+        _phase("smoke")
         smoke_cfg = dict(n_layers=2, n_experts=8, top_k=2, hidden=128, ffn=256, vocab=512)
         # 保留 GPU 测试 (非 CPU)
         if device.type != "cuda":
@@ -310,11 +339,13 @@ def main():
         results = {p: run_policy(p, args, plan, store, device, prompts, None, None,
                                  use_cache=False, smoke_cfg=smoke_cfg) for p in policies}
         _emit(args, device, plan, results, smoke=True)
+        _phase("complete", output=os.path.abspath(args.out))
         return
 
     # ───────────── 真实模型 ─────────────
     from transformers import AutoTokenizer, AutoConfig
     args.state_path_resolved = resolve_state_path(args.model, args.state_path)
+    _phase("loading_model_metadata", state_path=args.state_path_resolved)
     tokenizer = AutoTokenizer.from_pretrained(args.state_path_resolved, trust_remote_code=True)
 
     # 生成 per-layer α (模拟真实 profiling; 真实场景用 profile_deepseek.py 等的产出)
@@ -349,18 +380,43 @@ def main():
         e_ffn = cfg.intermediate_size
         n_experts_total = cfg.num_local_experts
     store = SSDExpertStore(args.store_root, e_hidden, e_ffn)
+    _phase("validating_store", store_root=os.path.abspath(args.store_root))
+    manifest = expected_manifest(
+        model=args.model, model_type=mtype, state_path=args.state_path_resolved,
+        n_layers=plan.n_layers, n_experts=plan.n_experts,
+        hidden=e_hidden, ffn=e_ffn, expert_bytes=store.total_bytes,
+        dtype=str(store.dtype))
+    store_complete = validate_store(args.store_root, manifest)
     print(f"\n[materialize] streaming {plan.n_layers*plan.n_experts} experts → {args.store_root}")
-    if mtype == "deepseek":
-        DT.materialize_experts_to_ssd(args.state_path_resolved, store,
-                                      plan.n_layers, plan.n_experts)
+    if store_complete:
+        print("  [store] manifest and all expert files verified, skip materialization.")
     else:
-        MT.materialize_experts_to_ssd(args.state_path_resolved, store,
-                                      plan.n_layers, plan.n_experts)
+        _phase("materializing_store", store_root=os.path.abspath(args.store_root))
+        write_pending_manifest(args.store_root, manifest)
+        if mtype == "deepseek":
+            DT.materialize_experts_to_ssd(args.state_path_resolved, store,
+                                          plan.n_layers, plan.n_experts)
+        else:
+            MT.materialize_experts_to_ssd(args.state_path_resolved, store,
+                                          plan.n_layers, plan.n_experts)
+        write_manifest(args.store_root, manifest)
+        print("  [store] manifest finalized after integrity check.")
 
     prompts, ppl_text = load_prompts(args.n_prompts, args.prompt_len)
-    results = {p: run_policy(p, args, plan, store, device, prompts, ppl_text,
-                             tokenizer, use_cache=True, model_type=mtype) for p in policies}
+    results = {}
+    for policy in policies:
+        _phase("running_policy", policy=policy, completed_policies=list(results))
+        results[policy] = run_policy(policy, args, plan, store, device, prompts, ppl_text,
+                                     tokenizer, use_cache=True, model_type=mtype)
     _emit(args, device, plan, results, smoke=False)
+    _phase("complete", output=os.path.abspath(args.out), completed_policies=list(results))
+
+def main():
+    try:
+        return _main()
+    except BaseException as exc:
+        _phase("failed", error_type=type(exc).__name__, error=str(exc))
+        raise
 
 
 def _compute_speedups(results):
@@ -394,8 +450,7 @@ def _emit(args, device, plan, results, smoke):
                    "n_prompts": args.n_prompts, "cold_ssd": args.cold_ssd},
         "results": results,
     }
-    with open(args.out, "w") as f:
-        json.dump(out, f, indent=2, ensure_ascii=False)
+    atomic_write_result(args.out, out, results.keys())
     print(f"\n{'='*70}\nMAIN TABLE → {args.out}")
     print(f"{'policy':<10}{'TTFT(ms)':>11}{'TPOT(ms)':>11}{'tok/s':>10}{'PPL':>16}")
     for p, r in results.items():

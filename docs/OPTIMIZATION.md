@@ -129,7 +129,7 @@
 
 | id | 维度 | 想法 | 设计稿 | 风险/注意 | status |
 |----|------|------|--------|-----------|--------|
-| `async_ssd_read` | B 工程 | SSD 读与计算 overlap，隐藏冷读延迟 | METHODS §M1 | 需保证读完成屏障，勿破坏无损 | candidate |
+| `async_ssd_read` | B 工程 | SSD 读 futures 与 expert 计算 overlap，消费时设完成屏障 | METHODS §M1 | 已实现并过 L0；正式 L2 已取消，不能判断收益 | parked |
 | `pinned_buffer_pool` | B 工程 | 复用 pinned buffer 减少分配/注册开销 | METHODS §M2 | 内存占用上升，需测 CPU budget | candidate |
 | `routing_aware_placement` | A 算法 | 更细的层间/专家间热度联合放置 | METHODS §M3 | 改放置算法需 L2 重验主战场 | candidate |
 | `adaptive_alpha` | A 算法 | 运行期自适应 α（随负载调热度权重） | METHODS §M4 | 增加运行期开销，需净收益 | candidate |
