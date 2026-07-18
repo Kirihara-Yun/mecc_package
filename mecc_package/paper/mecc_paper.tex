@@ -67,7 +67,7 @@ Mixture-of-Experts（MoE）架构~\cite{shazeer2017outrageously}通过在每层�
 
 \subsection{三级存储层次与缓存理论}
 
-现代计算系统中，GPU HBM（TB/s级带宽）→ CPU Pinned Memory（50-64 GB/s，PCIe 4.0/5.0）→ NVMe SSD（3-7 GB/s）构成天然的\textbf{三级存储层次}，带宽每级下降约10-100倍。尽管NVMe SSD绝对延迟高达数百μs甚至ms级，但凭借近乎无限的容量（数TB），可作为冷数据的终极存储层——这构成了MECC三级缓存的核心硬件基础。
+现代计算系统中，GPU HBM（TB/s级带宽）→ CPU Pinned Memory（50-64 GB/s，PCIe 4.0/5.0）→ NVMe SSD（3-7 GB/s）构成天然的\textbf{三级存储层次}，带宽每级下降约10-100倍。尽管NVMe SSD绝对延迟高达数百$\mu$s甚至ms级，但凭借近乎无限的容量（数TB），可作为冷数据的终极存储层——这构成了MECC三级缓存的核心硬件基础。
 
 在缓存替换策略上，LRU（Least Recently Used）及其变体（LRU-K、ARC、LIRS）被广泛使用。然而，MoE Expert缓存与传统CPU缓存有关键区别：(1) Expert权重是\textbf{只读的}，淘汰时无需写回；(2) 即使Expert不在HBM中，其权重往往已存在于CPU内存（来自上一次被淘汰时保留的镜像）。这启发了我们的\textbf{零拷贝降级}设计。
 
@@ -188,7 +188,7 @@ L3 (SSD) & NVMe SSD & $\sim$TB级 / $790$ms \\
 
 \begin{enumerate}
     \item 分析本轮需要的所有Expert集合$\mathcal{E}_{\text{need}}$
-    \item 将$\mathcal{E}_{\text{need}} \cap \text{CPU}$的所有Expert通过copy\_stream并行异步搬运到GPU（`cudaMemcpyAsync`）
+    \item 将$\mathcal{E}_{\text{need}} \cap \text{CPU}$的所有Expert通过copy\_stream并行异步搬运到GPU（\texttt{cudaMemcpyAsync}）
     \item 在compute\_stream上先处理已在HBM中的Expert的GEMM
     \item 通过event同步后处理新搬运的Expert的GEMM
 \end{enumerate}
@@ -243,7 +243,7 @@ MECC编译器是一个\textbf{五阶段自动流水线}，将HuggingFace MoE模�
 \centering
 \begin{tabular}{|c|c|l|}
 \hline
-\textbf{阶段} & \textbf{名��} & \textbf{描述} \\
+\textbf{阶段} & \textbf{名称} & \textbf{描述} \\
 \hline
 Phase 1 & Inspect & 提取模型结构参数：$N, d, d_{\text{ff}}$, expert大小, layer数 \\
 Phase 2 & Profile & 用校准集采集router logits，估计per-layer $\alpha_l$ \\
@@ -256,7 +256,7 @@ Phase 5 & Emit & 输出JSON配置$\{K_H, K_C, \text{ranking}\}$，加载到Runti
 \label{fig:pipeline}
 \end{figure}
 
-\textbf{Phase 3的关键实现细节}：为防止操作系统page cache污染延迟测量，CPU tier使用\textbf{pinned（page-locked）memory}（`cudaHostAlloc`）确保与真实offload系统的公平对比；SSD tier使用`posix_fadvise(POSIX_FADV_DONTNEED)`强制丢弃page cache。所有测量使用串行、同步路径，确保无流水线效应污染。
+\textbf{Phase 3的关键实现细节}：为防止操作系统page cache污染延迟测量，CPU tier使用\textbf{pinned（page-locked）memory}（\texttt{cudaHostAlloc}）确保与真实offload系统的公平对比；SSD tier使用\texttt{posix\_fadvise(POSIX\_FADV\_DONTNEED)}请求内核丢弃page cache。所有测量使用串行、同步路径，避免流水线效应混入单次路径测量。
 
 \textbf{一次编译，多次推理}：编译器产出的JSON配置（compilation artifact）可反复加载到Runtime，无需每次推理重新Profile。只要模型和硬件不变，配置保持有效。
 
@@ -274,9 +274,9 @@ Phase 5 & Emit & 输出JSON配置$\{K_H, K_C, \text{ranking}\}$，加载到Runti
 
 \textbf{模型}：DeepSeek-V2-Lite（27层MoE，$N=64$, $d=2048$, $d_{\text{ff}}=11264$，$S_{\text{expert}}\approx 276$~MB，top-6 routing），Mixtral-8×7B（32层MoE，$N=8$, $d=4096$, $d_{\text{ff}}=14336$，$S_{\text{expert}}\approx 1407$~MB，top-2 routing）。
 
-\textbf{预算设置}：为模拟消费级/受限部署环境，我们\\设置HBM预算为8GB（仅够缓存DeepSeek~$K_H=19$个Expert，或Mixtral~$K_H=4$个），CPU预算为12GB（$K_C=28$或$K_C=3$）。
+\textbf{预算设置}：为模拟消费级/受限部署环境，我们设置HBM预算为8GB（仅够缓存DeepSeek~$K_H=19$个Expert，或Mixtral~$K_H=4$个），CPU预算为12GB（$K_C=28$或$K_C=3$）。
 
-\textbf{Benchmark协议}：所有benchmark使用相同的模型权重、相同的input prompt、相同的`K_H + K_C`总预算（apples-to-apples对比）。每个实验重复10次，报告均值。PPL使用WikiText-2验证集（2048 tokens context）计算。
+\textbf{Benchmark协议}：所有benchmark使用相同的模型权重、相同的input prompt、相同的\texttt{K\_H + K\_C}总预算（apples-to-apples对比）。每个实验重复10次，报告均值。PPL使用WikiText-2验证集（2048 tokens context）计算。
 
 \subsection{真实延迟测量}
 
@@ -313,7 +313,7 @@ OURS相对SwapMoE-style机制对照的综合加速为1.33倍，SSD命中率更�
 
 \subsection{热点漂移场景}
 
-为评估动态负载下的性能，我们设计了\textbf{热点漂移实验}：在\~1000次推理请求中，Expert访问分布每100步平滑切换一次（$\alpha$不变但ranking随机旋转），模拟多租户/多任务场景。结果如表~\ref{tab:drift}：
+为评估动态负载下的性能，我们设计了\textbf{热点漂移实验}：在约1000次推理请求中，Expert访问分布每100步平滑切换一次（$\alpha$不变但ranking随机旋转），模拟多租户/多任务场景。结果如表~\ref{tab:drift}：
 
 \begin{table}[!h]
 \centering
