@@ -144,8 +144,11 @@ BUILTIN_PROMPTS = [
 ]
 
 
-def load_prompts(n_prompts: int, max_len: int = 64) -> (List[str], str):
-    """返回 (prompts, ppl_text)。优先 WikiText-2。"""
+def load_prompts(n_prompts: int, max_len: int = 64,
+                 use_wikitext: bool = True) -> (List[str], str):
+    """返回 (prompts, ppl_text)；仅在需要 PPL 时探测 WikiText-2。"""
+    if not use_wikitext:
+        return BUILTIN_PROMPTS[:n_prompts], " ".join(BUILTIN_PROMPTS)
     try:
         from datasets import load_dataset
         ds = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
@@ -402,7 +405,8 @@ def _main():
         write_manifest(args.store_root, manifest)
         print("  [store] manifest finalized after integrity check.")
 
-    prompts, ppl_text = load_prompts(args.n_prompts, args.prompt_len)
+    prompts, ppl_text = load_prompts(
+        args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl)
     results = {}
     for policy in policies:
         _phase("running_policy", policy=policy, completed_policies=list(results))
