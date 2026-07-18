@@ -22,9 +22,11 @@ MECC 数字一致性体检（claim ↔ 证据）
 import argparse
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # mecc_package/
+REPO_ROOT = os.path.dirname(ROOT)
 RESULTS = os.path.join(ROOT, "results")
 
 PASS = WARN = FAIL = 0
@@ -114,6 +116,65 @@ REMINDERS = [
     ("X6", "mixtral_real.json 的 swapmoe.ppl=36.116 数值存在，但当前 e2e SwapMoePolicy 为 fp16、无量化调用；2-bit baseline 身份未核实，禁止合成主 claim"),
     ("X5", "results/README.md 顶部硬件 A100 [已澄清，正确] —— 各 JSON 顶层 platform=A100 已与之一致；以 platform 字段为平台真值"),
 ]
+
+# 正式入口/论文材料。PROVENANCE 与审计文档故意描述禁用 claim，不参与扫描。
+TEXT_CLAIM_FILES = [
+    "AGENTS.md",
+    "README.md",
+    "docs/APPLICABILITY.md",
+    "docs/EXPERIMENTS.md",
+    "docs/PAPER_WRITING.md",
+    "docs/THEORY.md",
+    "mecc_package/README.md",
+    "mecc_package/STRATEGY.md",
+    "mecc_package/paper/mecc_paper.tex",
+    "mecc_package/paper/mecc_paper_example.md",
+]
+
+
+def _text_claim_violations(rel, text):
+    """返回高风险文本 claim，规则对应 CONSISTENCY_AUDIT CA-001/003/005/006。"""
+    violations = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        lower = line.lower()
+        # M5: 主结果平台已经裁定为 A100。仅拦明确把 Mixtral 主结果归到 5090 的句子。
+        if ("mixtral" in lower and "5090" in lower
+                and "a100" not in lower
+                and not any(word in lower for word in ("勿", "不得", "非平台", "仅为"))
+                and any(word in lower for word in ("主结果", "主场景", "来源"))):
+            violations.append((lineno, "M5_PLATFORM",
+                               "Mixtral 主结果平台应为 A100 80GB，不得写 RTX 5090"))
+        # X6: 当前仓库不能把 36.12 归因给 SwapMoE 2-bit。
+        if ("36.12" in line and "swapmoe" in lower
+                and re.search(r"2\s*[- ]?bit|有损", lower)
+                and not re.search(r"待核|unverified|无法|禁止", lower)):
+            violations.append((lineno, "X6_BASELINE_IDENTITY",
+                               "36.12 的 SwapMoE/2-bit baseline 身份未核实"))
+        # X3: 1.62x 只能作为 TPOT 比出现。
+        if (re.search(r"1\.62\s*[×x]", line)
+                and "tpot" not in lower and "每 token" not in lower):
+            violations.append((lineno, "X3_SPEEDUP_SCOPE",
+                               "1.62× 必须明确标注为 TPOT（每 token）比"))
+    return violations
+
+
+def check_text_claims():
+    print("\n== 高风险文本 claim 体检（正式入口与论文材料）==")
+    checked = total_violations = 0
+    for rel in TEXT_CLAIM_FILES:
+        path = os.path.join(REPO_ROOT, rel)
+        if not os.path.exists(path):
+            _fail(f"文本扫描目标缺失: {rel}")
+            continue
+        checked += 1
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+        violations = _text_claim_violations(rel, text)
+        total_violations += len(violations)
+        for lineno, rule, desc in violations:
+            _fail(f"{rule}: {rel}:{lineno} —— {desc}")
+    if checked and total_violations == 0:
+        _ok(f"{checked} 个正式文本通过平台/加速口径/baseline 身份规则")
 
 
 def _support_dotted(d, dotted):
@@ -211,6 +272,7 @@ def main():
     check_docs_present()
     check_claims()
     check_platform_time()
+    check_text_claims()
     check_reminders()
 
     print(f"\n== 小结 ==\n  OK={PASS}  WARN={WARN}  FAIL={FAIL}")

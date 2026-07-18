@@ -190,7 +190,9 @@ $$
 
 **证明.** 搬运算子是恒等映射 $\mathrm{copy}:W\mapsto W$（H2D/D2H 不改 fp16 值，代码 `_swap.copy_to_gpu` / `expert.py` 零拷贝 view），缓存命中/未命中只影响**何时**取到 $W$，不影响取到的 $W$ 本身；MoE 聚合 $\sum_e g_e\,\mathrm{Expert}_e(x)$ 的算子与权重均不变。故输出函数不变。$\qquad\blacksquare$
 
-**这是 MECC 相对 SwapMoE/EdgeMoE（2-bit 量化、有损）的核心卖点**（见 `APPLICABILITY.md` §4.1：PPL 24.57 无损 vs 36.12 有损）。
+**这是 MECC 相对任何改变权重数值的量化方案的定义性区别。** 当前 OURS fp16
+PPL 24.57 已 verified；历史对照 PPL 36.12 的具体 baseline 身份为 unverified
+（PROVENANCE X6），因此本定理不依赖、也不引用该归因。
 
 > **铁律 T1｜无损是定义性的**：任何"优化"若改变数值（量化/剪枝/近似）就**破坏 P8**，那就不再是 MECC 优化，而是变成了一个有损 baseline（见 `OPTIMIZATION.md` 铁律）。涉及精度的改动必须先在本文重新审视 P8 是否仍成立。
 

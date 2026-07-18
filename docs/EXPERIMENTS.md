@@ -248,7 +248,7 @@ bash run_5090.sh full
 
 | 级别 | 模型 | 来源文件 | 快照日期 | 参考值（会变） |
 |------|------|----------|----------|----------------|
-| L2 | Mixtral-8x7B | `../mecc_package/results/raw/mixtral_real.json` | 见文件内 `meta` | OURS vs SwapMoE ≈ **1.33×**；PPL **24.57(无损) vs 36.12(有损)**；SSD 命中 **17.6% vs 34.5%** |
+| L2 | Mixtral-8x7B | `../mecc_package/results/raw/mixtral_real.json` | 见文件内 `meta` | OURS vs SwapMoE ≈ **1.33×**；OURS fp16 PPL **24.57**；SSD 命中 **17.6% vs 34.5%**。对照 PPL 36.12 的 baseline 身份为 unverified（X6），不作快照 claim |
 | L1 | DeepSeek-V2-Lite | `../mecc_package/results/` 主表 | 见文件 | 无优化 ≈2.59×；+批量预取 ≈1.10×（**仅算法上界**） |
 | L0 | smoke-tiny-moe | `../mecc_package/results/smoke_test.json`、`e2e/smoke_table.json` | —— | 仅作链路样例，**不可引用为性能** |
 | <新> | <模型> | <results/raw/...> | <日期> | <值> |
