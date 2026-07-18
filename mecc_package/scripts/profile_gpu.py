@@ -7,6 +7,9 @@ MECC GPU Profiling — 支持 CUDA / Apple MPS
 import sys, time, json, statistics, math, os
 from collections import Counter
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from compiler import estimate_alpha as _compiler_estimate_alpha
+
 
 def get_device():
     """自动检测最佳设备: CUDA > MPS > CPU"""
@@ -114,12 +117,8 @@ def profile_alpha(model_name="mistralai/Mixtral-8x7B-v0.1", n_samples=1000):
 
 
 def estimate_alpha(counts):
-    """MLE for Zipf α"""
-    n = len(counts)
-    sorted_counts = sorted(counts, reverse=True)
-    log_sum = sum(math.log(max(r, 1)) for r in range(1, n + 1))
-    alpha = 1.0 + n / log_sum if log_sum > 0 else 1.0
-    return min(max(alpha, 0.5), 3.0)
+    """Use the compiler's bounded discrete-Zipf MLE implementation."""
+    return _compiler_estimate_alpha(counts)
 
 
 # ═══════════════════════════════════════════════════════════

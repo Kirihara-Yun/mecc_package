@@ -24,19 +24,41 @@ import numpy as np
 # ═══════════════════════════════════════════════════════════
 
 def estimate_alpha(access_counts: List[int]) -> float:
-    """从 expert 访问计数估算 Zipf α 参数。
-    
-    使用 MLE: α ≈ 1 + N / Σ log(rank_i)
-    其中 rank_i 是 expert i 在访问计数排序中的排名。
+    """从按 expert 聚合的访问计数估算有界离散 Zipf α。
+
+    先按频次降序赋予秩 ``r=1..N``，再最大化离散 Zipf 对数似然
+    ``-α Σ c_r log(r) - M log(H_N(α))``。score 在 α 上单调，故可用
+    二分法求唯一根；若无内部根则返回约束区间 [0.5, 3.0] 的边界。
     """
-    n = len(access_counts)
-    if n == 0:
+    if not access_counts:
         return 1.0
-    sorted_counts = sorted(access_counts, reverse=True)
-    # MLE for Zipf: α = 1 + N / sum(log(rank_i))
-    log_sum = sum(math.log(max(r, 1)) for r in range(1, n + 1))
-    alpha = 1.0 + n / log_sum if log_sum > 0 else 1.0
-    return min(max(alpha, 0.5), 3.0)  # clamp
+    counts = np.asarray(sorted(access_counts, reverse=True), dtype=np.float64)
+    if np.any(counts < 0):
+        raise ValueError("access counts must be non-negative")
+    total = float(counts.sum())
+    if total <= 0:
+        return 1.0
+
+    log_ranks = np.log(np.arange(1, len(counts) + 1, dtype=np.float64))
+    observed_mean_log_rank = float(np.dot(counts, log_ranks) / total)
+
+    def model_mean_log_rank(alpha: float) -> float:
+        weights = np.exp(-alpha * log_ranks)
+        return float(np.dot(weights, log_ranks) / weights.sum())
+
+    lo, hi = 0.5, 3.0
+    if observed_mean_log_rank >= model_mean_log_rank(lo):
+        return lo
+    if observed_mean_log_rank <= model_mean_log_rank(hi):
+        return hi
+    for _ in range(64):
+        mid = (lo + hi) / 2.0
+        # E_alpha[log r] decreases with alpha.
+        if model_mean_log_rank(mid) > observed_mean_log_rank:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2.0
 
 
 def generate_profile(model_name: str, n_tokens: int = 100000) -> dict:

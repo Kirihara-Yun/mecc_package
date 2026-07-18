@@ -85,13 +85,28 @@ $$
 
 代码锚点：`compiler.py:zcdf`（`hk/hn`）。**这是整套理论的基石**：缓存命中率被解析地写成调和数之比，使 §4 的优化可闭式分析。
 
-### 2.3 命题 P2（α 的 MLE）
+### 2.3 命题 P2（有界离散 Zipf MLE）
 
-代码 `compiler.py:estimate_alpha` 用 $\hat\alpha = 1 + N/\sum_{i}\log(\mathrm{rank}_i)$ 估计 α。
+代码 `compiler.py:estimate_alpha` 先按观测频次降序赋予秩 $r=1,\ldots,N$，
+再在 $\alpha\in[0.5,3]$ 上最大化离散 Zipf 对数似然
 
-> **命题 P2（陈述）.** 设观测到的 expert 访问服从 A2 的离散 Zipf，则上式是 α 的（近似）极大似然估计。
+$$
+\ell(\alpha)=-\alpha\sum_r c_r\log r-M\log H_N(\alpha),
+\qquad M=\sum_r c_r.
+$$
 
-**证明义务（未完成）.** 当前代码用的是**连续 Zipf/Pareto 的 MLE 近似式**（对秩取对数求和），其与离散 Zipf 精确 MLE 的偏差需要界定。**本命题状态为 `conjecture`**（见 §9 注册表 TH-002），证明义务：(a) 写出离散 Zipf 对数似然 $\ell(\alpha)=-\alpha\sum_i\log r_i - n\log H_N(\alpha)$；(b) 说明在何种近似（如 $H_N(\alpha)\!\approx\!\int$）下一阶条件退化为代码中的闭式；(c) 给出近似误差量级。这是一个**诚实标注的缺口**，不得在论文里把它当作已严格证明的定理。
+> **命题 P2.** 当 $M>0$ 时，上述有界最大似然问题是凹优化；若 score 在区间内有根，
+> `estimate_alpha` 的二分法收敛到该唯一根，否则收敛到相应边界。
+
+**证明.** 一阶条件为
+$\ell'(\alpha)=M\left(\mathbb{E}_{p_\alpha}[\log r]-\overline{\log r}\right)=0$，
+其中 $\overline{\log r}=\sum_r c_r\log r/M$。又有
+$\ell''(\alpha)=-M\operatorname{Var}_{p_\alpha}(\log r)\le 0$，
+故 $\ell$ 为凹函数，且非退化 $N>1$ 时 score 严格递减，内部根唯一；无内部根时有界凹函数的最大值在边界。
+代码按 score 符号进行固定次数二分，故得到该有界 MLE。$\qquad\blacksquare$
+
+注意：把 expert 按观测频次重新排序本身会引入有限样本的 rank-selection bias；P2 证明的是
+“给定该观测排序后”的有界离散 MLE，不声称消除了这一统计偏差。
 
 ---
 
@@ -253,7 +268,7 @@ $$
 | ID | 名称 | 级别 | 依赖 | 状态 | 正文 | 代码锚点 |
 |----|------|------|------|------|------|----------|
 | TH-001 | 命中率 = 调和数比 $H_k/H_N$ | proposition | A2 | **proven** | §2.2 | `compiler.py:zcdf` |
-| TH-002 | α 的 MLE 闭式 $1+N/\sum\log r_i$ | proposition | A2 | **conjecture** | §2.3 | `compiler.py:estimate_alpha` |
+| TH-002 | 给定观测排序的有界离散 Zipf MLE | proposition | A2 | **proven** | §2.3 | `compiler.py:estimate_alpha` |
 | TH-003 | 期望延迟 $\mathcal{L}$ 对 $K_H,K_C$ 单调不增 | proposition | A1,A2 | **proven** | §3.1 | `compiler.py:optimize` |
 | TH-004 | 最优分配 = 容量贪心填满（"Theorem 4"）| theorem | A1,A2,(C) | **partial** | §3.2 | `compiler.py:optimize` |
 | TH-005 | 静态 CPU 池命中率塌缩→0 | proposition | A1,A2 | **partial** | §4.2 | `engine.py:_access_swapmoe` |
