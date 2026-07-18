@@ -46,3 +46,13 @@ L0 输出中的 tok/s 只证明逻辑，不作为优化或论文性能证据。
 4. X1/X6 缺原始命令/revision，除非取得外部记录或重建独立 baseline，否则保持 unverified。
 
 这些项目只在相应外部状态改变后继续，不用历史舍入值、L0 或模拟器替代。
+
+## 5. 未跟踪用户文件分类（只登记，不删除）
+
+| 文件 | 分类 | 当前裁决 |
+|------|------|----------|
+| `e2e/bench_moe_infinity.py` | 外部 baseline 草稿 | 缺版本锁定、公平预算、PPL、平台/时间与 Schema A；已在 EXPERIMENTS 注册为 inactive，不运行、不引用 |
+| `results/l2_preflight_20260718.json` | 单策略最小 L2 预检 | 仅 `ours`、1 prompt/2 tokens、`exact(lossless)` 路径标记；不等同于后续四策略 `/data` 预检，不作论文或优化证据 |
+| `paper/MIDTERM_REPORT.md`、`paper/build_ppt.py`、两份 PPTX | 用户汇报材料 | 保留原样；其中可能含旧 X1/X6/理论口吻，未纳入投稿事实快照 |
+
+上述文件仍保持未跟踪，避免在没有用户明确选择的情况下把历史草稿混入受控证据提交。

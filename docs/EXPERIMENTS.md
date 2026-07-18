@@ -228,6 +228,7 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `swapmoe_quantized` | 外部量化系统对照 | 有损（待实现/核验） | 独立低比特速度—质量基线，不与 `swapmoe` 共用结果 | inactive | 尚无可追溯实现与结果，PROVENANCE X6 |
 | `fiddler` | CPU 协同计算 | 无损 | 部分专家 CPU 上算 | active | 同上 |
 | `naive` | 朴素基线 | 无损 | 无优化按需加载 | active | 同上 |
+| `moe_infinity` | 外部 offload baseline | 待核 | 草稿脚本尚无版本锁定、同预算对齐、PPL、平台/时间与 Schema A | inactive | 未跟踪草稿 `e2e/bench_moe_infinity.py`；完成审计前禁用 |
 | `<新baseline>` | <类别> | <是/否> | <一句话> | active/inactive | <文件:函数> |
 
 ### 7.2 Benchmarks / 指标注册表
