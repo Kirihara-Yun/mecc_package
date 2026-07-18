@@ -30,6 +30,7 @@ def main():
     run([sys.executable, "-c", "import runtime_spec"], PKG)
     run([sys.executable, "-c", "import concurrent_tiered_cache"], PKG / "scripts")
     run([sys.executable, PKG / "scripts" / "generate_paper_tables.py", "--check"])
+    run([sys.executable, PKG / "scripts" / "check_paper_tex.py"])
     run([sys.executable, PKG / "scripts" / "verify_claims.py"])
     if not args.skip_l0:
         with tempfile.TemporaryDirectory(prefix="mecc_cpu_ci_") as tmp:
