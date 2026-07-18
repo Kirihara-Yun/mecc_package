@@ -8,7 +8,7 @@
 
 | 阶段 | 状态 | 直接证据 | 未完成门禁 |
 |------|------|----------|------------|
-| P0 基线冻结 | 本地工作完成，待快照提交 | `CONSISTENCY_AUDIT.md`；`verify_claims.py` 30 OK/0 FAIL；config fingerprint | 需提交当前受控改动；X1/X6 只能保持 unverified |
+| P0 基线冻结 | 完成 | `CONSISTENCY_AUDIT.md`；`verify_claims.py` 30 OK/0 FAIL；config fingerprint；事实快照 `bffe489` | X1/X6 只能保持 unverified，不影响已核事实冻结 |
 | P1 可复现实验 | 完成 | launcher、显式 configs、store manifest、阶段状态、Schema A 原子写、共同 trace、`run_cpu_checks.py` | 尚未在新的正式 L2 作业上演练故障恢复；不影响 CPU 逻辑验收 |
 | P2 核心 claim | 部分完成 | baseline 命名拆分与共同 trace；TH-004 proven；TH-005/006 refuted | 五项核心消融缺正式 L2 JSON/log；更强 baseline 未完成外部版本核验 |
 | P3 性能优化 | parked | `async_ssd_read` futures/屏障测试与 L0 | 无正式 L2 单变量消融，不能 adopted；后续候选未启动 |
