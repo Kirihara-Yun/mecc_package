@@ -34,13 +34,14 @@ class ExperimentLauncherTest(unittest.TestCase):
             smoke=True, model="unused", state_path=None, store_root="/tmp/store",
             hbm_budget=1.0, cpu_budget=2.0, alpha=1.0, prompt_len=8,
             max_new_tokens=2, n_prompts=1, policies="ours,naive",
-            platform="CPU", skip_ppl=True,
+            platform="CPU", skip_ppl=True, uniform=True,
         )
         command = launcher.build_command(args, Path("/tmp/result.json"))
         self.assertIn("--smoke", command)
         self.assertEqual(command[command.index("--out") + 1], "/tmp/result.json")
         self.assertEqual(command[command.index("--platform") + 1], "CPU")
         self.assertEqual(command[command.index("--status_file") + 1], "/tmp/status.json")
+        self.assertIn("--uniform", command)
 
     def test_start_refuses_active_job_before_creating_directory(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
@@ -60,6 +61,7 @@ class ExperimentLauncherTest(unittest.TestCase):
                 store_root="/tmp/store", hbm_budget=1.0, cpu_budget=2.0,
                 alpha=1.0, prompt_len=8, max_new_tokens=2, n_prompts=1,
                 policies="all", platform="CPU", skip_ppl=True,
+                uniform=False,
             )
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(launcher.start(args), 0)
@@ -81,7 +83,7 @@ class ExperimentLauncherTest(unittest.TestCase):
             "run", "override", "--config", str(config),
             "--store-root", "/data/custom", "--max-new-tokens", "2",
             "--n-prompts", "1", "--policies", "flashmoe_rf_adaptation",
-            "--skip-ppl",
+            "--skip-ppl", "--uniform",
         ])
         merged = launcher.apply_config(args)
         self.assertEqual(merged.store_root, "/data/custom")
@@ -89,6 +91,7 @@ class ExperimentLauncherTest(unittest.TestCase):
         self.assertEqual(merged.n_prompts, 1)
         self.assertEqual(merged.policies, "flashmoe_rf_adaptation")
         self.assertTrue(merged.skip_ppl)
+        self.assertTrue(merged.uniform)
         self.assertEqual(merged.platform, "a100-80g")
 
     def test_resume_retargets_output_and_preserves_store(self):
