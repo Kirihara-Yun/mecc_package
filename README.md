@@ -23,15 +23,18 @@ python3 mecc_package/scripts/check_env.py --applies \
 ## 核心结果
 
 **主场景 — Mixtral-8x7B（~90GB，连 CPU 都装不下，被迫落 SSD）**
-来源 `mecc_package/results/raw/mixtral_real.json`（RTX 5090, cold SSD）
+来源 `mecc_package/results/raw/mixtral_real.json`（A100 80GB, cold SSD；平台以 JSON 顶层
+`platform` 为准，`compiled_plan.hardware` 仅为历史编译配置串）
 
 | 指标 | OURS | SwapMoE |
 |------|------|---------|
 | 加速比 | **1.33×** | 1.0 |
-| PPL（精度） | **24.57（fp16 无损）** | 36.12（2-bit 有损） |
+| PPL（精度） | **24.57（fp16）** | 36.12（JSON 对照值；2-bit/SwapMoE 身份待核） |
 | SSD 命中率 | **17.6%** | 34.5% |
 
-> 卖点：**同精度（无损）下更快**，并把 SSD 命中从 34.5% 压到 17.6%。
+> 当前 verified 卖点：OURS 保持 fp16 路径，并把 SSD 命中从 34.5% 压到 17.6%，
+> 综合吞吐为对照策略的 1.33×。对照行 PPL 36.12 的 2-bit baseline 身份正在按
+> PROVENANCE X6 核验，关闭前不将其与当前 fp16 `SwapMoePolicy` 合成质量 claim。
 
 > 数据真伪：以上为 **D2 真机实测**（`mixtral_real.json`）。引用任何数字前请查
 > **[`docs/PROVENANCE.md`](./docs/PROVENANCE.md)** 确认级别与状态——热点漂移的 9.50×/5.68× 属 **D1 缓存模拟器**，

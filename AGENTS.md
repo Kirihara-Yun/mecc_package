@@ -81,11 +81,11 @@
 
 | 场景 | 数据来源 | 关键数字 |
 |------|----------|---------|
-| **主场景** Mixtral-8x7B（落 SSD） | `mecc_package/results/raw/mixtral_real.json` | OURS vs SwapMoE **1.33×**（D2）；PPL **24.57（无损）vs 36.12（有损）**；SSD 命中 17.6% vs 34.5% |
+| **主场景** Mixtral-8x7B（落 SSD） | `mecc_package/results/raw/mixtral_real.json` | OURS vs SwapMoE **1.33×**（D2）；OURS PPL **24.57（fp16）**；SSD 命中 17.6% vs 34.5%。对照行 PPL 36.12 的“2-bit/SwapMoE”身份为 `unverified`（PROVENANCE X6），暂禁合成质量 claim |
 | 对照 DeepSeek-V2-Lite（不落 SSD） | `mecc_package/results/` 主表 | 无优化 2.59×；+批量预取后 1.10×（仅算法上界，非主战场） |
 | 热点漂移 9.50×/5.68× | `raw/deepseek_real_e2e.json` | **D1 缓存模拟器**（DeepSeek 合成规模），引用须标"模拟器"，**勿当真机** |
 
-> 已知矛盾（**禁止当结论引用**，详见 PROVENANCE §4）：论文表3 DeepSeek e2e 数字无对应 JSON（unverified）；Mixtral 平台 A100 vs rtx5090；加速口径 1.33×(综合) vs 1.62×(TPOT)。
+> 已知矛盾（**禁止当结论引用**，详见 PROVENANCE §4）：论文表3 DeepSeek e2e 数字无对应 JSON（unverified）；加速口径 1.33×(综合) vs 1.62×(TPOT)；主 JSON 的 36.12 对照 PPL 无法由当前 fp16 `SwapMoePolicy` 解释（X6）。Mixtral 平台已裁定为 A100，`compiled_plan.hardware=rtx5090` 仅为历史配置串。
 
 ---
 
