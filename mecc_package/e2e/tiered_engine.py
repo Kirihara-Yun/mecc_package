@@ -337,7 +337,10 @@ class LayerExpertCache:
         # 批量异步 H2D: 一次性把本轮所有 CPU 命中的 expert 搬上 GPU
         cpu_uids = [uid for uid in uids if uid not in self.gpu
                     and (uid in self.cpu or uid in self.static_cpu)]
-        if cpu_uids:
+        # FlashMoE adaptation owns CPU eviction order; the generic fast path
+        # would spill through LayerExpertCache's LRU helper before the policy
+        # can score recency/frequency candidates.
+        if cpu_uids and self._policy_plugin.name != "flashmoe_rf_adaptation":
             self.batch_prefetch(cpu_uids)
             # 直接把预取结果放进 self.gpu, 让 _access 自动命中
             for uid in cpu_uids:

@@ -229,6 +229,7 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `fiddler` | CPU 协同计算 | 无损 | 部分专家 CPU 上算 | active | 同上 |
 | `naive` | 朴素基线 | 无损 | 无优化按需加载 | active | 同上 |
 | `moe_infinity` | 外部 offload baseline | 待核 | 草稿脚本尚无版本锁定、同预算对齐、PPL、平台/时间与 Schema A | inactive | 未跟踪草稿 `e2e/bench_moe_infinity.py`；完成审计前禁用 |
+| `flashmoe_rf_adaptation` | FlashMoE 论文机制适配 | 无损 fp16 | 同三层预算；HBM LRU，CPU 用公开 recency/frequency 特征的确定性等权评分；不是作者训练 FFN | active | `e2e/policy_plugin.py:FlashMoeRFAdaptationPolicy`；原论文未发布训练权重/实现，禁称官方复现 |
 | `<新baseline>` | <类别> | <是/否> | <一句话> | active/inactive | <文件:函数> |
 
 ### 7.2 Benchmarks / 指标注册表

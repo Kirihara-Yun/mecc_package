@@ -35,7 +35,7 @@
 python3 mecc_package/scripts/run_cpu_checks.py
 ```
 
-该入口覆盖 35 项 CPU 测试、三条受保护 import 链、论文自动表、TeX 静态结构、claim 一致性与 L0。
+该入口覆盖 37 项 CPU 测试、三条受保护 import 链、论文自动表、TeX 静态结构、claim 一致性与 L0。
 L0 输出中的 tok/s 只证明逻辑，不作为优化或论文性能证据。
 
 ## 4. 不可伪完成的外部依赖

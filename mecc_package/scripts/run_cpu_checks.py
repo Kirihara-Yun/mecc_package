@@ -26,6 +26,7 @@ def main():
     run([sys.executable, "-m", "unittest", "test_compiler.py"], PKG)
     run([sys.executable, "-m", "unittest",
          "test_async_ssd_read.py", "test_cache_consistency.py",
+         "test_flashmoe_adaptation.py",
          "test_result_schema.py", "test_store_manifest.py",
          "test_run_e2e_metrics.py"], E2E)
     run([sys.executable, "-c", "import compile_config"], E2E)
