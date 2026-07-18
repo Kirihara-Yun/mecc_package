@@ -59,16 +59,19 @@ MoE 推理时，绝大部分参数集中在 expert 权重上。部署时只有�
 ## 4. 两个场景的真实实验对照
 
 ### 4.1 主场景：Mixtral-8x7B（90GB，连 CPU 都装不下，被迫落 SSD）
-来源：`mecc_package/results/raw/mixtral_real.json`（RTX 5090, cold SSD）
+来源：`mecc_package/results/raw/mixtral_real.json`（A100 80GB, cold SSD；平台以 JSON 顶层
+`platform` 为准）
 
 | 指标 | OURS | SwapMoE |
 |------|------|---------|
 | tokens/s | — | — |
 | **加速比** | **1.33× vs SwapMoE** | 1.0 |
-| **PPL（精度）** | **24.57（无损 fp16）** | 36.12（2-bit 有损） |
+| **PPL（精度）** | **24.57（fp16）** | 36.12（JSON 对照值；2-bit/SwapMoE 身份待核） |
 | SSD 命中率 | 17.6% | 34.5% |
 
-> MECC 把 SSD 命中从 34.5% 压到 17.6%（更多 expert 命中快层），同时**全程 fp16 无损**——这是相对 SwapMoE/EdgeMoE 的核心卖点：**同精度、更快**。
+> MECC 的当前实现全程 fp16，并把 SSD 命中从 34.5% 压到 17.6%（更多 expert
+> 命中快层）。对照行 PPL 36.12 的 2-bit/SwapMoE 身份无法由当前 fp16 harness
+> 解释，已登记 PROVENANCE X6；关闭前不将二者合成“同一 baseline 的速度+质量”结论。
 
 ### 4.2 对照场景：DeepSeek-V2-Lite（CPU 装得下，SSD 几乎不触发）
 来源：`mecc_package/results/`（A100 80GB, α=0.73）

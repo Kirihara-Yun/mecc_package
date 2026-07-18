@@ -80,8 +80,6 @@ CLAIMS = [
      "Mixtral OURS vs SwapMoE 加速 1.33×"),
     ("M2a", "raw/mixtral_real.json", "results.ours.ppl", 24.569, 0.01,
      "Mixtral OURS 无损 PPL 24.57"),
-    ("M2b", "raw/mixtral_real.json", "results.swapmoe.ppl", 36.116, 0.01,
-     "Mixtral SwapMoE 有损 PPL 36.12"),
     ("M3a", "raw/mixtral_real.json", "results.ours.hit_pct.ssd", 17.6, 0.1,
      "Mixtral OURS SSD 命中 17.6%"),
     ("M3b", "raw/mixtral_real.json", "results.swapmoe.hit_pct.ssd", 34.5, 0.1,
@@ -113,6 +111,7 @@ REMINDERS = [
     ("X2", "Mixtral 平台 [已澄清]：实验先 5090 后 A100，主结果在 A100 跑定（STRATEGY §2.2 佐证）—— 平台真值已写入各 JSON 顶层 platform=A100；compiled_plan.hardware 降级为编译期配置串，不再作平台依据"),
     ("X3", "加速口径：1.33×(综合) 与 1.62×(TPOT) 是两个指标，引用须标口径"),
     ("X4", "expert 体积：336MB(实测张量) vs 1407MB(理论3矩阵)，口径不同"),
+    ("X6", "mixtral_real.json 的 swapmoe.ppl=36.116 数值存在，但当前 e2e SwapMoePolicy 为 fp16、无量化调用；2-bit baseline 身份未核实，禁止合成主 claim"),
     ("X5", "results/README.md 顶部硬件 A100 [已澄清，正确] —— 各 JSON 顶层 platform=A100 已与之一致；以 platform 字段为平台真值"),
 ]
 

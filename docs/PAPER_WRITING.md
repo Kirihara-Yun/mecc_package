@@ -198,7 +198,7 @@
 | 把对照 DeepSeek 2.59× 写成"方法有效性" | 违反 APPLICABILITY，被指错位 | 写成"算法上界/对照"，明说不落 SSD |
 | 写论文表3 那组 TTFT/tok·s（X1） | 无对应 JSON，数据造假风险 | 重跑落盘升 verified，或改用 D3 的 2.55× |
 | 把代码注释里的 "Theorem 4" 当已证定理 | 虚假定理，比缺口更有害 | 标 `partial`，写"容量贪心版本，待补交换论证" |
-| 平台写 A100（沿用旧摘要） | 与 JSON(rtx5090) 矛盾 X2 | 统一 RTX 5090 |
+| 从 `compiled_plan.hardware=rtx5090` 反推主平台 | 与顶层 `platform=A100 80GB` 及 PROVENANCE M5 矛盾 | 主结果统一写 A100 80GB；`hardware` 仅作历史编译配置串 |
 | 凭记忆写 [Author et al. 2023] 引用 | 文献幻觉 | `[TODO: verify cite]`，人工/联网核实 |
 | 1.33× 与 1.62× 混用不标口径（X3） | 自相矛盾 | 明标：1.33×=综合加速，1.62×=TPOT 比 |
 
