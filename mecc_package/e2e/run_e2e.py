@@ -22,6 +22,7 @@ run_e2e.py — 真实 MoE 端到端"编译→运行" harness (DAC 主表生成�
 """
 from __future__ import annotations
 import argparse
+from datetime import datetime
 import json
 import math
 import os
@@ -209,7 +210,9 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
     agg = {
         "ttft_ms": round(statistics.mean(l["ttft_ms"] for l in lat), 2),
         "tpot_ms": round(statistics.mean(l["tpot_ms"] for l in lat), 2),
-        "tokens_per_s": round(statistics.mean(l["tokens_per_s"] for l in lat), 2),
+        # Keep enough precision for derived speedups.  Rounding 0.037 and 0.024
+        # to 0.04 and 0.02 before division can manufacture an apparent 2.0x.
+        "tokens_per_s": round(statistics.mean(l["tokens_per_s"] for l in lat), 6),
     }
     # ---- PPL (无损验证) ----
     ppl = None if args.skip_ppl else measure_ppl(
@@ -263,6 +266,8 @@ def main():
     ap.add_argument("--warm_ssd", dest="cold_ssd", action="store_false")
     ap.add_argument("--uniform", action="store_true", default=False,
                     help="统一 per-layer 分配 (不生成随机 per_layer_alpha, 与之前 A100 实验一致)")
+    ap.add_argument("--platform", default=None,
+                    help="真实实验平台名称；未指定时从当前 torch device 自动检测")
     ap.add_argument("--smoke", action="store_true", help="本机自检: 微型随机 MoE, 不下载")
     ap.add_argument("--out", default="main_table.json")
     args = ap.parse_args()
@@ -358,7 +363,7 @@ def main():
     _emit(args, device, plan, results, smoke=False)
 
 
-def _emit(args, device, plan, results, smoke):
+def _compute_speedups(results):
     # speedup vs baselines (按 throughput)
     if "ours" in results:
         ours_tps = results["ours"]["tokens_per_s"]
@@ -366,10 +371,24 @@ def _emit(args, device, plan, results, smoke):
             if b in results and results[b]["tokens_per_s"] > 0:
                 results["ours"].setdefault("speedup_vs", {})[b] = round(
                     ours_tps / results[b]["tokens_per_s"], 3)
+
+
+def _detect_platform(args, device):
+    if args.platform:
+        return args.platform
+    if device.type == "cuda":
+        return torch.cuda.get_device_name(device)
+    return "CPU"
+
+
+def _emit(args, device, plan, results, smoke):
+    _compute_speedups(results)
     out = {
         "device": str(device),
         "mode": "smoke" if smoke else "real",
         "model": args.model if not smoke else "smoke-tiny-moe",
+        "platform": _detect_platform(args, device),
+        "run_time": datetime.now().astimezone().isoformat(timespec="seconds"),
         "compiled_plan": {k: v for k, v in vars(plan).items() if k != "placement"},
         "config": {"max_new_tokens": args.max_new_tokens, "prompt_len": args.prompt_len,
                    "n_prompts": args.n_prompts, "cold_ssd": args.cold_ssd},
