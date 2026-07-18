@@ -63,7 +63,7 @@ Mixture-of-Experts（MoE）架构~\cite{shazeer2017outrageously}通过在每层�
 
 \subsection{现有卸载方案}
 
-相关系统采用量化卸载、两级换页、流式加载或CPU协同计算等不同取舍~\cite{mixtral_offloading,swapmoe2024,fluxmoe2026}。由于本轮引用审计无法访问外部主来源，具体系统身份与版本在投稿前仍须逐项核验；本文实验中的\texttt{swapmoe}仅表示同预算fp16静态CPU策略适配，不等同于尚未核验的外部量化实现。
+相关系统采用量化卸载、可调内存预算、流式Expert驻留或CPU协同计算等不同取舍~\cite{mixtral_offloading,swapmoe2024,fluxmoe2026,fiddler}。本文实验中的\texttt{swapmoe}仅表示同预算fp16静态CPU策略适配，不等同于SwapMoE原系统的完整复现。
 
 \subsection{三级存储层次与缓存理论}
 
@@ -381,9 +381,8 @@ OURS相对SwapMoE-style机制对照的综合加速为1.33倍，SSD命中率更�
 \bibliographystyle{plain}
 \begin{thebibliography}{99}
 
-% Citation audit note (2026-07-18): network verification was unavailable in the
-% managed session. Entries marked TODO must not be used for submission until
-% title/authors/venue are checked against the primary paper or repository.
+% Citation audit: titles/authors/identifiers below were checked against primary
+% arXiv/JMLR records on 2026-07-18; see docs/CITATION_AUDIT.md.
 
 \bibitem{shazeer2017outrageously}
 N. Shazeer, A. Mirhoseini, K. Maziarz, et al.
@@ -406,62 +405,24 @@ W. Fedus, B. Zoph, N. Shazeer.
 JMLR, 2022.
 
 \bibitem{mixtral_offloading}
-[TODO: verify cite against the upstream repository.]\\
-D. V. Mazur.
-\textit{mixtral-offloading: Run Mixtral-8x7B models on Colab or consumer hardware.}
-GitHub Repository, 2024.
+A. Eliseev and D. Mazur.
+\textit{Fast Inference of Mixture-of-Experts Language Models with Offloading.}
+arXiv:2312.17238, 2023.
 
 \bibitem{swapmoe2024}
-[TODO: verify cite; no primary source was reachable in the citation audit.]\\
-SwapMoE: Efficient MoE Model Serving with Swap-based Expert Offloading.
-ACL, 2024.
+R. Kong, Y. Li, Q. Feng, et al.
+\textit{SwapMoE: Serving Off-the-shelf MoE-based Large Language Models with Tunable Memory Budget.}
+arXiv:2308.15030, 2023.
 
 \bibitem{fluxmoe2026}
-[TODO: verify cite; no primary source was reachable in the citation audit.]\\
-FluxMoE: Streaming Expert Loading for MoE Inference.
-arXiv, 2026.
+Q. Liu, C. Y. He, H. Jiang, Z. Wang, A. Zhao, and P. P. C. Lee.
+\textit{FluxMoE: Decoupling Expert Residency for High-Performance MoE Serving.}
+arXiv:2604.02715, 2026.
 
 \bibitem{fiddler}
-K. Kamahori, Y. Gu, K. Zhu, B. Kasikci.
+K. Kamahori, Y. Gu, K. Zhu, and B. Kasikci.
 \textit{Fiddler: CPU-GPU Orchestration for Fast Inference of Mixture-of-Experts Models.}
 arXiv:2402.07033, 2024.
-
-\bibitem{lepikhin2020gshard}
-D. Lepikhin, H. Lee, Y. Xu, et al.
-\textit{GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding.}
-ICLR, 2021.
-
-\bibitem{rajbhandari2020zero}
-S. Rajbhandari, J. Rasley, O. Ruwase, Y. He.
-\textit{ZeRO: Memory Optimizations Toward Training Trillion Parameter Models.}
-SC, 2020.
-
-\bibitem{hqq_quantization}
-H. Badri, A. Shaji.
-\textit{Half-Quadratic Quantization (HQQ) for Large Language Models.}
-arXiv:2403.09175, 2024.
-
-\bibitem{chung2024unlocking}
-[TODO: verify cite against a primary paper.]\\
-H. W. Chung, L. Hou, S. Longpre, et al.
-\textit{Unlocking the Power of Mixture-of-Experts through Evolutionary Techniques.}
-arXiv, 2024.
-
-\bibitem{rajbhandari2022deepspeed}
-S. Rajbhandari, C. Li, Z. Yao, et al.
-\textit{DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale.}
-ICML, 2022.
-
-\bibitem{zipf1949}
-G. K. Zipf.
-\textit{Human Behavior and the Principle of Least Effort.}
-Addison-Wesley, 1949.
-
-\bibitem{adam2005}
-[TODO: verify cite against a primary paper.]\\
-B. Adam, E. Eide, K. Iftode.
-\textit{Efficient Object Caching Through On-Demand Replacement.}
-USENIX ATC, 2005.
 
 \end{thebibliography}
 

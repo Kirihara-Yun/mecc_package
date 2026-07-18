@@ -72,6 +72,7 @@ python3 mecc_package/scripts/check_env.py --applies \
 │   ├── APPLICABILITY.md  # ★ 适用性边界与决策树
 │   ├── PROJECT_TAKEOVER_PLAN.md # ★ 项目接管与推进路线图
 │   ├── PLAN_COMPLETION_AUDIT.md  # 路线图逐项完成度与剩余外部门禁
+│   ├── CITATION_AUDIT.md         # 论文外部引用的主来源核验记录
 │   ├── EXPERIMENTS.md    # ★ 实验运行规范（每次跑实验前必读）
 │   ├── OPTIMIZATION.md   # ★ 优化指导规范（做任何优化前必读：算法/工程/评测）
 │   ├── THEORY.md         # ★ 数学论证与形式化（方法数学化 + 证明规范 + 命题注册表）

@@ -12,7 +12,7 @@
 | P1 可复现实验 | 完成 | launcher、显式 configs、store manifest、阶段状态、Schema A 原子写、共同 trace、`run_cpu_checks.py` | 尚未在新的正式 L2 作业上演练故障恢复；不影响 CPU 逻辑验收 |
 | P2 核心 claim | 部分完成 | baseline 命名拆分与共同 trace；TH-004 proven；TH-005/006 refuted | 五项核心消融缺正式 L2 JSON/log；更强 baseline 未完成外部版本核验 |
 | P3 性能优化 | parked | `async_ssd_read` futures/屏障测试与 L0 | 无正式 L2 单变量消融，不能 adopted；后续候选未启动 |
-| P4 论文收敛 | 部分完成 | 原稿删除 X1；DeepSeek=L1；自动 Mixtral 主表；claim scanner 通过 | 外部引用 TODO；无 TeX 引擎渲染；无新 L2/消融证据；不能打投稿 tag |
+| P4 论文收敛 | 部分完成 | 原稿删除 X1；DeepSeek=L1；自动 Mixtral 主表；claim scanner 通过；引用主来源见 `CITATION_AUDIT.md`；TeX 静态结构门禁通过 | 无 TeX 引擎渲染；无新 L2/消融证据；不能打投稿 tag |
 
 ## 2. 第一批执行清单
 
@@ -41,8 +41,8 @@ L0 输出中的 tok/s 只证明逻辑，不作为优化或论文性能证据。
 ## 4. 不可伪完成的外部依赖
 
 1. 用户已取消正式 L2 复现，因此不能生成核心消融或 `async_ssd_read` 的 adopted 证据；
-2. 当前外部检索网络失败，论文中未核实条目保留 `[TODO: verify cite]`；
-3. 当前环境没有 TeX 引擎，无法证明投稿 PDF 可构建；
+2. 当前正文引用已由主来源核验；若新增文献，仍须先更新 `CITATION_AUDIT.md`；
+3. 当前环境没有 TeX 引擎；`check_paper_tex.py` 只验证引用、标签、环境和括号结构，无法证明投稿 PDF 可构建；
 4. X1/X6 缺原始命令/revision，除非取得外部记录或重建独立 baseline，否则保持 unverified。
 
 这些项目只在相应外部状态改变后继续，不用历史舍入值、L0 或模拟器替代。
