@@ -155,6 +155,21 @@ def _text_claim_violations(rel, text):
                 and "tpot" not in lower and "每 token" not in lower):
             violations.append((lineno, "X3_SPEEDUP_SCOPE",
                                "1.62× 必须明确标注为 TPOT（每 token）比"))
+        if ("deepseek" in lower and "主实验" in line
+                and not any(word in lower for word in ("非主", "不是主"))):
+            violations.append((lineno, "W2_DEEPSEEK_SCOPE",
+                               "DeepSeek-V2-Lite 只能标 L1 对照，不能称主实验"))
+        if (re.search(r"联合.*lru.*(不低于|普遍.*优)", lower)
+                and not any(word in lower for word in
+                            ("反例", "推翻", "已被", "已反驳", "refuted", "无普遍",
+                             "不具有", "不得", "不能", "不构成"))):
+            violations.append((lineno, "TH006_REFUTED",
+                               "TH-006 普遍包含性已被反例推翻"))
+        if (rel.endswith("mecc_paper.tex")
+                and re.search(r"7,?426|11,?569|8,?598|1\.56\s*[×倍]", line)
+                and not any(word in lower for word in ("todo", "x1", "d4", "不可追溯"))):
+            violations.append((lineno, "X1_UNVERIFIED_TABLE",
+                               "DeepSeek 旧表 X1/D4 数字无对应 JSON"))
     return violations
 
 

@@ -1,0 +1,98 @@
+import argparse
+import contextlib
+import io
+import importlib.util
+from pathlib import Path
+import tempfile
+import unittest
+from unittest import mock
+
+
+SCRIPT = Path(__file__).parent / "scripts" / "experiment_launcher.py"
+SPEC = importlib.util.spec_from_file_location("experiment_launcher", SCRIPT)
+launcher = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader
+SPEC.loader.exec_module(launcher)
+
+
+class ExperimentLauncherTest(unittest.TestCase):
+    def test_config_fingerprint_is_stable_and_sensitive(self):
+        first = launcher.config_fingerprint(["python", "run.py", "--alpha", "1"], "abc")
+        self.assertEqual(first, launcher.config_fingerprint(
+            ["python", "run.py", "--alpha", "1"], "abc"))
+        self.assertNotEqual(first, launcher.config_fingerprint(
+            ["python", "run.py", "--alpha", "2"], "abc"))
+
+    def test_unit_name_rejects_unsafe_ids(self):
+        self.assertEqual(launcher.unit_name("l2-20260718"), "mecc-exp-l2-20260718")
+        for value in ("", "UPPER", "../escape", "has space"):
+            with self.assertRaises(ValueError):
+                launcher.unit_name(value)
+
+    def test_build_command_uses_explicit_output_and_platform(self):
+        args = argparse.Namespace(
+            smoke=True, model="unused", state_path=None, store_root="/tmp/store",
+            hbm_budget=1.0, cpu_budget=2.0, alpha=1.0, prompt_len=8,
+            max_new_tokens=2, n_prompts=1, policies="ours,naive",
+            platform="CPU", skip_ppl=True,
+        )
+        command = launcher.build_command(args, Path("/tmp/result.json"))
+        self.assertIn("--smoke", command)
+        self.assertEqual(command[command.index("--out") + 1], "/tmp/result.json")
+        self.assertEqual(command[command.index("--platform") + 1], "CPU")
+        self.assertEqual(command[command.index("--status_file") + 1], "/tmp/status.json")
+
+    def test_start_refuses_active_job_before_creating_directory(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            launcher, "active_units", return_value=["mecc-exp-running.service"]
+        ):
+            args = argparse.Namespace(run_id="new", runs_root=tmp, allow_concurrent=False)
+            self.assertEqual(launcher.start(args), 2)
+            self.assertFalse((Path(tmp) / "new").exists())
+
+    def test_dry_run_does_not_create_run_directory(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            launcher, "active_units", return_value=[]
+        ), mock.patch.object(launcher, "environment_snapshot", return_value={}):
+            args = argparse.Namespace(
+                run_id="dry", runs_root=tmp, allow_concurrent=False, dry_run=True,
+                gpu="0", smoke=True, model="unused", state_path=None,
+                store_root="/tmp/store", hbm_budget=1.0, cpu_budget=2.0,
+                alpha=1.0, prompt_len=8, max_new_tokens=2, n_prompts=1,
+                policies="all", platform="CPU", skip_ppl=True,
+            )
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(launcher.start(args), 0)
+            self.assertFalse((Path(tmp) / "dry").exists())
+
+    def test_explicit_configs_are_valid_and_level_safe(self):
+        configs = launcher.E2E / "configs"
+        for name in ("l0_smoke.json", "l1_deepseek_control.json", "l2_mixtral_main.json"):
+            value = launcher.load_config(str(configs / name))
+            self.assertIn(value["level"], ("L0", "L1", "L2"))
+        bad = {"level": "L0", "smoke": False}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.json"; path.write_text(__import__("json").dumps(bad))
+            with self.assertRaises(ValueError): launcher.load_config(str(path))
+
+    def test_resume_retargets_output_and_preserves_store(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            launcher, "active_units", return_value=[]
+        ), mock.patch.object(launcher, "environment_snapshot", return_value={}):
+            root = Path(tmp); old = root / "old"; old.mkdir()
+            command = ["python3", "run_e2e.py", "--store_root", "/data/store",
+                       "--out", str(old / "result.json")]
+            (old / "run.json").write_text(__import__("json").dumps({"command": command}))
+            args = argparse.Namespace(from_run="old", run_id="new", runs_root=tmp,
+                                      gpu="0", allow_concurrent=False, dry_run=True)
+            with contextlib.redirect_stdout(io.StringIO()) as stdout:
+                self.assertEqual(launcher.resume(args), 0)
+            rendered = __import__("json").loads(stdout.getvalue())
+            resumed = rendered["metadata"]["command"]
+            self.assertEqual(resumed[resumed.index("--store_root") + 1], "/data/store")
+            self.assertEqual(resumed[resumed.index("--out") + 1], str(root / "new" / "result.json"))
+            self.assertFalse((root / "new").exists())
+
+
+if __name__ == "__main__":
+    unittest.main()
