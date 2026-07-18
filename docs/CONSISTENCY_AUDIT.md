@@ -23,7 +23,7 @@
 | CA-003 | 1.33× 与 1.62× | 1.33×=JSON 综合/吞吐口径；约1.62×=TPOT 比 | 多处写 1.6× 但未总是明确指标 | confirmed | 所有出现处强制带指标名；默认主 claim 用 1.33× |
 | CA-004 | Expert 体积 | 336MB=实际加载张量；1407MB=论文理论三矩阵口径 | 论文与 JSON | explained | 两者可保留，但必须标口径，不直接比较 |
 | CA-005 | 当前 e2e `swapmoe` 数值路径 | 当前实现没有量化，使用与 OURS 相同的 fp16 store | EXPERIMENTS 称其 2-bit 有损；ARCHITECTURE 又称四策略全 fp16 | **critical discrepancy** | 在来源厘清前拆分“fp16 策略模拟”与“外部 2-bit 质量基线”，禁止混成一个实现 |
-| CA-006 | 主 JSON 的 SwapMoE PPL | JSON 确有 36.116，但当前 fp16 `swapmoe` 代码不能解释该差异 | `mixtral_real.json` vs 当前 `tiered_engine.py`/`policy_plugin.py` | **unverified semantics** | 数值继续保留，M2b 降为语义待核实；查原始命令/代码 revision/量化脚本 |
+| CA-006 | 主 JSON 的 SwapMoE PPL | JSON 确有 36.116，但当前 fp16 `swapmoe` 代码不能解释该差异 | `mixtral_real.json` vs `tiered_engine.py`/`policy_plugin.py` | **repository-untraceable** | M2b 已降为 unverified；仓库历史和日志均无独立量化命令，除非取得外部原始记录或重建独立 baseline，否则不得恢复主 claim |
 | CA-007 | “同精度下更快”措辞 | 当前主表写的是 OURS fp16 vs 被标作 2-bit 的 36.116 基线，并非同精度 | README/APPLICABILITY/论文示例 | confirmed wording error | 分开写“OURS 无损”和“相对该有损基线的速度/质量折中”；同精度加速需 fp16 baseline 证据 |
 | CA-008 | SwapMoE 存储层级 | 当前 e2e 模拟为动态 HBM + 静态 CPU + SSD fallback | STRATEGY 称原工作 HBM+CPU 无 SSD，ARCHITECTURE 表写其余落 SSD | explained but naming-risk | 明确“相关工作原语义”与“本 harness 在同容量约束下的适配语义” |
 | CA-009 | `exact(lossless)` 字段 | `--skip_ppl` 时的路径标记，不是数值 PPL 测量 | 多个历史 JSON/日志可能被读成质量测量 | confirmed | schema/论文中称“fp16 路径标记”；只有数值 PPL 才算质量实测 |
@@ -59,8 +59,11 @@
 1. 修正 CA-001/002：纯文档平台错误。
 2. 修正 CA-003/004/009：为口径补标签，不改历史数据。
 3. 将 CA-005/006 登记到 PROVENANCE，临时降级 M2b 的语义状态。
-4. 从 git 历史、实验日志和旧脚本追查 `mixtral_real.json` 的原始 PPL 生成路径。
-5. 根据追查结果二选一：
+4. [已完成] 从 git 历史、实验日志和旧脚本追查 `mixtral_real.json`：`36.116`
+   与“去掉 HQQ、全 fp16”的 harness 同时首次出现在初始提交 `06381a3`；没有更早
+   revision，已提交日志也无 Mixtral 数值 PPL 或独立量化命令。因此仓库内无法恢复
+   该 baseline 身份。
+5. 后续二选一：
    - 找到独立 2-bit baseline：拆分 policy id、命令、结果和论文行；
    - 找不到：保留原 JSON 作为历史未核实数据，移出主 claim，当前 fp16 harness 重建质量对照。
 6. 为四策略增加微型 trace 语义测试，机器验证 HBM/CPU/SSD 行为与上表一致。
