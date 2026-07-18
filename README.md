@@ -45,6 +45,7 @@ python3 mecc_package/scripts/check_env.py --applies \
 | 你是… | 从这里开始 |
 |-------|-----------|
 | **AI coding agent** | [`AGENTS.md`](./AGENTS.md)（入口、硬约束、数据口径） |
+| **想了解项目接管后的推进规划** | **[`docs/PROJECT_TAKEOVER_PLAN.md`](./docs/PROJECT_TAKEOVER_PLAN.md)（阶段路线、验收门禁、风险与第一批任务）** |
 | 想判断方法是否适用 | [`docs/APPLICABILITY.md`](./docs/APPLICABILITY.md) |
 | 想理解架构与数据流 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
 | 不懂术语 | [`docs/GLOSSARY.md`](./docs/GLOSSARY.md) |
@@ -66,6 +67,7 @@ python3 mecc_package/scripts/check_env.py --applies \
 ├── README.md             # 本文件（人类入口）
 ├── docs/                 # 文档体系
 │   ├── APPLICABILITY.md  # ★ 适用性边界与决策树
+│   ├── PROJECT_TAKEOVER_PLAN.md # ★ 项目接管与推进路线图
 │   ├── EXPERIMENTS.md    # ★ 实验运行规范（每次跑实验前必读）
 │   ├── OPTIMIZATION.md   # ★ 优化指导规范（做任何优化前必读：算法/工程/评测）
 │   ├── THEORY.md         # ★ 数学论证与形式化（方法数学化 + 证明规范 + 命题注册表）
