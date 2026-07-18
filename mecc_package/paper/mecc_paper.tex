@@ -46,7 +46,7 @@ Mixture-of-Experts（MoE）架构~\cite{shazeer2017outrageously}通过在每层�
 我们的主要贡献：
 \begin{itemize}
     \item \textbf{三级无损Expert缓存架构}：将MoE Expert组织为HBM→CPU pinned→NVMe SSD三级，在相同fp16执行定义下保持权重数值不变。
-    \item \textbf{Theorem~4最优分配理论}：基于Zipf CDF的闭合解析公式，编译器自动确定最优的$(K_H, K_C)$，无需手动调参。
+    \item \textbf{独立容量上限下的最优静态放置}：给定不可兑换的HBM与CPU容量上限，证明先填满快层并按访问概率降序放置可最小化三级期望取数延迟；该结论不覆盖共享成本预算。
     \item \textbf{联合动态LRU+零拷贝升降级}：HBM和CPU构成独占式联合缓存，仅淘汰时（而非每次访问）操作CPU镜像，开销远低于SwapMoE的常驻CPU方案。
     \item \textbf{分级实验}：以A100 80GB上的Mixtral-8×7B作为L2主场景；DeepSeek-V2-Lite仅作为CPU可容纳模型的L1对照，缓存模拟器结果单独报告。
 \end{itemize}
@@ -196,7 +196,7 @@ L3 (SSD) & NVMe SSD & $\sim$TB级 / $790$ms \\
 这一设计旨在提高PCIe利用率；其端到端收益必须由同平台L2消融裁决，不能由实现结构直接推断。
 
 %=====================================================================
-\section{Theorem 4：最优三级分配}
+\section{Theorem 4：独立容量上限下的最优三级放置}
 %=====================================================================
 
 \subsection{问题定义}
@@ -220,17 +220,17 @@ L3 (SSD) & NVMe SSD & $\sim$TB级 / $790$ms \\
     K_C &\leq \lfloor B_C / S_{\text{expert}} \rfloor, \quad K_H + K_C \leq N
 \end{align}
 
-\textbf{Theorem 4（最优分配）}：在容量约束下，按热度降序的最贪婪策略是最优的——即$K_H = \min(\lfloor B_H/S_{\text{expert}}\rfloor, N)$，$K_C = \min(\lfloor B_C/S_{\text{expert}}\rfloor, N-K_H)$。最热$K_H$个Expert入HBM，次热$K_C$个入CPU，剩余$N-K_H-K_C$个入SSD。
+\textbf{Theorem 4（独立容量上限下的最优放置）}：设HBM与CPU容量是两个不可兑换的独立上限，且$T_H<T_C<T_S$。则存在一个最优解满足$K_H = \min(\lfloor B_H/S_{\text{expert}}\rfloor, N)$，$K_C = \min(\lfloor B_C/S_{\text{expert}}\rfloor, N-K_H)$；最热$K_H$个Expert入HBM，次热$K_C$个入CPU，剩余Expert入SSD。若容量可在tier之间按共享成本兑换，则本定理不直接适用。
 
-\textbf{证明概要}：由于$T_H < T_C < T_S$，且Zipf CDF是单调递增函数，将最热的Expert分配给最快的存储层次必然最小化期望延迟。任意交换（将一个较热Expert放入较慢层、同时将一个较冷Expert放入较快层）都会增加$\mathbb{E}[T]$。严格证明可通过反证法完成：假设存在比贪婪方案更优的配置，则必存在一对Expert $(i, j)$（$i$更热但在更慢层，$j$更冷但在更快层），交换二者可降低期望延迟，矛盾。$\square$
+\textbf{证明}：只要仍有未缓存Expert，向HBM或CPU增加一个可用槽位都会把非负概率质量从更慢tier移到更快tier，因此期望延迟不增；故最优解可取两个独立容量上限均填满。再考虑任意逆序对：若$p_i\ge p_j$，但$i$位于延迟$T_b$的慢tier、$j$位于延迟$T_a$的快tier（$T_a<T_b$），交换后二者对目标的变化为$(p_i-p_j)(T_a-T_b)\le0$。反复消除逆序对即得到按热度降序的放置。$\square$
 
 \subsection{per-layer优化}
 
-值得注意的是，Theorem~4可以\textbf{per-layer}独立执行，因为不同Transformer层的Expert权重在物理上相互独立。具体而言：
+运行时各层顺序执行并复用同一组物理缓存槽位；编译器可在固定的$K_H,K_C$槽位数下为每层生成不同ranking。具体而言：
 \begin{itemize}
-    \item 各层共享全局硬件预算$B_H$和$B_C$，但编译器按层分配
-    \item 每层使用自己的$\alpha_l$（per-layer Zipf参数）进行最优分配
-    \item 这使MECC能够\textbf{自适应}不同层的Expert分化程度——某些层Expert可能高度均质（$\alpha_l$小），需要更大缓存覆盖；某些层偏斜度高（$\alpha_l$大），少量缓存即可高命中
+    \item 所有层受同一组物理槽位上限约束，而非各自拥有一份HBM/CPU预算
+    \item 每层profile决定该层Expert的热度ranking；$\alpha_l$用于描述偏斜度，不把共享硬件容量复制到每层
+    \item Theorem~4保证给定该层概率排序与固定槽位数时的按秩放置；它不声称求解跨层并发或共享成本预算
 \end{itemize}
 
 %=====================================================================
@@ -248,7 +248,7 @@ MECC编译器是一个\textbf{五阶段自动流水线}，将HuggingFace MoE模�
 Phase 1 & Inspect & 提取模型结构参数：$N, d, d_{\text{ff}}$, expert大小, layer数 \\
 Phase 2 & Profile & 用校准集采集router logits，估计per-layer $\alpha_l$ \\
 Phase 3 & Hardware & 测量$T_H, T_C, T_S$的真实硬件延迟（F\_NOCACHE冷读） \\
-Phase 4 & Compile & 执行Theorem~4，独立计算每层的最优$(K_{H,l}, K_{C,l})$ \\
+Phase 4 & Compile & 由容量确定固定$(K_H,K_C)$，按每层profile生成ranking \\
 Phase 5 & Emit & 输出JSON配置$\{K_H, K_C, \text{ranking}\}$，加载到Runtime \\
 \hline
 \end{tabular}
