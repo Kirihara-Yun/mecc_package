@@ -22,6 +22,7 @@ def main():
     run([sys.executable, "-m", "unittest",
          "mecc_package/test_experiment_launcher.py",
          "mecc_package/test_theory_counterexamples.py",
+         "mecc_package/test_migrate_store_manifest.py",
          "mecc_package/test_verify_claims.py"])
     run([sys.executable, "-m", "unittest", "test_compiler.py"], PKG)
     run([sys.executable, "-m", "unittest",
