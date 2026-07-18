@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 E2E = ROOT / "mecc_package" / "e2e"
 CONFIG_KEYS = {"smoke", "model", "state_path", "store_root", "hbm_budget",
                "cpu_budget", "alpha", "prompt_len", "max_new_tokens",
-               "n_prompts", "policies", "platform", "skip_ppl"}
+               "n_prompts", "policies", "platform", "skip_ppl", "uniform"}
 CONFIG_DEFAULTS = {
     "smoke": False,
     "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -36,6 +36,7 @@ CONFIG_DEFAULTS = {
     "policies": "all",
     "platform": None,
     "skip_ppl": False,
+    "uniform": False,
 }
 
 
@@ -123,6 +124,8 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
     ]
     if args.skip_ppl:
         command.append("--skip_ppl")
+    if args.uniform:
+        command.append("--uniform")
     return command
 
 
@@ -296,6 +299,8 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--platform", default=None)
     run.add_argument("--config", help="explicit L0/L1/L2 JSON config")
     run.add_argument("--skip-ppl", action="store_true", default=None)
+    run.add_argument("--uniform", action="store_true", default=None,
+                     help="use one fixed per-layer K_H/K_C allocation")
     resume_cmd = sub.add_parser("resume-from-store", help="rerun a prior command with its store")
     resume_cmd.add_argument("from_run")
     resume_cmd.add_argument("run_id")
