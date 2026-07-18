@@ -256,13 +256,32 @@ def resume(args: argparse.Namespace) -> int:
     return 0
 
 
-def status(run_id: str) -> int:
+def status(run_id: str, runs_root: str | None = None) -> int:
     unit = unit_name(run_id)
     result = systemctl(
         "show", unit, "-p", "ActiveState", "-p", "SubState", "-p", "MainPID",
         "-p", "ExecMainStatus", "-p", "Result", check=False,
     )
     sys.stdout.write(result.stdout or result.stderr)
+    if runs_root:
+        run_dir = Path(runs_root).resolve() / run_id
+        status_path = run_dir / "status.json"
+        result_path = run_dir / "result.json"
+        if status_path.is_file():
+            try:
+                phase = json.loads(status_path.read_text())
+            except json.JSONDecodeError as exc:
+                print(f"invalid phase status: {exc}", file=sys.stderr)
+                return 1
+            print(json.dumps({"phase_status": phase,
+                              "result_exists": result_path.is_file()}, indent=2))
+            if phase.get("phase") == "failed":
+                return 1
+            if phase.get("phase") == "complete" and not result_path.is_file():
+                print("phase is complete but atomic result is missing", file=sys.stderr)
+                return 1
+        else:
+            print(f"phase status not found: {status_path}", file=sys.stderr)
     return 0 if result.returncode == 0 else 1
 
 
@@ -308,9 +327,12 @@ def parser() -> argparse.ArgumentParser:
     resume_cmd.add_argument("--gpu", default="0")
     resume_cmd.add_argument("--allow-concurrent", action="store_true")
     resume_cmd.add_argument("--dry-run", action="store_true")
-    for action in ("status", "stop"):
-        cmd = sub.add_parser(action)
-        cmd.add_argument("run_id")
+    status_cmd = sub.add_parser("status")
+    status_cmd.add_argument("run_id")
+    status_cmd.add_argument(
+        "--runs-root", default=str(ROOT / "mecc_package" / "results" / "runs"))
+    stop_cmd = sub.add_parser("stop")
+    stop_cmd.add_argument("run_id")
     return ap
 
 
@@ -323,7 +345,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"invalid experiment configuration: {exc}", file=sys.stderr)
             return 2
     if args.action == "status":
-        return status(args.run_id)
+        return status(args.run_id, args.runs_root)
     if args.action == "resume-from-store":
         return resume(args)
     return stop(args.run_id)

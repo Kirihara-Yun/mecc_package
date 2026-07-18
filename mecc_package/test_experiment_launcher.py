@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest import mock
+import json
 
 
 SCRIPT = Path(__file__).parent / "scripts" / "experiment_launcher.py"
@@ -111,6 +112,26 @@ class ExperimentLauncherTest(unittest.TestCase):
             self.assertEqual(resumed[resumed.index("--store_root") + 1], "/data/store")
             self.assertEqual(resumed[resumed.index("--out") + 1], str(root / "new" / "result.json"))
             self.assertFalse((root / "new").exists())
+
+    def test_status_treats_failed_phase_as_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp) / "failed-run"; run.mkdir()
+            (run / "status.json").write_text(json.dumps({
+                "phase": "failed", "error": "application traceback"}))
+            service = mock.Mock(returncode=0, stdout="Result=success\n", stderr="")
+            with mock.patch.object(launcher, "systemctl", return_value=service), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(launcher.status("failed-run", tmp), 1)
+
+    def test_status_requires_result_after_complete_phase(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp) / "complete-run"; run.mkdir()
+            (run / "status.json").write_text(json.dumps({"phase": "complete"}))
+            service = mock.Mock(returncode=0, stdout="Result=success\n", stderr="")
+            with mock.patch.object(launcher, "systemctl", return_value=service), \
+                    contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(launcher.status("complete-run", tmp), 1)
 
 
 if __name__ == "__main__":
