@@ -268,6 +268,14 @@ def atomic_write_result_status(path, value):
     finally:
         if os.path.exists(temporary): os.unlink(temporary)
 
+def _emit_partial(args, device, plan, results, smoke):
+    if not args.partial_out:
+        return
+    out = _build_result(args, device, plan, results, smoke)
+    out["partial"] = True
+    out["completed_policies"] = list(results)
+    atomic_write_result(args.partial_out, out, results.keys())
+
 def _main():
     global _STATUS_FILE
     ap = argparse.ArgumentParser()
@@ -298,6 +306,8 @@ def _main():
                     help="真实实验平台名称；未指定时从当前 torch device 自动检测")
     ap.add_argument("--smoke", action="store_true", help="本机自检: 微型随机 MoE, 不下载")
     ap.add_argument("--out", default="main_table.json")
+    ap.add_argument("--partial_out", default=None,
+                    help="atomic Schema-A checkpoint updated after each completed policy")
     ap.add_argument("--status_file", default=None, help="atomic phase-status JSON for persistent runs")
     args = ap.parse_args()
     _STATUS_FILE = args.status_file
@@ -339,8 +349,13 @@ def _main():
         args.prompt_len = 8
         args.max_new_tokens = 6
         prompts = list(range(args.n_prompts))
-        results = {p: run_policy(p, args, plan, store, device, prompts, None, None,
-                                 use_cache=False, smoke_cfg=smoke_cfg) for p in policies}
+        results = {}
+        for policy in policies:
+            _phase("running_policy", policy=policy, completed_policies=list(results),
+                   partial_output=os.path.abspath(args.partial_out) if args.partial_out else None)
+            results[policy] = run_policy(policy, args, plan, store, device, prompts, None, None,
+                                         use_cache=False, smoke_cfg=smoke_cfg)
+            _emit_partial(args, device, plan, results, smoke=True)
         _emit(args, device, plan, results, smoke=True)
         _phase("complete", output=os.path.abspath(args.out))
         return
@@ -409,9 +424,11 @@ def _main():
         args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl)
     results = {}
     for policy in policies:
-        _phase("running_policy", policy=policy, completed_policies=list(results))
+        _phase("running_policy", policy=policy, completed_policies=list(results),
+               partial_output=os.path.abspath(args.partial_out) if args.partial_out else None)
         results[policy] = run_policy(policy, args, plan, store, device, prompts, ppl_text,
                                      tokenizer, use_cache=True, model_type=mtype)
+        _emit_partial(args, device, plan, results, smoke=False)
     _emit(args, device, plan, results, smoke=False)
     _phase("complete", output=os.path.abspath(args.out), completed_policies=list(results))
 
@@ -441,9 +458,9 @@ def _detect_platform(args, device):
     return "CPU"
 
 
-def _emit(args, device, plan, results, smoke):
+def _build_result(args, device, plan, results, smoke):
     _compute_speedups(results)
-    out = {
+    return {
         "device": str(device),
         "mode": "smoke" if smoke else "real",
         "model": args.model if not smoke else "smoke-tiny-moe",
@@ -454,6 +471,10 @@ def _emit(args, device, plan, results, smoke):
                    "n_prompts": args.n_prompts, "cold_ssd": args.cold_ssd},
         "results": results,
     }
+
+
+def _emit(args, device, plan, results, smoke):
+    out = _build_result(args, device, plan, results, smoke)
     atomic_write_result(args.out, out, results.keys())
     print(f"\n{'='*70}\nMAIN TABLE → {args.out}")
     print(f"{'policy':<10}{'TTFT(ms)':>11}{'TPOT(ms)':>11}{'tok/s':>10}{'PPL':>16}")

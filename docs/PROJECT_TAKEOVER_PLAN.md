@@ -303,7 +303,8 @@ P2 分为评测、理论和实现语义三条并行但独立验收的主线。
 - **P0 已完成可本地验收部分**：口径审计、高风险 claim 扫描、baseline 命名拆分和
   config fingerprint 已落地；历史 X1/X6 保持 unverified，不静默修数。
 - **P1 已完成**：持久 launcher、显式 L0/L1/L2 配置、status/stop/resume-from-store、
-  store manifest、阶段状态、Schema A 校验与原子结果、双实现共同 trace 测试均已落地。
+  store manifest、阶段状态、逐策略 partial checkpoint、Schema A 校验与原子结果、
+  双实现共同 trace 测试均已落地。
 - **P2 理论主线已收敛**：TH-004 proven；TH-005/006 的普遍版本由最小反例判为
   refuted。baseline 公平性矩阵和机器 trace 门禁已完成。正式 L2 消融因用户取消正式
   L2 复现而未启动，不能补造证据。

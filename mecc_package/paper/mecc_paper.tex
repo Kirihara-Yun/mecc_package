@@ -14,7 +14,7 @@
 \usepackage{geometry}
 \geometry{margin=1in}
 
-\title{\textbf{MECC: 面向混合专家大语言模型推理的\\三级无损Expert缓存编译器}}
+\title{\textbf{MECC：编译器引导的无损三级缓存架构\\及其在混合专家推理中的实例化}}
 
 \author{
     Qin Zeyuan\thanks{通讯作者} \\
@@ -28,27 +28,27 @@
 \maketitle
 
 \begin{abstract}
-混合专家（Mixture-of-Experts, MoE）模型的Expert权重总量可能同时超过GPU HBM与可用CPU内存，使NVMe SSD被迫进入推理关键路径。本文提出\textbf{MECC（MoE Expert Cache Compiler）}：一个HBM→CPU pinned→NVMe SSD三级无损Expert缓存系统，由编译期按热度放置与运行期动态升降级共同驱动。对于独立的HBM/CPU容量上限，我们证明按访问概率排序并依次填满快层可最小化三级期望取数延迟；运行时则保持fp16权重数值不变。在A100 80GB上的Mixtral-8×7B主场景真机实验中，MECC相对同预算SwapMoE-style机制对照取得\textbf{1.33倍综合加速}，OURS的fp16 PPL为\textbf{24.57}，并将SSD访问占比从34.5\%降至17.6\%。这些结论仅适用于Expert总量超过可用CPU内存、必须落SSD的部署区间。
+现代推理系统越来越多地访问超过快速存储容量的只读参数块；当工作集进一步超过CPU内存时，NVMe SSD被迫进入关键路径。本文提出\textbf{MECC}：一个由编译期概率放置与运行期在线迁移协同驱动的HBM→CPU pinned→NVMe SSD无损三级缓存架构。我们把对象请求形式化为带容量约束的随机放置问题，并在等大小对象、独立tier容量上限下证明按访问概率排序并依次填满快层的静态最优性；运行期联合升降级用于修正profile偏差，但不声称对任意trace普遍最优。MoE Expert推理是该抽象的核心实例。在A100 80GB上的Mixtral-8×7B SSD强制场景中，MECC相对同预算SwapMoE-style静态CPU机制对照取得\textbf{1.33倍综合加速}，OURS的fp16 PPL为\textbf{24.57}，并将SSD访问占比从34.5\%降至17.6\%。
 \end{abstract}
 
 %=====================================================================
 \section{引言}
 %=====================================================================
 
-Mixture-of-Experts（MoE）架构~\cite{shazeer2017outrageously}通过在每层引入多个Expert子网络并以稀疏激活的方式仅调用其中$k$个，已成为扩展大语言模型容量的主流范式。代表性模型包括Mixtral-8×7B~\cite{jiang2024mixtral}（8个Expert，top-2 routing，fp16下约90GB）、DeepSeek-V2-Lite~\cite{deepseek2024v2}（64个Expert，top-6 routing，约30GB）以及Switch Transformer~\cite{fedus2022switch}（2048个Expert）等。
+现代加速器节点形成HBM、CPU pinned memory与NVMe SSD的异构存储层级。本文首先研究一个与具体模型无关的问题：对规模超过前两级容量、访问非均匀且可能漂移的只读对象，如何在容量约束下最小化暴露访问与迁移成本，同时保持对象数值语义。Mixture-of-Experts（MoE）架构~\cite{shazeer2017outrageously}为这一抽象提供了自然实例：Expert权重只读且可分块，每个token仅请求少数对象，router trace又提供可观测的访问分布。代表性模型包括Mixtral-8×7B~\cite{jiang2024mixtral}、DeepSeek-V2-Lite~\cite{deepseek2024v2}以及Switch Transformer~\cite{fedus2022switch}。
 
 然而，MoE部署的关键分界不只是权重超过GPU HBM，而是Expert总量是否进一步超过目标节点的可用CPU内存。前者可由传统HBM+CPU两级offload处理；只有后者才迫使SSD进入关键路径，也是本文三级缓存所针对的区间。当前主验证实例为Mixtral-8×7B。
 
 现有解决方案可归为四类：\textbf{（1）量化压缩}，如mixtral-offloading~\cite{mixtral_offloading}采用HQQ 2-bit量化在单卡MPI上运行Mixtral，但\textbf{精度损失不可忽视}；\textbf{（2）二级静态缓存}，如SwapMoE~\cite{swapmoe2024}在HBM常驻少量Expert，其余静态放置在CPU，但热点漂移时命中率急剧下降；\textbf{（3）流式全加载}，如FluxMoE~\cite{fluxmoe2026}每次推理均从CPU流式搬运所有激活Expert，延迟受限于PCIe带宽；\textbf{（4）CPU计算卸载}，如Fiddler在CPU上计算冷Expert而非搬运权重，但CPU算力远逊GPU。
 
-本文提出\textbf{MECC（MoE Expert Cache Compiler）}，面向“Expert总量超过可用CPU内存”的三级无损Expert缓存系统。其设计包括NVMe冷存、基于profile的编译期放置，以及HBM/CPU间的动态升降级。联合LRU在当前Mixtral配置中表现出更低的SSD访问，但其相对静态拆分的普遍包含性已被短trace反例推翻；因此本文把该优势作为条件性实测观察，而非无条件定理。
+本文提出\textbf{MECC}，一个面向sub-CPU工作集的三级无损对象缓存架构。其设计包括NVMe冷存、基于profile的编译期先验放置，以及HBM/CPU间的在线升降级。映射到MoE时，对象成为Expert权重、请求成为router选择。联合LRU在当前Mixtral配置中表现出更低的SSD访问，但其相对静态拆分的普遍包含性已被短trace反例推翻；因此本文把该优势作为条件性实测观察，而非无条件定理。
 
 我们的主要贡献：
 \begin{itemize}
-    \item \textbf{三级无损Expert缓存架构}：将MoE Expert组织为HBM→CPU pinned→NVMe SSD三级，在相同fp16执行定义下保持权重数值不变。
-    \item \textbf{独立容量上限下的最优静态放置}：给定不可兑换的HBM与CPU容量上限，证明先填满快层并按访问概率降序放置可最小化三级期望取数延迟；该结论不覆盖共享成本预算。
-    \item \textbf{联合动态LRU+零拷贝升降级}：HBM和CPU构成独占式联合缓存，仅淘汰时（而非每次访问）操作CPU镜像，开销远低于SwapMoE的常驻CPU方案。
-    \item \textbf{分级实验}：以A100 80GB上的Mixtral-8×7B作为L2主场景；DeepSeek-V2-Lite仅作为CPU可容纳模型的L1对照，缓存模拟器结果单独报告。
+    \item \textbf{三级缓存形式化}：定义对象、请求过程、三级容量与访问/迁移成本，明确当前实现所求解的等大小特例。
+    \item \textbf{编译期先验与运行期纠偏}：证明独立容量上限下按概率排序并填满快层的静态最优性，并以联合动态LRU修正profile偏差，同时保留其非普遍支配的理论边界。
+    \item \textbf{语义保持与MoE实例化}：用恒等搬运保持对象值不变，并将对象/请求映射为fp16 Expert权重/router选择。
+    \item \textbf{分级实验}：以A100 80GB上的Mixtral-8×7B作为L2实例验证；DeepSeek-V2-Lite仅作为CPU可容纳模型的L1对照。
 \end{itemize}
 
 %=====================================================================
@@ -75,6 +75,23 @@ Mixture-of-Experts（MoE）架构~\cite{shazeer2017outrageously}通过在每层�
 \section{Zipf分布分析与$\alpha$实测}
 %=====================================================================
 
+\subsection{三级对象缓存的随机优化形式}
+
+设只读对象集合为$\mathcal D=\{1,\ldots,N\}$，对象$i$的大小为$s_i$、边际访问概率为$p_i$。
+令$x_{i,t}\in\{0,1\}$表示对象$i$是否驻留于$t\in\{H,C,S\}$。编译期静态问题为
+\begin{equation}
+\min_x\ \sum_{i=1}^{N}p_i\sum_{t\in\{H,C,S\}}x_{i,t}T_t(s_i),
+\quad
+\text{s.t. }\sum_t x_{i,t}=1,\ \sum_i s_i x_{i,t}\le B_t\ (t\in\{H,C\}).
+\end{equation}
+运行期面对随时间变化的请求$X_1,\ldots,X_T$，还需计入策略$\pi$产生的迁移与同步成本$M_\pi(\tau)$：
+\begin{equation}
+J_T(\pi)=\mathbb E\left[\sum_{\tau=1}^{T}
+T_{z_\tau}(s_{X_\tau})+M_\pi(\tau)\right],
+\end{equation}
+其中$z_\tau$为第$\tau$次请求命中的tier。当前编译器求解等大小对象、独立HBM/CPU容量上限的特例；
+联合LRU是非平稳目标$J_T$的在线启发式，而非任意trace上的最优解。MoE实例中，对象对应单层单Expert权重块，请求对应router的一次选择。
+
 \subsection{MoE Expert激活的Zipf分布建模}
 
 令$f(r)$为第$r$位（按访问频率降序）Expert的访问概率。假设$f(r)$服从Zipf分布：
@@ -93,11 +110,10 @@ Zipf分布的CDF为：
 
 给定从实际推理trace中收集的Expert访问计数$\{c_1, c_2, \ldots, c_N\}$（按频率降序排列），我们采用极大似然估计法推断$\alpha$：
 \begin{equation}
-    \hat{\alpha} = 1 + \frac{N}{\sum_{i=1}^{N} \log(r_i)}
+    \hat{\alpha}=\arg\max_{\alpha\in[0.5,3]}
+    \left[-\alpha\sum_r c_r\log r-M\log H_N(\alpha)\right],\qquad M=\sum_r c_r
 \end{equation}
-其中$r_i$为第$i$个Expert的真实频率排名（不是计数排名，而是归一化的分位数排名）。该估计量在$N$较大时具有一致性。
-
-此外，我们也采用对数线性回归法进行验证：对$\log f(r) = \log C - \alpha \log r$在双对数空间上进行最小二乘拟合，所得斜率即为$-\hat{\alpha}$。
+代码通过score单调性在有界区间内二分求解。给定观测排序后，该对数似然为凹函数；但按观测频次重新排序仍可能引入有限样本的rank-selection bias，因此不把估计量外推为无偏真值。
 
 \subsection{实测结果：颠覆假设}
 
@@ -371,7 +387,7 @@ OURS相对SwapMoE-style机制对照的综合加速为1.33倍，SSD命中率更�
 \section{结论}
 %=====================================================================
 
-本文提出了\textbf{MECC}三级无损Expert缓存编译器，目标部署区间是Expert总量超过可用CPU内存、SSD被迫进入关键路径的MoE推理。编译期按秩放置在独立tier容量约束下具有已证明的最优性；运行期动态升降级保持fp16权重不变，但不具有对任意trace优于静态拆分的普遍保证。在A100 80GB的Mixtral-8×7B主场景中，当前verified结果为相对SwapMoE-style机制对照1.33倍综合加速、OURS fp16 PPL 24.57。未来工作将验证更多sub-CPU-memory模型，并为动态策略建立带分布条件的期望性能界。
+本文提出了\textbf{MECC}：一个带静态先验、在线纠偏与语义不变量的三级缓存架构。MoE推理是当前核心实例化，其有效部署区间是Expert总量超过可用CPU内存、SSD被迫进入关键路径。编译期按秩放置在独立tier容量约束下具有已证明的最优性；运行期动态升降级保持fp16权重不变，但不具有对任意trace优于静态拆分的普遍保证。在A100 80GB的Mixtral-8×7B实例中，当前verified结果为相对SwapMoE-style静态CPU机制对照1.33倍综合加速、OURS fp16 PPL 24.57。未来工作将验证更多sub-CPU-memory对象类型，并为动态策略建立带分布条件的期望性能界。
 
 \subsection*{致谢}
 

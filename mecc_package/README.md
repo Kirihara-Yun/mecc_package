@@ -1,6 +1,10 @@
-# MECC — MoE Expert Cache Compiler (DAC)
+# MECC — 编译器引导的无损三级缓存架构（DAC）
 
-三级 (HBM→CPU→SSD) 无损 Expert 缓存编译器，首次量化 "Expert 权重 vs KV Cache 争抢 HBM" 的 trade-off。
+MECC 面向总工作集超过 HBM 与 CPU 可用容量的只读大对象，联合优化 HBM→CPU→SSD 的
+初始放置与在线迁移；MoE expert 权重是当前的核心实例化。方法先定义三级缓存问题与数学模型，
+再把对象、请求和语义不变量分别映射为 expert 权重、router trace 与 fp16 恒等搬运。
+
+> 统一科研叙事见 [`../docs/RESEARCH_NARRATIVE.md`](../docs/RESEARCH_NARRATIVE.md)。
 
 > **适用边界（务必先读）**：MECC 只在「连 CPU 内存都装不下整个模型」时有效（`expert 总量 > CPU 内存`，被迫落 SSD）。
 > 详见 [`../docs/APPLICABILITY.md`](../docs/APPLICABILITY.md)。AI 协作请先读 [`../AGENTS.md`](../AGENTS.md)。

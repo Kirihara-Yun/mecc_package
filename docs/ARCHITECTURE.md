@@ -1,29 +1,32 @@
-# 架构 —— MECC 怎么工作
+# 架构 —— 编译器引导的三级缓存如何工作
 
-> 配套阅读：适用性边界 [`APPLICABILITY.md`](./APPLICABILITY.md)、术语 [`GLOSSARY.md`](./GLOSSARY.md)。
+> 配套阅读：科研叙事 [`RESEARCH_NARRATIVE.md`](./RESEARCH_NARRATIVE.md)、适用性边界
+> [`APPLICABILITY.md`](./APPLICABILITY.md)、术语 [`GLOSSARY.md`](./GLOSSARY.md)。
 
 ---
 
-## 1. 总体思想：编译期决定放哪，运行期动态换页
+## 1. 总体思想：先优化对象放置，再实例化为 expert 缓存
 
-MECC 把 MoE expert 缓存拆成两个阶段：
+MECC 的架构对象是只读、可独立搬运的大对象集合。编译期根据 profile 给出三级初始放置，
+运行期根据真实请求流动态修正。MoE 实例把“对象”映射为 expert 权重块，把“请求”映射为
+router 选择；核心库的状态机与数学目标并不依赖 gate 或 top-k 的具体形式。
 
 ```
 ┌─────────────── 编译期（offline，CPU 即可）───────────────┐
-│  Profile(估路由热度 α)                                    │
+│  Profile(估访问热度/Zipf α；MoE 中来自 router trace)       │
 │        │                                                  │
 │        ▼                                                  │
 │  Optimize(用 Zipf/Theorem 在预算下解每层 K_H/K_C)         │  ← compiler.py / compile.py
 │        │                                                  │
 │        ▼                                                  │
-│  Allocate(生成每层 expert → {HBM/CPU/SSD} 静态放置表)     │
+│  Allocate(生成对象 → {HBM/CPU/SSD} 静态放置表)             │
 └───────────────────────────────────────────────────────────┘
                          │ 编译产物（plan）
                          ▼
 ┌─────────────── 运行期（online，需 GPU）─────────────────┐
 │  三级缓存：HBM(K_H) + CPU pinned(K_C) + SSD(其余)         │
 │  miss 时：HBM/CPU 联合动态 LRU 升降级 + 异步 PCIe 预取    │  ← mecc_framework/cache, e2e/tiered_engine
-│  forward：gate routing → expert dispatch → 加权聚合       │  ← mecc_framework/layers/moe_forward
+│  应用适配：MoE 中为 gate routing → expert dispatch → 聚合 │  ← mecc_framework/layers/moe_forward
 └───────────────────────────────────────────────────────────┘
                          │
                          ▼

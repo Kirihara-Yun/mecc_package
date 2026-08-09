@@ -40,6 +40,8 @@ class ExperimentLauncherTest(unittest.TestCase):
         command = launcher.build_command(args, Path("/tmp/result.json"))
         self.assertIn("--smoke", command)
         self.assertEqual(command[command.index("--out") + 1], "/tmp/result.json")
+        self.assertEqual(command[command.index("--partial_out") + 1],
+                         "/tmp/partial_result.json")
         self.assertEqual(command[command.index("--platform") + 1], "CPU")
         self.assertEqual(command[command.index("--status_file") + 1], "/tmp/status.json")
         self.assertIn("--uniform", command)
@@ -101,7 +103,9 @@ class ExperimentLauncherTest(unittest.TestCase):
         ), mock.patch.object(launcher, "environment_snapshot", return_value={}):
             root = Path(tmp); old = root / "old"; old.mkdir()
             command = ["python3", "run_e2e.py", "--store_root", "/data/store",
-                       "--out", str(old / "result.json")]
+                       "--out", str(old / "result.json"),
+                       "--partial_out", str(old / "partial_result.json"),
+                       "--status_file", str(old / "status.json")]
             (old / "run.json").write_text(__import__("json").dumps({"command": command}))
             args = argparse.Namespace(from_run="old", run_id="new", runs_root=tmp,
                                       gpu="0", allow_concurrent=False, dry_run=True)
@@ -111,6 +115,10 @@ class ExperimentLauncherTest(unittest.TestCase):
             resumed = rendered["metadata"]["command"]
             self.assertEqual(resumed[resumed.index("--store_root") + 1], "/data/store")
             self.assertEqual(resumed[resumed.index("--out") + 1], str(root / "new" / "result.json"))
+            self.assertEqual(resumed[resumed.index("--partial_out") + 1],
+                             str(root / "new" / "partial_result.json"))
+            self.assertEqual(resumed[resumed.index("--status_file") + 1],
+                             str(root / "new" / "status.json"))
             self.assertFalse((root / "new").exists())
 
     def test_status_treats_failed_phase_as_failure(self):
@@ -132,6 +140,18 @@ class ExperimentLauncherTest(unittest.TestCase):
                     contextlib.redirect_stdout(io.StringIO()), \
                     contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(launcher.status("complete-run", tmp), 1)
+
+    def test_status_reports_partial_checkpoint(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp) / "partial-run"; run.mkdir()
+            (run / "status.json").write_text(json.dumps({"phase": "running_policy"}))
+            (run / "partial_result.json").write_text("{}\n")
+            service = mock.Mock(returncode=0, stdout="Result=success\n", stderr="")
+            with mock.patch.object(launcher, "systemctl", return_value=service), \
+                    contextlib.redirect_stdout(io.StringIO()) as stdout:
+                self.assertEqual(launcher.status("partial-run", tmp), 0)
+            rendered = stdout.getvalue()
+            self.assertIn('"partial_result_exists": true', rendered)
 
 
 if __name__ == "__main__":

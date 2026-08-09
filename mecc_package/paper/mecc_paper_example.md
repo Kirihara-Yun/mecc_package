@@ -8,7 +8,7 @@
   阅读时请对照 docs/PAPER_WRITING.md 的逐章 SOP。
 -->
 
-# MECC: A Lossless Three-Tier Expert Cache Compiler for MoE Inference under Sub-CPU Memory Budgets
+# MECC: Compiler-Guided Lossless Three-Tier Caching, Instantiated for MoE Inference
 
 > **示例论文（活教材）**。撰写规范见 [`../../docs/PAPER_WRITING.md`](../../docs/PAPER_WRITING.md)；数字真伪以 [`../../docs/PROVENANCE.md`](../../docs/PROVENANCE.md) 为准；理论命题见 [`../../docs/THEORY.md`](../../docs/THEORY.md)。
 > 每个数字旁的方括号（如 `[M1, D2]`）是其在 PROVENANCE 对照表中的 claim 编号与可信度级别，**这是规范要求的可追溯标注，正式投稿时移入脚注或删除**。
@@ -17,7 +17,7 @@
 
 ## Abstract（摘要）
 
-混合专家（Mixture-of-Experts, MoE）已成为扩展大语言模型容量的主流范式，但其庞大的 expert 权重在部署时带来严峻的内存压力：当一个 MoE 模型的 expert 权重总量**超过可用 CPU 内存**时，部分权重被迫驻留在 SSD 上，而 SSD 的冷读延迟比 HBM 高出四到五个数量级，使朴素的换页方案在 decode 阶段急剧变慢。现有方案要么只覆盖"HBM+CPU"两级、在此场景容量不足，要么以低比特量化换取空间但改变权重数值。本文提出 **MECC（MoE Expert Cache Compiler）**，一个面向 sub-CPU 内存预算的**无损**三级（HBM→CPU pinned→SSD）expert 缓存系统：编译期依据路由热度静态放置 expert，运行期将 HBM 与 CPU 视为一个**联合动态 LRU 栈**，使快层始终覆盖真实工作集的高频部分，从而压低 SSD 命中率。在被迫落 SSD 的主场景 Mixtral-8×7B 上（A100 80GB，冷 SSD），MECC 相对静态 CPU 对照策略取得 **1.33× 综合加速** `[M1, D2]`，OURS 的 fp16 困惑度（PPL）为 **24.57** `[M2a, D2]`，并将 SSD 命中率从 **34.5% 降至 17.6%** `[M3, D2]`。MECC 表明：在"装不进 CPU"的真实瓶颈下，结构化缓存调度能够减少昂贵的 SSD 访问。
+现代推理系统越来越多地访问规模超过快速存储容量的只读参数块；当工作集进一步超过 CPU 内存时，SSD 被迫进入关键路径，系统性能由少量慢层访问主导。本文提出 **MECC**，一个编译器引导的无损三级（HBM→CPU pinned→SSD）缓存架构。我们将对象请求建模为带容量约束的随机放置问题：编译期由 profile 估计访问分布并最小化期望取数成本，运行期用 HBM↔CPU 联合升降级修正分布漂移，同时把跨层搬运约束为同精度恒等映射。对于等大小对象与独立 tier 容量上限，我们证明按访问概率排序并依次填满快层的静态最优性；在线策略则明确作为无任意-trace 支配保证的启发式。MoE expert 推理天然满足“大、稀疏激活、只读、访问偏斜”这些条件，因此成为该架构的核心实例化。在 Mixtral-8×7B 的 SSD 强制场景中（A100 80GB，冷 SSD），MECC 相对同预算静态 CPU 机制对照取得 **1.33× 综合加速** `[M1, D2]`，OURS 的 fp16 PPL 为 **24.57** `[M2a, D2]`，并将 SSD 命中率从 **34.5% 降至 17.6%** `[M3, D2]`。
 
 > 自检（对照 PAPER_WRITING §2.1）：摘要仅含 M1/M2/M3（D2 verified）；未出现 D1/unverified 数字；平台为 A100 80GB（M5，已采信；实验历史先 5090 后 A100，Mixtral 主结果在 A100 跑定）。
 
@@ -25,7 +25,9 @@
 
 ## 1. Introduction（引言）
 
-MoE 通过"每个 token 只激活少数 expert"在几乎不增加计算量的前提下放大参数规模，已被广泛采用。然而推理部署面临一个被低估的现实：**绝大部分参数集中在 expert 权重上**，而这些权重往往大到无法整体放进 GPU 显存（HBM）。
+现代加速器节点形成 HBM、CPU pinned memory 与 NVMe SSD 的深层异构存储。对一组只读大对象而言，困难不只是“放不进 HBM”，而是工作集超过 HBM 与 CPU 后，如何决定哪些对象占据稀缺快层，以及当访问分布偏离离线 profile 时如何在线修正。这个问题同时包含容量约束、随机请求成本、迁移成本与语义保持约束。
+
+MoE 是该抽象的一种自然实例，而非问题定义本身。它通过“每个 token 只激活少数 expert”放大模型容量；expert 权重只读且可分块，router 暴露可 profile 的请求流，而总权重又可能大到无法整体放进 HBM 与 CPU。
 
 部署时，expert 权重只能落在三个层级，其取数延迟相差悬殊：
 
@@ -37,10 +39,10 @@ MoE 通过"每个 token 只激活少数 expert"在几乎不增加计算量的前
 
 **本文贡献**：
 
-1. 形式化了 sub-CPU 内存预算下的三级 expert 缓存问题，给出基于 Zipf 路由热度的命中率闭式与编译期放置目标（§4，命题 P1/T4）。
-2. 提出**编译期静态放置 + 运行期 HBM/CPU 联合动态 LRU**的 MECC 框架（§5–§6），其关键洞察是让快层覆盖运行期真实工作集而非编译期猜测（§5）。
-3. 论证并实证 MECC 的**无损性**（§6.4，命题 P8）：缓存只改变权重的存放位置与搬运时机，不改变数值，故 PPL 与原模型一致。
-4. 在被迫落 SSD 的主场景 Mixtral-8×7B 上验证：相对有损基线 1.33× 加速且无损（§7）。
+1. 形式化 sub-CPU 内存预算下的三级对象缓存问题，给出容量约束、访问成本与迁移成本组成的目标，并在当前等大小特例中得到 Zipf 命中率闭式与静态最优放置（§4，P1/T4）。
+2. 提出“编译期先验放置 + 运行期在线纠偏”的两时间尺度架构；联合动态 LRU 是当前在线实现，其理论边界被显式保留（§5–§6）。
+3. 给出恒等搬运的语义保持证明，并在 MoE 实例中映射为 fp16 expert 权重与前向图不变（§6.4，P8）。
+4. 将架构实例化到 MoE，在 Mixtral-8×7B 的 SSD 强制场景中相对同预算静态 CPU 机制对照取得 1.33× 综合加速（§7）。
 
 > 自检（§2.2）：贡献 1–4 各有对应章节兑现；主战场叙事与适用性一致；未把对照场景当主战场。
 
@@ -78,7 +80,12 @@ MoE 通过"每个 token 只激活少数 expert"在几乎不增加计算量的前
 
 > 本节命题均引用理论文档编号；完整证明见 [`THEORY.md`](../../docs/THEORY.md)，正文不复写。
 
-设模型 $L$ 层、每层 $N$ 个 expert、单 expert 大小 $s$（fp16）。三级延迟 $T_t(s)=\mathrm{lat}_t + s/\mathrm{bw}_t,\ t\in\{H,C,S\}$，满足 $T_H \le T_C \le T_S$（假设 A1）。HBM/CPU 分别容纳 $K_H,K_C$ 个 expert，约束 $K_H+K_C\le N$。
+首先定义一般对象集合 $\mathcal D=\{1,\ldots,N\}$，对象 $i$ 大小为 $s_i$、访问概率为 $p_i$。令 $x_{i,t}\in\{0,1\}$ 表示对象放在 $t\in\{H,C,S\}$，静态目标为
+$$
+\min_x\sum_i p_i\sum_t x_{i,t}T_t(s_i),\qquad
+\sum_t x_{i,t}=1,\quad \sum_i s_i x_{i,t}\le B_t\;(t\in\{H,C\}).
+$$
+运行期策略还需最小化有限时域内的命中层级成本与迁移成本之和。当前实现求解上述问题的等大小对象特例：$s_i=s$，三级延迟 $T_t(s)=\mathrm{lat}_t+s/\mathrm{bw}_t$ 满足 $T_H\le T_C\le T_S$；HBM/CPU 分别容纳 $K_H,K_C$ 个对象。映射到 MoE 后，对象即单层单 expert 权重块。
 
 **路由热度（假设 A2，Zipf）。** 把 expert 按访问频率降序排名，排名第 $i$ 者被一次路由命中的概率 $p_i = i^{-\alpha}/H_N(\alpha)$，其中 $H_n(\alpha)=\sum_{i=1}^n i^{-\alpha}$ 为广义调和数，$\alpha$ 为热度集中度。
 
@@ -97,14 +104,14 @@ $$
 
 **定理 T4（最优分配，TH-004，已证明）.** *在 A1–A2 与独立 HBM/CPU 容量上限下，使 $\mathcal{L}$ 最小的分配为容量贪心填满：$K_H^\star=\min(\lfloor\mathrm{hbm}/s\rfloor,N)$，再 $K_C^\star=\min(\lfloor\mathrm{cpu}/s\rfloor,N-K_H^\star)$。* P3 给出填满性，交换论证给出按热度秩分配的最优性；该定理不覆盖可在 tier 间兑换的共享成本预算。
 
-> 自检（§2.7）：P1/P3 引用为 proven；T4 状态 partial，已降为"在…假设下/容量贪心版本"，未当完全证明的定理。
+> 自检（§2.7）：P1/P3/T4 均按 THEORY 中的 `proven` 状态陈述，并明确 T4 只覆盖独立容量上限与当前等大小特例。
 
 ---
 
 ## 5. Insight（关键洞察）
 
 > **本文成立所依赖的一个想法，一句话：**
-> **把 HBM 与 CPU 视为一个"联合动态 LRU 栈"——HBM 淘汰的 expert 降级到 CPU，CPU 命中的 expert 升级回 HBM——使快层覆盖的是运行期真实工作集的前 $K_H{+}K_C$ 个高频 expert，而非编译期猜死的静态秩区间。**
+> **把 profile 当作访问分布的先验，把真实请求流当作在线观测：编译期优化三级初始放置，运行期通过 HBM↔CPU 升降级纠正先验偏差，同时以恒等搬运保持对象语义。**
 
 这与静态放置（如 SwapMoE-style 策略把 CPU 池固定为编译期的"次热"区间）不同。但 P5/P6 的普遍优势版本已被短 trace 反例推翻，因此这里只陈述经验洞察：
 
@@ -219,7 +226,7 @@ MoE offloading 与 expert 缓存已有若干工作，按"是否落 SSD"与"是�
 
 **未来工作。** (a) 为联合 LRU 建立带 IRM/Zipf 稳态或 drift 条件的期望 miss 命题；(b) 重跑 DeepSeek e2e，把 §7.2 待核数字落盘为 D2 verified；(c) 在更多真正超过 CPU 容量的大 MoE 上扩展 L2；(d) 扩展实验平台并验证不同 PCIe/HBM 配比。
 
-**结论。** 我们提出 MECC——一个面向 sub-CPU 内存预算的无损三级 expert 缓存编译器。其关键洞察是把 HBM 与 CPU 当作联合动态 LRU 栈，使快层覆盖运行期真实工作集，从而在被迫落 SSD 的主战场上，以 fp16 路径取得相对静态 CPU 对照策略 1.33× 的综合加速，并把 SSD 命中率从 34.5% 压到 17.6%。MECC 表明，在真实内存瓶颈下，结构化缓存调度能够同时保持 fp16 数值语义并改善系统性能。
+**结论。** 我们提出 MECC——一个带静态先验、在线纠偏与语义不变量的三级缓存架构。MoE expert 推理把该抽象中的容量压力、稀疏请求和慢层代价同时具体化；在 Mixtral 的 SSD 强制场景中，fp16 实例相对同预算静态 CPU 机制对照取得 1.33× 综合加速，并把 SSD 命中率从 34.5% 降至 17.6%。当前结果验证的是这一架构在 MoE 中的有效实例，而非对任意对象或任意 trace 的普遍最优性。
 
 > 自检（§2.9）：如实列入 THEORY 未证命题与 PROVENANCE 矛盾；结论未把对照/模拟器结果升格为主结论。
 

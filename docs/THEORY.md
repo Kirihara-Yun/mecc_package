@@ -23,11 +23,44 @@
 
 # Part I — MECC 方法的形式化
 
+## 0.1 抽象边界：三级缓存是研究对象，MoE 是实例化
+
+MECC 首先考虑只读对象集合 $\mathcal D=\{1,\ldots,N\}$ 与请求过程
+$X_1,X_2,\ldots$。对象 $i$ 的大小为 $s_i$，profile 给出边际访问概率
+$p_i=\Pr[X=i]$。放置变量 $x_{i,t}\in\{0,1\}$ 表示对象 $i$ 位于
+$t\in\{H,C,S\}$，则通用静态放置问题为
+
+$$
+\min_x \sum_{i=1}^{N}p_i\sum_{t\in\{H,C,S\}}x_{i,t}T_t(s_i)
+$$
+
+subject to
+
+$$
+\sum_t x_{i,t}=1,\qquad
+\sum_i s_i x_{i,t}\le B_t\quad(t\in\{H,C\}). \tag{G}
+$$
+
+当前编译器求解的是 (G) 的**等大小对象、独立 HBM/CPU 容量上限、Zipf 边际概率**特例。
+运行期策略 $\pi$ 则面向非平稳请求流，目标可更完整地写成
+
+$$
+J_T(\pi)=\mathbb E\!\left[\sum_{\tau=1}^{T}
+T_{z_\tau}(s_{X_\tau})+M_\pi(\tau)\right], \tag{O}
+$$
+
+其中 $z_\tau$ 是第 $\tau$ 次请求命中的 tier，$M_\pi(\tau)$ 汇总迁移、同步与替换开销。
+现有联合 LRU 是 (O) 的在线启发式，仓库没有声称它对任意 trace 全局最优。
+
+在 MoE 实例中，对象 $i$ 是单层单 expert 权重块，$X_\tau$ 是 router 的一次 expert 选择，
+$p_i$ 是路由频率，恒等搬运对应 fp16 权重不变。后文沿用 expert 术语，是为了和代码一一对应，
+并不把理论抽象限制为 MoE。
+
 ## 1. 系统模型（符号表）
 
 > 代码锚点：`compiler.py`（编译期），`mecc_framework/cache/engine.py`（运行期），`mecc_framework/base/`（存储）。
 
-### 1.1 对象
+### 1.1 MoE 实例中的对象
 
 - 一个 MoE 模型有 $L$ 层；第 $\ell$ 层有 $N$ 个 expert（为简洁设各层同构，异构时对每层独立成立）。
 - 单个 expert 权重大小 $s$（单位 GB），全程 **fp16**（见 §6 无损性）。
@@ -137,11 +170,11 @@ $$
 
 **推论**：在预算约束 (C) 下，$\mathcal{L}$ 的最小值必然在约束**边界**取得——即「能装多满就装多满」。这正是代码 `optimize` 直接令 $K_H=\min(K_H^{\max},N)$、$K_C=\min(K_C^{\max},N{-}K_H)$ 的理论依据。
 
-### 3.2 定理 T4（最优分配 / "Theorem 4"）
+### 3.2 定理 T4（独立容量上限下的最优静态分配）
 
 代码注释把 `optimize` 称为 *Theorem 4*。其严格陈述应为：
 
-> **定理 T4（拟陈述）.** 在 A1–A2 与预算 (C) 下，使 ($\star$) 最小的分配满足贪心填满：先把 HBM 填到容量上限 $K_H^\star=\min(\lfloor\mathrm{hbm}/s\rfloor,N)$，再把 CPU 填到 $K_C^\star=\min(\lfloor\mathrm{cpu}/s\rfloor,N-K_H^\star)$，且 expert 按热度秩分配到 tier。
+> **定理 T4.** 在 A1–A2、等大小对象与不可兑换的独立 HBM/CPU 容量上限下，使 ($\star$) 最小的分配满足贪心填满：先把 HBM 填到容量上限 $K_H^\star=\min(\lfloor\mathrm{hbm}/s\rfloor,N)$，再把 CPU 填到 $K_C^\star=\min(\lfloor\mathrm{cpu}/s\rfloor,N-K_H^\star)$，且对象按热度秩分配到 tier。
 
 **证明（TH-004，`proven`）.** 这里的硬件预算是两个独立上限
 $K_H\le B_H=\lfloor\mathrm{hbm}/s\rfloor$ 与
@@ -157,9 +190,11 @@ $(p_iT_a+p_jT_b)-(p_iT_b+p_jT_a)=(p_i-p_j)(T_a-T_b)\le0$。
 
 ---
 
-## 4. 为什么 OURS 优于静态放置（核心定理）
+## 4. 运行期动态策略及其理论边界
 
-这是 MECC 相对 SwapMoE 的**结构性优势**所在，对应 `tuning_log.md` 实验 3 的关键现象：**OURS 的 CPU 命中率 5.5%，而 swapmoe/fiddler 的 CPU 命中率 = 0%**。下面给出数学解释。
+联合动态 LRU 用在线请求修正编译期 profile，但它并不对所有 trace 支配静态放置。本节保留两个
+已被反例推翻的强命题，目的是精确划定可证明范围：当前只能声称实现了在线纠偏机制，并在特定
+L2 配置中观察到更低 SSD 命中；不能把这一经验现象升格为普遍结构性优势。
 
 ### 4.1 两种 CPU 管理
 

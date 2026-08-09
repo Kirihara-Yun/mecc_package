@@ -90,7 +90,7 @@ def config_fingerprint(command: list[str], commit: str) -> str:
         if skip:
             skip = False
             continue
-        if token in ("--out", "--status_file"):
+        if token in ("--out", "--partial_out", "--status_file"):
             skip = True
             continue
         normalized.append(token)
@@ -120,6 +120,7 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
         "--policies", args.policies,
         "--platform", args.platform,
         "--out", str(output),
+        "--partial_out", str(output.parent / "partial_result.json"),
         "--status_file", str(output.parent / "status.json"),
     ]
     if args.skip_ppl:
@@ -231,6 +232,10 @@ def resume(args: argparse.Namespace) -> int:
     if "--out" not in command:
         print("prior command has no --out argument", file=sys.stderr); return 2
     command[command.index("--out") + 1] = str(output)
+    if "--partial_out" in command:
+        command[command.index("--partial_out") + 1] = str(run_dir / "partial_result.json")
+    if "--status_file" in command:
+        command[command.index("--status_file") + 1] = str(run_dir / "status.json")
     commit = git_commit()
     metadata = {**prior, "run_id": args.run_id, "unit": unit,
                 "resumed_from": args.from_run,
@@ -267,6 +272,7 @@ def status(run_id: str, runs_root: str | None = None) -> int:
         run_dir = Path(runs_root).resolve() / run_id
         status_path = run_dir / "status.json"
         result_path = run_dir / "result.json"
+        partial_path = run_dir / "partial_result.json"
         if status_path.is_file():
             try:
                 phase = json.loads(status_path.read_text())
@@ -274,7 +280,8 @@ def status(run_id: str, runs_root: str | None = None) -> int:
                 print(f"invalid phase status: {exc}", file=sys.stderr)
                 return 1
             print(json.dumps({"phase_status": phase,
-                              "result_exists": result_path.is_file()}, indent=2))
+                              "result_exists": result_path.is_file(),
+                              "partial_result_exists": partial_path.is_file()}, indent=2))
             if phase.get("phase") == "failed":
                 return 1
             if phase.get("phase") == "complete" and not result_path.is_file():

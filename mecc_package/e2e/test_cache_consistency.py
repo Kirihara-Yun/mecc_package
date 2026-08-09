@@ -30,6 +30,26 @@ class FakeStore:
         w2 = torch.full((2, 2), float(seed + 2))
         return self.weight_type(w1, w3, w2)
 
+class TrackingWeights:
+    cpu_copies = 0
+
+    def __init__(self, uid, device="cpu"):
+        self.uid = uid
+        self.device = torch.device(device)
+
+    def to(self, device, non_blocking=False):
+        target = torch.device(device)
+        if target.type == "cpu" and self.device.type != "cpu":
+            TrackingWeights.cpu_copies += 1
+        return TrackingWeights(self.uid, target.type)
+
+    def pin_memory(self):
+        return self
+
+class TrackingStore:
+    def load_to_cpu(self, uid, cold=True):
+        return TrackingWeights(uid, "cpu")
+
 def core_cache(policy):
     spec = ModelSpec("tiny", 1, 4, 1, ExpertSpec(2, 2, 24))
     config = OffloadConfig(spec, CacheBudget(1, 1), CachePolicy(policy), cold_ssd=True)
@@ -67,5 +87,15 @@ class CacheConsistencyTest(unittest.TestCase):
         self.assertEqual(states[1]["hbm"], [(0, 1)])
         self.assertEqual(states[1]["cpu"], [(0, 0)])
         self.assertEqual(states[2]["hits"], [1, 1, 1, 0])
+
+    def test_core_ours_demotes_hbm_without_gpu_to_cpu_copy(self):
+        TrackingWeights.cpu_copies = 0
+        spec = ModelSpec("tiny", 1, 3, 1, ExpertSpec(2, 2, 24))
+        config = OffloadConfig(spec, CacheBudget(1, 1), CachePolicy.OURS, cold_ssd=True)
+        cache = CoreCache(0, TrackingStore(), config.budget, torch.device("meta"),
+                          config, [(0, e) for e in range(3)])
+        cache._access((0, 1))
+        cache._access((0, 2))
+        self.assertEqual(TrackingWeights.cpu_copies, 0)
 
 if __name__ == "__main__": unittest.main()
