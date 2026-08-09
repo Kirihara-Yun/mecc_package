@@ -1,11 +1,15 @@
-# MECC — MoE Expert Cache Compiler
+# MECC — Compiler-Guided Lossless Three-Tier Caching
 
-> 三级（HBM → CPU pinned → SSD）**无损** Expert 缓存编译器：编译期静态放置 + 运行期联合动态 LRU。
-> 面向 DAC 的科研项目，同时工程化落地、可复现。
+> 一个由编译期概率放置与运行期在线迁移协同驱动的 HBM → CPU pinned → SSD
+> **无损三级缓存架构**。MoE expert 推理是当前最重要的实例化与验证场景，而不是方法抽象的边界。
 
-## TL;DR —— 方法什么时候有效
+MECC 研究的第一性问题是：当只读大对象的总工作集超过 HBM 与 CPU 可用容量、SSD
+不可避免地进入关键路径时，如何在容量约束下最小化暴露访问代价，同时保持对象数值语义不变。
+统一科研叙事与数学抽象见 **[`docs/RESEARCH_NARRATIVE.md`](./docs/RESEARCH_NARRATIVE.md)**。
 
-**MECC 只在「连 CPU 内存都装不下整个模型」时才有价值**：此时部分 expert 被迫落 SSD，
+## TL;DR —— 从三级缓存到 MoE 实例
+
+在当前 MoE 实例中，**MECC 只在「连 CPU 内存都装不下全部 expert」时才有价值**：此时部分 expert 被迫落 SSD，
 三级缓存（HBM→CPU→SSD）才解决真实瓶颈。判断条件只有一个：
 
 > **`模型 expert 总量 > 可用 CPU 内存` → MECC 有效**
@@ -29,11 +33,11 @@ python3 mecc_package/scripts/check_env.py --applies \
 | 指标 | OURS | SwapMoE |
 |------|------|---------|
 | 加速比 | **1.33×** | 1.0 |
-| PPL（精度） | **24.57（fp16）** | 36.12（JSON 对照值；2-bit/SwapMoE 身份待核） |
+| PPL（精度） | **24.57（fp16）** | 未核实（历史 JSON 值 36.12 的 baseline 身份待核） |
 | SSD 命中率 | **17.6%** | 34.5% |
 
 > 当前 verified 卖点：OURS 保持 fp16 路径，并把 SSD 命中从 34.5% 压到 17.6%，
-> 综合吞吐为对照策略的 1.33×。对照行 PPL 36.12 的 2-bit baseline 身份正在按
+> 综合吞吐为同预算静态 CPU 机制对照的 1.33×。历史 PPL 36.12 的 baseline 身份正在按
 > PROVENANCE X6 核验，关闭前不将其与当前 fp16 `SwapMoePolicy` 合成质量 claim。
 
 > 数据真伪：以上为 **D2 真机实测**（`mixtral_real.json`）。引用任何数字前请查
@@ -50,6 +54,7 @@ python3 mecc_package/scripts/check_env.py --applies \
 | **AI coding agent** | [`AGENTS.md`](./AGENTS.md)（入口、硬约束、数据口径） |
 | **想了解项目接管后的推进规划** | **[`docs/PROJECT_TAKEOVER_PLAN.md`](./docs/PROJECT_TAKEOVER_PLAN.md)（阶段路线、验收门禁、风险与第一批任务）** |
 | 想判断方法是否适用 | [`docs/APPLICABILITY.md`](./docs/APPLICABILITY.md) |
+| 想理解科研故事与贡献边界 | [`docs/RESEARCH_NARRATIVE.md`](./docs/RESEARCH_NARRATIVE.md) |
 | 想理解架构与数据流 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
 | 不懂术语 | [`docs/GLOSSARY.md`](./docs/GLOSSARY.md) |
 | 想用提示词驱动 AI 做事 | [`docs/PROMPTS.md`](./docs/PROMPTS.md) |

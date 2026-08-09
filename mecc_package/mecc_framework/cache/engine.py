@@ -49,6 +49,7 @@ class LayerExpertCache:
 
         # 三个 tier 的存储: 都用 OrderedDict 维护 LRU 顺序
         self.hbm: OrderedDict[ExpertUID, ExpertWeights] = OrderedDict()
+        self._hbm_cpu_mirror: Dict[ExpertUID, ExpertWeights] = {}
         self.cpu: OrderedDict[ExpertUID, ExpertWeights] = OrderedDict()
         self.static_cpu: Dict[ExpertUID, ExpertWeights] = {}   # swapmoe 静态池
         self.hits = [0, 0, 0, 0]  # [hbm, cpu, ssd, cpu_compute]
@@ -66,6 +67,7 @@ class LayerExpertCache:
         for uid in ranked_uids[:self.k_h]:
             ws = self.store.load_to_cpu(uid, cold=False)
             self.hbm[uid] = ws.to(self.device)
+            self._hbm_cpu_mirror[uid] = ws
         if self.policy == CachePolicy.SWAPMOE:
             for uid in ranked_uids[self.k_h:self.k_h + self.k_c]:
                 self.static_cpu[uid] = self.store.load_to_cpu(uid, cold=False).pin_memory()
@@ -167,6 +169,7 @@ class LayerExpertCache:
                 self.store.load_to_cpu(uid, cold=self.cold_ssd))
             self.hits[2] += 1
         self.hbm[uid] = g
+        self._hbm_cpu_mirror[uid] = self.static_cpu.get(uid)
         self.hbm.move_to_end(uid)
         self._evict_hbm_if_needed(spill_to_cpu=False)
         return g
@@ -182,10 +185,11 @@ class LayerExpertCache:
             g = self._swap.copy_to_gpu(ws_cpu)
             self.hits[1] += 1
         else:
-            g = self._swap.copy_to_gpu(
-                self.store.load_to_cpu(uid, cold=self.cold_ssd))
+            ws_cpu = self.store.load_to_cpu(uid, cold=self.cold_ssd)
+            g = self._swap.copy_to_gpu(ws_cpu)
             self.hits[2] += 1
         self.hbm[uid] = g
+        self._hbm_cpu_mirror[uid] = ws_cpu
         self.hbm.move_to_end(uid)
         self._evict_hbm_if_needed(spill_to_cpu=True)
         return g
@@ -195,11 +199,16 @@ class LayerExpertCache:
     # ----------------------------------------------------------------
 
     def _evict_hbm_if_needed(self, spill_to_cpu: bool):
-        """HBM 满时淘汰最久未用的 expert。"""
+        """HBM 满时淘汰最久未用的 expert。
+
+        OURS keeps a CPU mirror for promoted experts, so demotion can reuse
+        that read-only copy instead of copying weights back from GPU.
+        """
         while len(self.hbm) > self.k_h:
             ev_uid, ev_ws = self.hbm.popitem(last=False)
+            ev_cpu = self._hbm_cpu_mirror.pop(ev_uid, None)
             if spill_to_cpu and self.k_c > 0:
-                self.cpu[ev_uid] = ev_ws.to("cpu")
+                self.cpu[ev_uid] = ev_cpu if ev_cpu is not None else ev_ws.to("cpu")
                 self.cpu.move_to_end(ev_uid)
                 self._evict_cpu_if_needed()
 

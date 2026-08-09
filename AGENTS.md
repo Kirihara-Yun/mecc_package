@@ -28,6 +28,7 @@
 ├── README.md                  # 人类入口（项目总览 + 导航）
 ├── docs/                      # 文档体系（AI + 人类共用）
 │   ├── APPLICABILITY.md       # ★ 适用性边界与决策树（最重要的科研定位）
+│   ├── RESEARCH_NARRATIVE.md  # ★ 统一科研叙事（三级缓存模型 → MoE 实例化）
 │   ├── EXPERIMENTS.md         # ★ 实验运行规范（每次跑实验前必读：L0冒烟/L1对照/L2主实验）
 │   ├── OPTIMIZATION.md        # ★ 优化指导规范（做任何优化前必读：算法/工程/评测三维度 + 注册表）
 │   ├── THEORY.md              # ★ 数学论证与形式化（方法数学化 + 证明规范 + 命题注册表）
@@ -58,7 +59,7 @@
     ├── scripts/ configs/ logs/
 ```
 
-入口建议：理解方法→`docs/ARCHITECTURE.md`；理解代码→`mecc_package/mecc_framework/`；**跑任何实验前→必读 `docs/EXPERIMENTS.md`**（L0/L1/L2 分级、命令、判据、记录模板）；**做任何优化前→必读 `docs/OPTIMIZATION.md`**（算法/工程/评测分维度、收益证据落在哪级、优化注册表）；**做任何数学论证 / 形式化证明前→必读 `docs/THEORY.md`**（方法已数学化、证明级别与状态、命题注册表）；**引用任何性能数字 / 写论文或对外材料前→必读 `docs/PROVENANCE.md`**（claim↔证据对照、矛盾登记、可信度分级 D2/D1/D0），并跑 `python3 mecc_package/scripts/verify_claims.py` 做一致性体检；**动手写论文（摘要/引言/背景/motivation/insight/framework/method/experiment/讨论总结/引用）前→必读 `docs/PAPER_WRITING.md`**（逐章节写作 SOP + 三诚实门禁 + 投稿检查清单），可对照示例论文 `mecc_package/paper/mecc_paper_example.md` 照葫芦画瓢。
+入口建议：理解科研故事→`docs/RESEARCH_NARRATIVE.md`；理解方法→`docs/ARCHITECTURE.md`；理解代码→`mecc_package/mecc_framework/`；**跑任何实验前→必读 `docs/EXPERIMENTS.md`**（L0/L1/L2 分级、命令、判据、记录模板）；**做任何优化前→必读 `docs/OPTIMIZATION.md`**（算法/工程/评测分维度、收益证据落在哪级、优化注册表）；**做任何数学论证 / 形式化证明前→必读 `docs/THEORY.md`**（方法已数学化、证明级别与状态、命题注册表）；**引用任何性能数字 / 写论文或对外材料前→必读 `docs/PROVENANCE.md`**（claim↔证据对照、矛盾登记、可信度分级 D2/D1/D0），并跑 `python3 mecc_package/scripts/verify_claims.py` 做一致性体检；**动手写论文（摘要/引言/背景/motivation/insight/framework/method/experiment/讨论总结/引用）前→必读 `docs/PAPER_WRITING.md`**（逐章节写作 SOP + 三诚实门禁 + 投稿检查清单），可对照示例论文 `mecc_package/paper/mecc_paper_example.md` 照葫芦画瓢。
 
 ---
 
