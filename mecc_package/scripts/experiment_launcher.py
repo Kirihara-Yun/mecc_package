@@ -265,13 +265,20 @@ def resume(args: argparse.Namespace) -> int:
 
 def status(run_id: str, runs_root: str | None = None) -> int:
     unit = unit_name(run_id)
+    run_dir = None
+    if runs_root:
+        run_dir = Path(runs_root).resolve() / run_id
+        if not run_dir.is_dir():
+            print(f"run directory not found: {run_dir}", file=sys.stderr)
+            print("the run was not started in this checkout (a --dry-run does not create it)",
+                  file=sys.stderr)
+            return 2
     result = systemctl(
         "show", unit, "-p", "ActiveState", "-p", "SubState", "-p", "MainPID",
         "-p", "ExecMainStatus", "-p", "Result", check=False,
     )
     sys.stdout.write(result.stdout or result.stderr)
-    if runs_root:
-        run_dir = Path(runs_root).resolve() / run_id
+    if run_dir is not None:
         status_path = run_dir / "status.json"
         result_path = run_dir / "result.json"
         partial_path = run_dir / "partial_result.json"
