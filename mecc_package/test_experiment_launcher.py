@@ -132,6 +132,14 @@ class ExperimentLauncherTest(unittest.TestCase):
                     contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(launcher.status("failed-run", tmp), 1)
 
+    def test_status_explains_missing_run_before_querying_systemd(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            launcher, "systemctl"
+        ) as systemctl, contextlib.redirect_stderr(io.StringIO()) as stderr:
+            self.assertEqual(launcher.status("dry-only", tmp), 2)
+            systemctl.assert_not_called()
+            self.assertIn("--dry-run does not create it", stderr.getvalue())
+
     def test_status_requires_result_after_complete_phase(self):
         with tempfile.TemporaryDirectory() as tmp:
             run = Path(tmp) / "complete-run"; run.mkdir()
