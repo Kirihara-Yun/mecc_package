@@ -340,7 +340,14 @@ class LayerExpertCache:
         # FlashMoE adaptation owns CPU eviction order; the generic fast path
         # would spill through LayerExpertCache's LRU helper before the policy
         # can score recency/frequency candidates.
-        if cpu_uids and self._policy_plugin.name != "flashmoe_rf_adaptation":
+        # The prefetch buffer is additional HBM until entries are installed and
+        # old cache residents are evicted.  A long prefill can activate every
+        # expert in a layer; batching more than K_H would therefore exceed the
+        # compiler's HBM budget before eviction.  Keep the common decode batch
+        # path, but fall back to sequential access/eviction for oversized
+        # prefill batches.
+        can_batch = 0 < len(cpu_uids) <= self.k_h
+        if can_batch and self._policy_plugin.name != "flashmoe_rf_adaptation":
             self.batch_prefetch(cpu_uids)
             # 直接把预取结果放进 self.gpu, 让 _access 自动命中
             for uid in cpu_uids:

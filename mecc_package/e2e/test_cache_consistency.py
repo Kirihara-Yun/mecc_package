@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 import unittest
+from unittest import mock
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -97,5 +98,21 @@ class CacheConsistencyTest(unittest.TestCase):
         cache._access((0, 1))
         cache._access((0, 2))
         self.assertEqual(TrackingWeights.cpu_copies, 0)
+
+    def test_e2e_oversized_cpu_batch_falls_back_to_sequential_access(self):
+        cache = E2ECache(0, FakeStore(E2EWeights), RANKED, 1, 2,
+                         torch.device("cpu"), policy="ours", cold_ssd=True)
+        with mock.patch.object(cache, "batch_prefetch") as batch:
+            loaded = list(cache.load_experts((0, 1), (0, 2)))
+        batch.assert_not_called()
+        self.assertEqual([uid for uid, _ in loaded], [(0, 1), (0, 2)])
+        self.assertLessEqual(len(cache.gpu), cache.k_h)
+
+    def test_e2e_decode_sized_cpu_batch_keeps_prefetch_path(self):
+        cache = E2ECache(0, FakeStore(E2EWeights), RANKED, 2, 1,
+                         torch.device("cpu"), policy="ours", cold_ssd=True)
+        with mock.patch.object(cache, "batch_prefetch") as batch:
+            list(cache.load_experts((0, 2)))
+        batch.assert_called_once_with([(0, 2)])
 
 if __name__ == "__main__": unittest.main()
