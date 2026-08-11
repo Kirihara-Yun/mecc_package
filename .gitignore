@@ -7,3 +7,7 @@ build/
 dist/
 *.egg-info/
 .DS_Store
+
+# GPU launcher working data can contain very large logs and partial artifacts.
+# Use `experiment_launcher.py report <run-id>` to create a compact tracked handoff.
+mecc_package/results/runs/

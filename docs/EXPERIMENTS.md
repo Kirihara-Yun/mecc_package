@@ -174,12 +174,15 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 python3 mecc_package/scripts/experiment_launcher.py status <run-id>
 python3 mecc_package/scripts/experiment_launcher.py stop <run-id>
 python3 mecc_package/scripts/experiment_launcher.py resume-from-store <旧run-id> <新run-id>
+python3 mecc_package/scripts/experiment_launcher.py report <run-id>
 ```
 
 每次运行在 `mecc_package/results/runs/<run-id>/` 留下包含 commit、稳定 config fingerprint、环境快照和完整命令的
 `run.json`、`run.log` 和
 `result.json`。launcher 默认拒绝已有 MECC 作业或同名目录；只有明确分配了互不冲突的
 GPU 后才可使用 `--allow-concurrent`。可先加 `--dry-run` 核对完整命令和元数据。
+`report` 会把完整 JSON 与日志尾部导出到 `results/reports/<run-id>/`，用于通过 Git 回传；
+完整 `run.log` 仍留在 GPU 机器，避免仓库被长日志撑大。完整交接步骤见 [`GPU_HANDOFF.md`](./GPU_HANDOFF.md)。
 L0/L1/L2 的显式模板位于 `mecc_package/e2e/configs/`，例如：
 
 ```bash
