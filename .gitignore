@@ -1,28 +1,9 @@
-# Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-.eggs/
+*.pyc
+*.pyo
+.env
+.venv/
 build/
 dist/
-.venv/
-venv/
-env/
-
-# 模型权重 / 大文件 store（运行时产物，不入库）
-*.bin
-*.safetensors
-mecc_store/
-/tmp/mecc_store/
-
-# 系统
+*.egg-info/
 .DS_Store
-Thumbs.db
-
-# IDE
-.idea/
-.vscode/
-
-# Jupyter
-.ipynb_checkpoints/
-mecc_package/third_party/MoE-Infinity/
