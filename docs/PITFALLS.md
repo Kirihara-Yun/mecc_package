@@ -56,6 +56,17 @@ Mixtral 0.04 tok/s——每个 SSD miss 读 1GB，300MB/s → 3.3s。快速迭�
 
 `nohup` 后看不到输出 → 加 `PYTHONUNBUFFERED=1` 或 `python3 -u`。
 
+### 3.4 长 prefill 的批量预取峰值必须受 K_H 约束
+
+**现象**：A100 80GB、统一 `K_H=2` 的短 prompt 可完成，但 `prompt_len=64` 在
+`batch_prefetch` 搬运同层多个 CPU expert 时 OOM；当时只剩约 95MB HBM。
+
+**原因**：长 prefill 可能激活同层全部 expert。旧实现先把所有 CPU 命中批量搬入额外
+prefetch buffer，再逐个放进 HBM cache 并淘汰，瞬时峰值超过编译器预算。
+
+**处理**：当同层 CPU batch 数量 `> K_H` 时改走逐个加载与即时淘汰；数量 `<= K_H`
+时保留 decode 常用的批量路径。该修复仅证明容量安全，L2 性能影响仍需真机重跑后判断。
+
 ---
 
 ## 4. 编译参数
