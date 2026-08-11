@@ -71,6 +71,22 @@ class ExperimentLauncherTest(unittest.TestCase):
                 self.assertEqual(launcher.start(args), 0)
             self.assertFalse((Path(tmp) / "dry").exists())
 
+    def test_dry_run_enables_unbuffered_python_logging(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            launcher, "active_units", return_value=[]
+        ), mock.patch.object(launcher, "environment_snapshot", return_value={}):
+            args = argparse.Namespace(
+                run_id="logging", runs_root=tmp, allow_concurrent=False, dry_run=True,
+                gpu="0", smoke=True, model="unused", state_path=None,
+                store_root="/tmp/store", hbm_budget=1.0, cpu_budget=2.0,
+                alpha=1.0, prompt_len=8, max_new_tokens=2, n_prompts=1,
+                policies="all", platform="CPU", skip_ppl=True, uniform=False,
+            )
+            with contextlib.redirect_stdout(io.StringIO()) as stdout:
+                self.assertEqual(launcher.start(args), 0)
+            rendered = json.loads(stdout.getvalue())
+            self.assertIn("--setenv=PYTHONUNBUFFERED=1", rendered["launch"])
+
     def test_explicit_configs_are_valid_and_level_safe(self):
         configs = launcher.E2E / "configs"
         for name in ("l0_smoke.json", "l1_deepseek_control.json", "l2_mixtral_main.json"):

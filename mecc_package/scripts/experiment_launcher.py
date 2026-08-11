@@ -198,6 +198,7 @@ def start(args: argparse.Namespace) -> int:
         f"--property=StandardOutput=append:{log}",
         f"--property=StandardError=append:{log}",
         f"--setenv=CUDA_VISIBLE_DEVICES={args.gpu}",
+        "--setenv=PYTHONUNBUFFERED=1",
         *command,
     ]
     if args.dry_run:
@@ -250,7 +251,8 @@ def resume(args: argparse.Namespace) -> int:
               f"--property=WorkingDirectory={E2E}",
               f"--property=StandardOutput=append:{log}",
               f"--property=StandardError=append:{log}",
-              f"--setenv=CUDA_VISIBLE_DEVICES={args.gpu}", *command]
+              f"--setenv=CUDA_VISIBLE_DEVICES={args.gpu}",
+              "--setenv=PYTHONUNBUFFERED=1", *command]
     if args.dry_run:
         print(json.dumps({"metadata": metadata, "launch": launch}, indent=2)); return 0
     run_dir.mkdir(parents=True)
