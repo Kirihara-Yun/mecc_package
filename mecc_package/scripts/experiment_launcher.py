@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import datetime as dt
 import hashlib
 import json
@@ -11,6 +12,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shutil
 import subprocess
 import sys
 
@@ -302,6 +304,74 @@ def stop(run_id: str) -> int:
     return result.returncode
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def export_report(run_id: str, runs_root: str, reports_root: str,
+                  tail_lines: int = 2000) -> int:
+    """Export a compact, Git-friendly report for remote diagnosis."""
+    unit_name(run_id)  # Validate before resolving paths.
+    run_dir = Path(runs_root).resolve() / run_id
+    if not run_dir.is_dir():
+        print(f"run directory not found: {run_dir}", file=sys.stderr)
+        return 2
+    report_dir = Path(reports_root).resolve() / run_id
+    if report_dir.exists():
+        print(f"refusing to overwrite existing report: {report_dir}", file=sys.stderr)
+        return 2
+
+    report_dir.mkdir(parents=True)
+    copied = []
+    for name in ("run.json", "status.json", "result.json", "partial_result.json",
+                 "launch_error.txt"):
+        source = run_dir / name
+        if source.is_file():
+            target = report_dir / name
+            shutil.copy2(source, target)
+            copied.append(target)
+
+    log = run_dir / "run.log"
+    if log.is_file():
+        # Decode defensively: a failed native dependency can emit non-UTF-8 bytes.
+        with log.open(encoding="utf-8", errors="replace") as stream:
+            lines = deque(stream, maxlen=tail_lines)
+        target = report_dir / "run_tail.log"
+        target.write_text("".join(lines), encoding="utf-8")
+        copied.append(target)
+
+    manifest = {
+        "run_id": run_id,
+        "exported_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "source_run_dir": str(run_dir),
+        "source_log": {
+            "path": str(log),
+            "exists": log.is_file(),
+            "size_bytes": log.stat().st_size if log.is_file() else 0,
+            "sha256": sha256_file(log) if log.is_file() else None,
+            "included_tail_lines": tail_lines if log.is_file() else 0,
+        },
+        "files": {},
+    }
+    for path in copied:
+        manifest["files"][path.name] = {
+            "size_bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        }
+    (report_dir / "report_manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    print(f"report exported: {report_dir}")
+    print("return it with:")
+    print(f"  git add {report_dir}")
+    print(f"  git commit -m \"results: add GPU report {run_id}\"")
+    print("  git push")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="action", required=True)
@@ -340,6 +410,14 @@ def parser() -> argparse.ArgumentParser:
         "--runs-root", default=str(ROOT / "mecc_package" / "results" / "runs"))
     stop_cmd = sub.add_parser("stop")
     stop_cmd.add_argument("run_id")
+    report_cmd = sub.add_parser(
+        "report", help="export compact run artifacts for Git-based handoff")
+    report_cmd.add_argument("run_id")
+    report_cmd.add_argument(
+        "--runs-root", default=str(ROOT / "mecc_package" / "results" / "runs"))
+    report_cmd.add_argument(
+        "--reports-root", default=str(ROOT / "mecc_package" / "results" / "reports"))
+    report_cmd.add_argument("--tail-lines", type=int, default=2000)
     return ap
 
 
@@ -355,6 +433,12 @@ def main(argv: list[str] | None = None) -> int:
         return status(args.run_id, args.runs_root)
     if args.action == "resume-from-store":
         return resume(args)
+    if args.action == "report":
+        if args.tail_lines < 1:
+            print("--tail-lines must be positive", file=sys.stderr)
+            return 2
+        return export_report(args.run_id, args.runs_root, args.reports_root,
+                             args.tail_lines)
     return stop(args.run_id)
 
 

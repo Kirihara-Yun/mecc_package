@@ -39,11 +39,12 @@ class ExperimentLauncherTest(unittest.TestCase):
         )
         command = launcher.build_command(args, Path("/tmp/result.json"))
         self.assertIn("--smoke", command)
-        self.assertEqual(command[command.index("--out") + 1], "/tmp/result.json")
+        self.assertEqual(command[command.index("--out") + 1], str(Path("/tmp/result.json")))
         self.assertEqual(command[command.index("--partial_out") + 1],
-                         "/tmp/partial_result.json")
+                         str(Path("/tmp/partial_result.json")))
         self.assertEqual(command[command.index("--platform") + 1], "CPU")
-        self.assertEqual(command[command.index("--status_file") + 1], "/tmp/status.json")
+        self.assertEqual(command[command.index("--status_file") + 1],
+                         str(Path("/tmp/status.json")))
         self.assertIn("--uniform", command)
 
     def test_start_refuses_active_job_before_creating_directory(self):
@@ -152,6 +153,34 @@ class ExperimentLauncherTest(unittest.TestCase):
                 self.assertEqual(launcher.status("partial-run", tmp), 0)
             rendered = stdout.getvalue()
             self.assertIn('"partial_result_exists": true', rendered)
+
+    def test_report_exports_compact_diagnostic_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); runs = root / "runs"; reports = root / "reports"
+            run = runs / "gpu-run"; run.mkdir(parents=True)
+            (run / "run.json").write_text(json.dumps({"git_commit": "abc"}))
+            (run / "status.json").write_text(json.dumps({"phase": "failed"}))
+            (run / "partial_result.json").write_text(json.dumps({"results": {}}))
+            (run / "run.log").write_text("first\nsecond\nthird\n")
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(launcher.export_report(
+                    "gpu-run", str(runs), str(reports), tail_lines=2), 0)
+            report = reports / "gpu-run"
+            self.assertEqual((report / "run_tail.log").read_text(), "second\nthird\n")
+            manifest = json.loads((report / "report_manifest.json").read_text())
+            self.assertEqual(manifest["source_log"]["size_bytes"],
+                             (run / "run.log").stat().st_size)
+            self.assertEqual(manifest["source_log"]["included_tail_lines"], 2)
+            self.assertIn("partial_result.json", manifest["files"])
+            self.assertFalse((report / "run.log").exists())
+
+    def test_report_refuses_to_overwrite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); run = root / "runs" / "same"; run.mkdir(parents=True)
+            report = root / "reports" / "same"; report.mkdir(parents=True)
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(launcher.export_report(
+                    "same", str(root / "runs"), str(root / "reports")), 2)
 
 
 if __name__ == "__main__":
