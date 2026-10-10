@@ -1,0 +1,96 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+  [compile] uniform allocation (no per-layer alpha)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=2 (HBM)  K_C=3 (CPU)  SSD=3
+  total HBM for experts ≈ 21.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=55.2%  CPU=28.8%  SSD=16.0%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store_mixtral
+  [store] manifest and all expert files verified, skip materialization.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: cd315a1e-cc7b-4968-a0ea-25841f9852d6)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 5bc3d587-25e0-4927-a518-780872650177)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 921964c3-9eca-4605-9e51-c550f0db79fb)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 5ff7106d-7587-47ff-9c4d-860763b22f11)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: dd2b0d3a-09a5-4536-84b4-5c59b9367f9c)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 536b3f7e-1607-4f3a-bcd8-779e9388563f)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-10-10 19:17:20.159971: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-10 19:17:20.212587: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-10-10 19:17:21.458405: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[2..2] K_C∈[3..3], total HBM=64 slots
+Traceback (most recent call last):
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 490, in <module>
+    main()
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 437, in main
+    return _main()
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 429, in _main
+    results[policy] = run_policy(policy, args, plan, store, device, prompts, ppl_text,
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 213, in run_policy
+    lat.append(measure_latency(model, ids, args.max_new_tokens, device, use_cache,
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 99, in measure_latency
+    logits, past = _forward(model, next_tok, past, True, use_amp=use_amp)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 70, in _forward
+    out = model(ids, past_key_values=past, use_cache=True)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 943, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 747, in forward
+    outputs: MoeModelOutputWithPast = self.model(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 943, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 539, in forward
+    layer_outputs = decoder_layer(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/modeling_layers.py", line 83, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 365, in forward
+    hidden_states, router_logits = self.block_sparse_moe(hidden_states)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/mixtral_tiered.py", line 75, in forward
+    for (_lid, expert_idx), expert_layer in self.experts.load_experts(
+  File "/home/qinzy/mecc_package/mecc_package/e2e/tiered_engine.py", line 362, in load_experts
+    ws = self._access(uid)          # CPU 命中的已在 gpu 中, 直接命中
+  File "/home/qinzy/mecc_package/mecc_package/e2e/tiered_engine.py", line 368, in _access
+    return self._policy_plugin.access(self, uid)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/policy_plugin.py", line 94, in access
+    g = cache._to_gpu(ws_cpu)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/tiered_engine.py", line 256, in _to_gpu
+    result = ws.to(self.device, non_blocking=True)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/tiered_engine.py", line 64, in to
+    self.w2.to(device, non_blocking=non_blocking),
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 112.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 22.50 MiB is free. Process 284129 has 414.00 MiB memory in use. Process 292245 has 528.00 MiB memory in use. Including non-PyTorch memory, this process has 67.86 GiB memory in use. Process 310601 has 434.00 MiB memory in use. Process 317594 has 9.85 GiB memory in use. Of the allocated memory 67.20 GiB is allocated by PyTorch, and 142.23 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
