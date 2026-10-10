@@ -1,0 +1,138 @@
+{
+  "schema": "mecc-host-report-v1",
+  "collected_at": "2026-10-10T17:21:46+08:00",
+  "git": {
+    "commit": "613a517ead87eabb1d9bfc17e6aa4a8203747af8",
+    "dirty": false,
+    "status": ""
+  },
+  "python": "3.10.12 (main, Jan  8 2026, 06:52:19) [GCC 11.4.0]",
+  "platform": "Linux-6.8.0-40-generic-x86_64-with-glibc2.35",
+  "machine": "x86_64",
+  "packages": {
+    "torch": "2.5.1+cu121",
+    "transformers": "4.53.0",
+    "safetensors": "0.4.5",
+    "numpy": "1.26.4"
+  },
+  "torch": {
+    "version": "2.5.1+cu121",
+    "cuda_available": true,
+    "torch_cuda": "12.1",
+    "cudnn": 90100,
+    "device_count": 1,
+    "devices": [
+      {
+        "index": 0,
+        "name": "NVIDIA A100 80GB PCIe",
+        "total_memory_bytes": 85097971712,
+        "capability": [
+          8,
+          0
+        ]
+      }
+    ]
+  },
+  "gpu": {
+    "command": [
+      "nvidia-smi",
+      "--query-gpu=index,name,driver_version,memory.total,memory.free,utilization.gpu",
+      "--format=csv,noheader,nounits"
+    ],
+    "returncode": 0,
+    "stdout": "0, NVIDIA A100 80GB PCIe, 560.35.03, 81920, 81153, 0",
+    "stderr": ""
+  },
+  "gpu_processes": {
+    "command": [
+      "nvidia-smi",
+      "--query-compute-apps=gpu_name,pid,used_memory",
+      "--format=csv,noheader,nounits"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "cpu": {
+    "command": [
+      "lscpu"
+    ],
+    "returncode": 0,
+    "stdout": "Architecture:                         x86_64\nCPU op-mode(s):                       32-bit, 64-bit\nAddress sizes:                        46 bits physical, 57 bits virtual\nByte Order:                           Little Endian\nCPU(s):                               72\nOn-line CPU(s) list:                  0-71\nVendor ID:                            GenuineIntel\nModel name:                           Intel(R) Xeon(R) Platinum 8360Y CPU @ 2.40GHz\nCPU family:                           6\nModel:                                106\nThread(s) per core:                   1\nCore(s) per socket:                   36\nSocket(s):                            2\nStepping:                             6\nCPU max MHz:                          3500.0000\nCPU min MHz:                          800.0000\nBogoMIPS:                             4800.00\nFlags:                                fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 ds_cpl smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local split_lock_detect wbnoinvd dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq la57 rdpid fsrm md_clear pconfig flush_l1d arch_capabilities\nL1d cache:                            3.4 MiB (72 instances)\nL1i cache:                            2.3 MiB (72 instances)\nL2 cache:                             90 MiB (72 instances)\nL3 cache:                             108 MiB (2 instances)\nNUMA node(s):                         4\nNUMA node0 CPU(s):                    0-17\nNUMA node1 CPU(s):                    18-35\nNUMA node2 CPU(s):                    36-53\nNUMA node3 CPU(s):                    54-71\nVulnerability Gather data sampling:   Mitigation; Microcode\nVulnerability Itlb multihit:          Not affected\nVulnerability L1tf:                   Not affected\nVulnerability Mds:                    Not affected\nVulnerability Meltdown:               Not affected\nVulnerability Mmio stale data:        Mitigation; Clear CPU buffers; SMT disabled\nVulnerability Reg file data sampling: Not affected\nVulnerability Retbleed:               Not affected\nVulnerability Spec rstack overflow:   Not affected\nVulnerability Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; RSB filling; PBRSB-eIBRS SW sequence; BHI SW loop, KVM SW loop\nVulnerability Srbds:                  Not affected\nVulnerability Tsx async abort:        Not affected",
+    "stderr": ""
+  },
+  "memory": {
+    "command": [
+      "free",
+      "-b"
+    ],
+    "returncode": 0,
+    "stdout": "total        used        free      shared  buff/cache   available\nMem:     1081820397568 21148172288 333073240064    14364672 727598985216 1052265897984\nSwap:     2147479552   343957504  1803522048",
+    "stderr": ""
+  },
+  "block_devices": {
+    "command": [
+      "lsblk",
+      "-J",
+      "-b",
+      "-o",
+      "NAME,PATH,TYPE,SIZE,FSTYPE,MOUNTPOINTS,MODEL,ROTA"
+    ],
+    "returncode": 0,
+    "stdout": "{\n   \"blockdevices\": [\n      {\n         \"name\": \"sda\",\n         \"path\": \"/dev/sda\",\n         \"type\": \"disk\",\n         \"size\": 959656755200,\n         \"fstype\": null,\n         \"mountpoints\": [\n             null\n         ],\n         \"model\": \"MR9364-8i\",\n         \"rota\": true,\n         \"children\": [\n            {\n               \"name\": \"sda1\",\n               \"path\": \"/dev/sda1\",\n               \"type\": \"part\",\n               \"size\": 536870912,\n               \"fstype\": \"vfat\",\n               \"mountpoints\": [\n                   \"/boot/efi\"\n               ],\n               \"model\": null,\n               \"rota\": true\n            },{\n               \"name\": \"sda2\",\n               \"path\": \"/dev/sda2\",\n               \"type\": \"part\",\n               \"size\": 959117787136,\n               \"fstype\": \"ext4\",\n               \"mountpoints\": [\n                   \"/\"\n               ],\n               \"model\": null,\n               \"rota\": true\n            }\n         ]\n      },{\n         \"name\": \"sdb\",\n         \"path\": \"/dev/sdb\",\n         \"type\": \"disk\",\n         \"size\": 3840204079104,\n         \"fstype\": \"ext4\",\n         \"mountpoints\": [\n             \"/data\"\n         ],\n         \"model\": \"MR9364-8i\",\n         \"rota\": true\n      }\n   ]\n}",
+    "stderr": ""
+  },
+  "user_systemd": {
+    "command": [
+      "systemctl",
+      "--user",
+      "is-system-running"
+    ],
+    "returncode": 0,
+    "stdout": "running",
+    "stderr": ""
+  },
+  "paths": {
+    "state_path": {
+      "requested": "/data/models/Mixtral-8x7B-Instruct-v0.1",
+      "exists": false,
+      "is_dir": false,
+      "probe_path": "/data",
+      "disk_total_bytes": 3778759499776,
+      "disk_used_bytes": 3231658258432,
+      "disk_free_bytes": 355074260992,
+      "filesystem": {
+        "command": [
+          "df",
+          "-T",
+          "/data"
+        ],
+        "returncode": 0,
+        "stdout": "Filesystem     Type  1K-blocks       Used Available Use% Mounted on\n/dev/sdb       ext4 3690194824 3155916268 346752208  91% /data",
+        "stderr": ""
+      }
+    },
+    "store_root": {
+      "requested": "/data/mecc_store_mixtral",
+      "exists": true,
+      "is_dir": true,
+      "probe_path": "/data/mecc_store_mixtral",
+      "disk_total_bytes": 3778759499776,
+      "disk_used_bytes": 3231658258432,
+      "disk_free_bytes": 355074260992,
+      "filesystem": {
+        "command": [
+          "df",
+          "-T",
+          "/data/mecc_store_mixtral"
+        ],
+        "returncode": 0,
+        "stdout": "Filesystem     Type  1K-blocks       Used Available Use% Mounted on\n/dev/sdb       ext4 3690194824 3155916268 346752208  91% /data",
+        "stderr": ""
+      }
+    }
+  },
+  "environment": {
+    "cuda_visible_devices": "unset"
+  }
+}
