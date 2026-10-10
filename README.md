@@ -60,6 +60,7 @@ python3 mecc_package/scripts/check_env.py --applies \
 | 想用提示词驱动 AI 做事 | [`docs/PROMPTS.md`](./docs/PROMPTS.md) |
 | **想跑实验 / 让 agent 跑实验** | **[`docs/EXPERIMENTS.md`](./docs/EXPERIMENTS.md)（实验规范：L0冒烟/L1对照/L2主实验 + 记录模板）** |
 | **想在 GPU 机器运行并回传日志** | **[`docs/GPU_HANDOFF.md`](./docs/GPU_HANDOFF.md)（拉取、持久运行、状态查看、紧凑报告回传）** |
+| **让 WorkBuddy 在 A100 上执行** | **[`WORKBUDDY.md`](./WORKBUDDY.md) → [`docs/WORKBUDDY_A100_RUNBOOK.md`](./docs/WORKBUDDY_A100_RUNBOOK.md)（分阶段门禁、冻结配置与 Git 回传格式）** |
 | **想做优化 / 让 agent 做优化** | **[`docs/OPTIMIZATION.md`](./docs/OPTIMIZATION.md)（算法/工程/评测三维度 + 收益证据级别 + 优化注册表）** |
 | **想做数学论证 / 形式化证明** | **[`docs/THEORY.md`](./docs/THEORY.md)（方法数学化 + 证明级别与状态 + 命题注册表）** |
 | **想引用数字 / 写论文 / 核对真伪** | **[`docs/PROVENANCE.md`](./docs/PROVENANCE.md)（claim↔证据对照 + 矛盾登记 + 可信度分级；配 `scripts/verify_claims.py` 体检）** |
