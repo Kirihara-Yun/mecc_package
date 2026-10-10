@@ -21,6 +21,7 @@ def main():
     args = ap.parse_args()
     run([sys.executable, "-m", "unittest",
          "mecc_package/test_experiment_launcher.py",
+         "mecc_package/test_collect_host_report.py",
          "mecc_package/test_theory_counterexamples.py",
          "mecc_package/test_migrate_store_manifest.py",
          "mecc_package/test_verify_claims.py"])

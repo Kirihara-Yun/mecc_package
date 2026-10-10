@@ -4,6 +4,9 @@
 `mecc_package/results/runs/<run-id>/`；回传目录位于
 `mecc_package/results/reports/<run-id>/`。前者默认不进 Git，后者是紧凑、可追踪的诊断材料。
 
+由 WorkBuddy 执行 A100 任务时，以 [`WORKBUDDY_A100_RUNBOOK.md`](./WORKBUDDY_A100_RUNBOOK.md)
+为逐项门禁；根目录 `WORKBUDDY.md` 是其入口。本文件保留通用 launcher/reference 用法。
+
 ## 1. GPU 机器拉取与检查
 
 ```bash
