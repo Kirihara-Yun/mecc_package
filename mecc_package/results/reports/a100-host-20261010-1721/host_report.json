@@ -1,8 +1,8 @@
 {
   "schema": "mecc-host-report-v1",
-  "collected_at": "2026-10-10T17:21:46+08:00",
+  "collected_at": "2026-10-10T17:26:13+08:00",
   "git": {
-    "commit": "613a517ead87eabb1d9bfc17e6aa4a8203747af8",
+    "commit": "872daf3d55dc10f36d20216e2c5c610b2a43e21e",
     "dirty": false,
     "status": ""
   },
@@ -67,7 +67,7 @@
       "-b"
     ],
     "returncode": 0,
-    "stdout": "total        used        free      shared  buff/cache   available\nMem:     1081820397568 21148172288 333073240064    14364672 727598985216 1052265897984\nSwap:     2147479552   343957504  1803522048",
+    "stdout": "total        used        free      shared  buff/cache   available\nMem:     1081820397568 20982493184 333155737600    14364672 727682166784 1052431532032\nSwap:     2147479552   343957504  1803522048",
     "stderr": ""
   },
   "block_devices": {
@@ -94,21 +94,21 @@
   },
   "paths": {
     "state_path": {
-      "requested": "/data/models/Mixtral-8x7B-Instruct-v0.1",
-      "exists": false,
-      "is_dir": false,
-      "probe_path": "/data",
+      "requested": "/data/qinzy/models/models--mistralai--Mixtral-8x7B-Instruct-v0.1/snapshots/eba92302a2861cdc0098cc54bc9f17cb2c47eb61",
+      "exists": true,
+      "is_dir": true,
+      "probe_path": "/data/qinzy/models/models--mistralai--Mixtral-8x7B-Instruct-v0.1/snapshots/eba92302a2861cdc0098cc54bc9f17cb2c47eb61",
       "disk_total_bytes": 3778759499776,
-      "disk_used_bytes": 3231658258432,
-      "disk_free_bytes": 355074260992,
+      "disk_used_bytes": 3231658397696,
+      "disk_free_bytes": 355074121728,
       "filesystem": {
         "command": [
           "df",
           "-T",
-          "/data"
+          "/data/qinzy/models/models--mistralai--Mixtral-8x7B-Instruct-v0.1/snapshots/eba92302a2861cdc0098cc54bc9f17cb2c47eb61"
         ],
         "returncode": 0,
-        "stdout": "Filesystem     Type  1K-blocks       Used Available Use% Mounted on\n/dev/sdb       ext4 3690194824 3155916268 346752208  91% /data",
+        "stdout": "Filesystem     Type  1K-blocks       Used Available Use% Mounted on\n/dev/sdb       ext4 3690194824 3155916404 346752072  91% /data",
         "stderr": ""
       }
     },
@@ -118,8 +118,8 @@
       "is_dir": true,
       "probe_path": "/data/mecc_store_mixtral",
       "disk_total_bytes": 3778759499776,
-      "disk_used_bytes": 3231658258432,
-      "disk_free_bytes": 355074260992,
+      "disk_used_bytes": 3231658397696,
+      "disk_free_bytes": 355074121728,
       "filesystem": {
         "command": [
           "df",
@@ -127,7 +127,7 @@
           "/data/mecc_store_mixtral"
         ],
         "returncode": 0,
-        "stdout": "Filesystem     Type  1K-blocks       Used Available Use% Mounted on\n/dev/sdb       ext4 3690194824 3155916268 346752208  91% /data",
+        "stdout": "Filesystem     Type  1K-blocks       Used Available Use% Mounted on\n/dev/sdb       ext4 3690194824 3155916404 346752072  91% /data",
         "stderr": ""
       }
     }
