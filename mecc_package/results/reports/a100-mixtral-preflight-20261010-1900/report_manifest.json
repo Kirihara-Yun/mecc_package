@@ -1,0 +1,34 @@
+{
+  "run_id": "a100-mixtral-preflight-20261010-1900",
+  "exported_at": "2026-10-10T19:03:47+08:00",
+  "source_run_dir": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-preflight-20261010-1900",
+  "source_log": {
+    "path": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-preflight-20261010-1900/run.log",
+    "exists": true,
+    "size_bytes": 3260,
+    "sha256": "f50583906ffe983ac4e57e6b96507687bd663443e924649b22a3cc01c7f21f3b",
+    "included_tail_lines": 2000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1829,
+      "sha256": "60ee89f792fee9c6a4c50eaaf5899457e271d83bdde0b5cb7305d38ed0f745ac"
+    },
+    "status.json": {
+      "size_bytes": 243,
+      "sha256": "ca87c1f0fe823bb53c1a8c4325af1fe5bdfcbf5de7a17e0a136b712e9a95926e"
+    },
+    "result.json": {
+      "size_bytes": 1898,
+      "sha256": "c190e1273ff823d0a39b498fffe09d28b69a5b4a6be2d1282d07707a0c1bcdc2"
+    },
+    "partial_result.json": {
+      "size_bytes": 1974,
+      "sha256": "0f7ef56b4f6e03c200d58ec4b3e3df2c62b723bbd1298dc49c366e60647fd59f"
+    },
+    "run_tail.log": {
+      "size_bytes": 3260,
+      "sha256": "f50583906ffe983ac4e57e6b96507687bd663443e924649b22a3cc01c7f21f3b"
+    }
+  }
+}
