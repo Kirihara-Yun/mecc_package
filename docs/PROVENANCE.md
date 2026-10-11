@@ -62,6 +62,13 @@
 
 > **M6 关键澄清**：1.62× 是 **TPOT（每 token）比**，1.33× 是 `speedup_vs`（综合/吞吐口径）。二者都"真"，但**不是同一个指标**。对外默认用 **1.33×（综合）**，提 1.62× 时必须写"TPOT 比"。
 
+| M8a | Mixtral **30/40GB 独立臂** OURS vs SwapMoE 加速（run1；K_H=2/K_C=3；**非 50/40 冻结复现**——50/40 在 A100-80g 因 ~79.1GiB 自分配 OOM，按 `MOTIVATION_EXPERIMENT_PLAN.md` §2.2 回退到明确命名的 30/40 臂） | **2.064×** | D2 | `reports/a100-mixtral-30g-1-20261011-2158/result.json : results.ours.speedup_vs.swapmoe (=2.064)`；platform=a100-80g, run_time=2026-10-11T23:39:50+08:00；`--skip-ppl`（无 PPL 可比） | `verified` |
+| M8b | Mixtral 30/40GB 独立臂 OURS vs SwapMoE 加速（run2） | **1.948×** | D2 | `reports/a100-mixtral-30g-2-20261011-2343/result.json : results.ours.speedup_vs.swapmoe (=1.948)`；platform=a100-80g, run_time=2026-10-12T01:32:40+08:00 | `verified` |
+| M8c | Mixtral 30/40GB 独立臂 OURS vs SwapMoE 加速（run3） | **1.744×** | D2 | `reports/a100-mixtral-30g-3-20261012-0137/result.json : results.ours.speedup_vs.swapmoe (=1.744)`；platform=a100-80g, run_time=2026-10-12T03:09:54+08:00 | `verified` |
+| M8m | Mixtral 30/40GB 臂 OURS vs SwapMoE **中位数加速**（M8a/b/c 三份 ≥3 次独立真机取中位数；不挑最好一次） | **1.948×** | D2 | 派生自 `reports/a100-mixtral-30g-{1,2,3}-*/result.json` 三者 `speedup_vs.swapmoe` 中位数（2.064/1.948/1.744） | `verified` |
+
+> **M8 臂口径说明**（关键，引用前必读）：M8a/b/c/m 来自 **30/40GB（K_H=2/K_C=3）** 的独立实验臂，是 50/40GB 冻结配置在 A100-80g OOM 后的**明确命名回退**，不构成历史 50/40 复现、也不替代 M1（M1 来自 `raw/mixtral_real.json`，为另一口径真机结果）。三次运行均 `mode=real`、`--skip-ppl`（WikiText-2 不可用，自动回退 `BUILTIN_PROMPTS`，PPL 不可对标，质量/PPL 实验已单独排队）。swapmoe 基线在 A100 上的自有加载/前向路径存在损耗（与 OURS 同输入下 swapmoe PPL 偏高，同 X6 类问题），**速度/speedup 为实测吞吐比仍有效**；质量口径未闭合前，M8 仅支撑"吞吐加速"结论，不支撑 PPL 质量结论。
+
 ### 3.2 对照场景 — DeepSeek-V2-Lite（CPU 装得下，不落 SSD，非主战场）
 
 | # | Claim | 采信值 | 级别 | 证据 | 状态 |

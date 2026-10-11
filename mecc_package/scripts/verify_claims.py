@@ -90,6 +90,13 @@ CLAIMS = [
      "Mixtral OURS CPU 命中 38.0%"),
     ("M4b", "raw/mixtral_real.json", "results.swapmoe.hit_pct.cpu", 23.3, 0.1,
      "Mixtral SwapMoE CPU 命中 23.3%"),
+    # --- 主场景 Mixtral 30/40GB 独立臂（D2 真机，A100-80g；50/40 冻结配置 OOM 后的明确命名回退臂，K_H=2/K_C=3）---
+    ("M8a", "reports/a100-mixtral-30g-1-20261011-2158/result.json", "results.ours.speedup_vs.swapmoe", 2.064, 0.01,
+     "Mixtral 30/40GB 臂 OURS vs SwapMoE 2.064× (run1)"),
+    ("M8b", "reports/a100-mixtral-30g-2-20261011-2343/result.json", "results.ours.speedup_vs.swapmoe", 1.948, 0.01,
+     "Mixtral 30/40GB 臂 OURS vs SwapMoE 1.948× (run2)"),
+    ("M8c", "reports/a100-mixtral-30g-3-20261012-0137/result.json", "results.ours.speedup_vs.swapmoe", 1.744, 0.01,
+     "Mixtral 30/40GB 臂 OURS vs SwapMoE 1.744× (run3)"),
     # --- 对照场景 DeepSeek（D2 真机，main_table_5090.json）---
     ("D3", "main_table_5090.json", "results.ours.speedup_vs.swapmoe", 2.554, 0.01,
      "DeepSeek e2e OURS vs SwapMoE 2.55×"),
