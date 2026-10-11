@@ -1,0 +1,26 @@
+{
+  "run_id": "a100-mixtral-repro-50g-1-20261011-2148",
+  "exported_at": "2026-10-11T21:58:49+08:00",
+  "source_run_dir": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-repro-50g-1-20261011-2148",
+  "source_log": {
+    "path": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-repro-50g-1-20261011-2148/run.log",
+    "exists": true,
+    "size_bytes": 6572,
+    "sha256": "2189169c348ff12d61549dfc7c9f355eed7a917d7428b5451773b21805365fa2",
+    "included_tail_lines": 2000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1844,
+      "sha256": "4914ab4c0358eecaf9a335159f23d360664abcae5160364e1a903716058eaf95"
+    },
+    "status.json": {
+      "size_bytes": 665,
+      "sha256": "df8a31ece7f4473b1a4e4af862d7bcf754fab6328ad83de36fc8435a7054cb09"
+    },
+    "run_tail.log": {
+      "size_bytes": 6572,
+      "sha256": "2189169c348ff12d61549dfc7c9f355eed7a917d7428b5451773b21805365fa2"
+    }
+  }
+}

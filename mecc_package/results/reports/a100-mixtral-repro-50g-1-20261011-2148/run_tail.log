@@ -1,0 +1,80 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+  [compile] uniform allocation (no per-layer alpha)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=4 (HBM)  K_C=3 (CPU)  SSD=1
+  total HBM for experts ≈ 42.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=76.7%  CPU=18.7%  SSD=4.6%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store_mixtral
+  [store] manifest and all expert files verified, skip materialization.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-10-11 21:49:33.658181: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-11 21:49:33.711522: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-10-11 21:49:34.980948: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[4..4] K_C∈[3..3], total HBM=128 slots
+Traceback (most recent call last):
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 490, in <module>
+    main()
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 437, in main
+    return _main()
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 429, in _main
+    results[policy] = run_policy(policy, args, plan, store, device, prompts, ppl_text,
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 213, in run_policy
+    lat.append(measure_latency(model, ids, args.max_new_tokens, device, use_cache,
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 99, in measure_latency
+    logits, past = _forward(model, next_tok, past, True, use_amp=use_amp)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/run_e2e.py", line 70, in _forward
+    out = model(ids, past_key_values=past, use_cache=True)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 943, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 747, in forward
+    outputs: MoeModelOutputWithPast = self.model(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 943, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 539, in forward
+    layer_outputs = decoder_layer(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/modeling_layers.py", line 83, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 365, in forward
+    hidden_states, router_logits = self.block_sparse_moe(hidden_states)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/mixtral_tiered.py", line 75, in forward
+    for (_lid, expert_idx), expert_layer in self.experts.load_experts(
+  File "/home/qinzy/mecc_package/mecc_package/e2e/tiered_engine.py", line 351, in load_experts
+    self.batch_prefetch(cpu_uids)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/tiered_engine.py", line 326, in batch_prefetch
+    gpu_ws = ws.to(self.device, non_blocking=True)
+  File "/home/qinzy/mecc_package/mecc_package/e2e/tiered_engine.py", line 62, in to
+    self.w1.to(device, non_blocking=non_blocking),
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 112.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 6.75 MiB is free. Including non-PyTorch memory, this process has 79.12 GiB memory in use. Of the allocated memory 78.47 GiB is allocated by PyTorch, and 141.13 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
