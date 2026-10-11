@@ -1,0 +1,59 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+  [compile] uniform allocation (no per-layer alpha)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=2 (HBM)  K_C=3 (CPU)  SSD=3
+  total HBM for experts ≈ 21.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=55.2%  CPU=28.8%  SSD=16.0%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store_mixtral
+  [store] manifest and all expert files verified, skip materialization.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 50b686c8-48ca-471a-ac97-827dcd8b2bbf)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: fa1bdb26-e852-4b1b-8037-e030238d250b)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 5b884df0-3bae-4782-8b90-b56e63d3b05e)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: f48ac2c6-5a73-4992-b12e-d91e23c97a31)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 20051fdb-bf6b-4020-b358-04c0a4314ca1)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 5783b7db-bd20-4288-9ece-652ff1295ce9)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-10-11 15:00:38.746050: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-11 15:00:38.799416: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-10-11 15:00:40.091508: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[2..2] K_C∈[3..3], total HBM=64 slots
+  TTFT=137216.02ms  TPOT=12840.84ms  throughput=0.048647 tok/s  PPL=92.953
+  hit: HBM=44.4% CPU=39.3% SSD=16.4% CPUcompute=0.0%
+
+======================================================================
+[POLICY = swapmoe]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] swapmoe: per-layer adaptive K_H∈[2..2] K_C∈[3..3], total HBM=64 slots
+  TTFT=169646.6ms  TPOT=34267.55ms  throughput=0.023429 tok/s  PPL=893.774
+  hit: HBM=39.3% CPU=13.8% SSD=46.9% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-repro-20261011-1500/result.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours        137216.02   12840.84  0.048647          92.953
+swapmoe      169646.6   34267.55  0.023429         893.774
+  OURS speedup: vs swapmoe 2.076×
+======================================================================
