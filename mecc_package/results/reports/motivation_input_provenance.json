@@ -1,0 +1,17 @@
+{
+  "input_source": "BUILTIN_PROMPTS (run_e2e.py L135-139)",
+  "reason": "no external network; WikiText-2 unavailable -> auto-fell-back to builtin",
+  "prompts": [
+    "The economic policy of the central bank affects inflation rates because",
+    "In quantum mechanics, entanglement is a phenomenon where",
+    "The history of the Roman Empire can be summarized as",
+    "To optimize a deep neural network, engineers typically"
+  ],
+  "sha256": "2d5d076cc196dd882de2e2e384080cb3302c0ac9da6c1a2b0cf2dd7e218f3782",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "model_snapshot_revision": "eba92302a2861cdc0098cc54bc9f17cb2c47eb61",
+  "n_prompts": 4,
+  "prompt_len": 64,
+  "max_new_tokens": 16,
+  "note": "口径不同于历史 1.33x 的 WikiText-2 标准语料；速度/命中率比较仍有效，PPL 不可直接对标"
+}
