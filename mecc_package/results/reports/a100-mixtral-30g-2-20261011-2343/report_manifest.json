@@ -1,0 +1,34 @@
+{
+  "run_id": "a100-mixtral-30g-2-20261011-2343",
+  "exported_at": "2026-10-12T01:37:04+08:00",
+  "source_run_dir": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-30g-2-20261011-2343",
+  "source_log": {
+    "path": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-30g-2-20261011-2343/run.log",
+    "exists": true,
+    "size_bytes": 3258,
+    "sha256": "c19f2d79211ec5ba04f8439ecd86acc05bda4a07447e9a3e144e88956451e61d",
+    "included_tail_lines": 2000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1802,
+      "sha256": "4562a04ca5f48213b79c4fc27bcb451245f6944b0a5a48a2239a300a36190268"
+    },
+    "status.json": {
+      "size_bytes": 239,
+      "sha256": "37706328ee3423e5bb44a44fd878572f55df387c205cf70039df734b6df813d6"
+    },
+    "result.json": {
+      "size_bytes": 1901,
+      "sha256": "44d06cd9dd7779a75b8f45f35a7dba65ba5e8e537b1d372be4c6b13d3fe54649"
+    },
+    "partial_result.json": {
+      "size_bytes": 1977,
+      "sha256": "4448943241ac8a5d0aa8c96e839e095efcf8adc37c7d63f4792dd0eb5d470834"
+    },
+    "run_tail.log": {
+      "size_bytes": 3258,
+      "sha256": "c19f2d79211ec5ba04f8439ecd86acc05bda4a07447e9a3e144e88956451e61d"
+    }
+  }
+}

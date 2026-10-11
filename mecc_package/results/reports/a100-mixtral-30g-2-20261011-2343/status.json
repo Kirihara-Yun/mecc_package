@@ -1,0 +1,9 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-10-12T01:32:40+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-30g-2-20261011-2343/result.json",
+  "completed_policies": [
+    "ours",
+    "swapmoe"
+  ]
+}
