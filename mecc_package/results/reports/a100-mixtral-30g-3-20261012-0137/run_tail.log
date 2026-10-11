@@ -1,0 +1,47 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+  [compile] uniform allocation (no per-layer alpha)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=2 (HBM)  K_C=3 (CPU)  SSD=3
+  total HBM for experts ≈ 21.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=55.2%  CPU=28.8%  SSD=16.0%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store_mixtral
+  [store] manifest and all expert files verified, skip materialization.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-10-12 01:37:13.703693: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-12 01:37:13.757784: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-10-12 01:37:15.037390: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[2..2] K_C∈[3..3], total HBM=64 slots
+  TTFT=127626.17ms  TPOT=12570.47ms  throughput=0.050636 tok/s  PPL=exact(lossless)
+  hit: HBM=45.3% CPU=38.7% SSD=15.9% CPUcompute=0.0%
+
+======================================================================
+[POLICY = swapmoe]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] swapmoe: per-layer adaptive K_H∈[2..2] K_C∈[3..3], total HBM=64 slots
+  TTFT=152564.81ms  TPOT=28428.31ms  throughput=0.029032 tok/s  PPL=exact(lossless)
+  hit: HBM=46.1% CPU=11.5% SSD=42.4% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-30g-3-20261012-0137/result.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours        127626.17   12570.47  0.050636 exact(lossless)
+swapmoe     152564.81   28428.31  0.029032 exact(lossless)
+  OURS speedup: vs swapmoe 1.744×
+======================================================================

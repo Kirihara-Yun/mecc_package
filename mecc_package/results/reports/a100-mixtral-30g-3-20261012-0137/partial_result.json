@@ -1,0 +1,131 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "a100-80g",
+  "run_time": "2026-10-12T03:09:54+08:00",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=30.0GB, CPU_budget=40.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 2,
+    "k_c": 3,
+    "per_layer_k_h": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "per_layer_k_c": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 55.2,
+    "cpu_hit_pct": 28.8,
+    "ssd_hit_pct": 16.0,
+    "hbm_gb_used": 21.0,
+    "cpu_gb_used": 31.5
+  },
+  "config": {
+    "max_new_tokens": 16,
+    "prompt_len": 64,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 127626.17,
+      "tpot_ms": 12570.47,
+      "tokens_per_s": 0.050636,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 45.3,
+        "cpu": 38.7,
+        "ssd": 15.9,
+        "cpu_compute": 0.0
+      },
+      "speedup_vs": {
+        "swapmoe": 1.744
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 152564.81,
+      "tpot_ms": 28428.31,
+      "tokens_per_s": 0.029032,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 46.1,
+        "cpu": 11.5,
+        "ssd": 42.4,
+        "cpu_compute": 0.0
+      }
+    }
+  },
+  "partial": true,
+  "completed_policies": [
+    "ours",
+    "swapmoe"
+  ]
+}
