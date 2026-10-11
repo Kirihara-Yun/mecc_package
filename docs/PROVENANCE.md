@@ -79,6 +79,7 @@
 |---|-------|--------|------|------|------|
 | H1 | 漂移 OURS vs FluxMoE / SwapMoE | **9.50× / 5.68×** | **D1** | `raw/deepseek_real_e2e.json : workloads[drift].speedup (vs_flux=9.502, vs_swap=5.68)` | `verified`（**模拟器**，DeepSeek 合成 N=64/expert 7.1MB） |
 | H2 | 静止 OURS vs FluxMoE / SwapMoE | **6.26× / 3.99×** | **D1** | `raw/deepseek_real_e2e.json : workloads[stationary].speedup` | `verified`（模拟器） |
+| H3 | 静态驻留对照在静止/漂移负载下的 SSD 访问比例 | **7.5% / 11.3%** | **D1** | `raw/deepseek_real_e2e.json : workloads[0/1].results[policy=SwapMoE].ssd_hit_pct` | `verified`（缓存模拟器；DeepSeek 合成 N=64、K_H=19、K_C=45；只支持“漂移增加该对照的 SSD 访问”这一机制观察，不是 Mixtral 真机结论） |
 
 > **H1/H2 是 D1 模拟器值**，论文表7 标题已注明"模拟器"。引用务必带"（模拟器，DeepSeek 合成规模）"，**不可与真机加速比并列成一张表**。
 > ⚠️ 易混：`real_e2e_5090.json`/`real_e2e_a100.json`/`raw/real_e2e_results.json` 也是 B 类模拟器，但 `config`（N=96 等）不同，漂移 speedup 仅 ~1.6×，**不是论文表7 的来源**，勿引用为漂移主结果。

@@ -100,6 +100,10 @@ CLAIMS = [
      "漂移 OURS vs SwapMoE 5.68×（模拟器）"),
     ("H2a", "raw/deepseek_real_e2e.json", "workloads.0.speedup.vs_flux", 6.26, 0.01,
      "静止 OURS vs FluxMoE 6.26×（模拟器）"),
+    ("H3a", "raw/deepseek_real_e2e.json", "workloads.0.results.1.ssd_hit_pct", 7.5, 0.1,
+     "静态对照静止负载 SSD 访问 7.5%（模拟器）"),
+    ("H3b", "raw/deepseek_real_e2e.json", "workloads.1.results.1.ssd_hit_pct", 11.3, 0.1,
+     "静态对照漂移负载 SSD 访问 11.3%（模拟器）"),
     # --- 三级延迟（D2 实测）---
     ("L1h", "raw/measured_latency_5090.json", "tier_latency_us.hbm_hit", 255.8, 0.5,
      "5090 HBM 命中延迟 255.8µs"),
