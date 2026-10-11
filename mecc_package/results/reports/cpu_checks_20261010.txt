@@ -1,0 +1,148 @@
++ /usr/bin/python3 -m unittest mecc_package/test_experiment_launcher.py mecc_package/test_collect_host_report.py mecc_package/test_theory_counterexamples.py mecc_package/test_migrate_store_manifest.py mecc_package/test_verify_claims.py (cwd=/home/qinzy/mecc_package)
+.........refusing to start: active MECC job(s): mecc-exp-running.service
+use --allow-concurrent only after assigning non-conflicting GPU resources
+.................
+----------------------------------------------------------------------
+Ran 26 tests in 2.490s
+
+OK
++ /usr/bin/python3 -m unittest test_compiler.py (cwd=/home/qinzy/mecc_package/mecc_package)
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK
++ /usr/bin/python3 -m unittest test_async_ssd_read.py test_cache_consistency.py test_flashmoe_adaptation.py test_result_schema.py test_store_manifest.py test_run_e2e_metrics.py (cwd=/home/qinzy/mecc_package/mecc_package/e2e)
+.....................
+----------------------------------------------------------------------
+Ran 21 tests in 0.298s
+
+OK
++ /usr/bin/python3 -c import compile_config (cwd=/home/qinzy/mecc_package/mecc_package/e2e)
++ /usr/bin/python3 -c import runtime_spec (cwd=/home/qinzy/mecc_package/mecc_package)
++ /usr/bin/python3 -c import concurrent_tiered_cache (cwd=/home/qinzy/mecc_package/mecc_package/scripts)
++ /usr/bin/python3 /home/qinzy/mecc_package/mecc_package/scripts/generate_paper_tables.py --check (cwd=/home/qinzy/mecc_package)
++ /usr/bin/python3 /home/qinzy/mecc_package/mecc_package/scripts/check_paper_tex.py (cwd=/home/qinzy/mecc_package)
+PASS: /home/qinzy/mecc_package/mecc_package/paper/mecc_paper.tex TeX structure is internally consistent
++ /usr/bin/python3 /home/qinzy/mecc_package/mecc_package/scripts/verify_claims.py (cwd=/home/qinzy/mecc_package)
+MECC 数字一致性体检 —— 权威源 docs/PROVENANCE.md
+
+
+== 权威文档存在性 ==
+  [ OK ] JSON 字段字典: results/SCHEMA.md
+  [ OK ] 数字真伪权威源: ../docs/PROVENANCE.md
+== Claim ↔ 证据 一致性体检（仅 verified 项） ==
+  [ OK ] M1: Mixtral OURS vs SwapMoE 加速 1.33×（raw/mixtral_real.json:results.ours.speedup_vs.swapmoe = 1.333）
+  [ OK ] M2a: Mixtral OURS 无损 PPL 24.57（raw/mixtral_real.json:results.ours.ppl = 24.569）
+  [ OK ] M3a: Mixtral OURS SSD 命中 17.6%（raw/mixtral_real.json:results.ours.hit_pct.ssd = 17.6）
+  [ OK ] M3b: Mixtral SwapMoE SSD 命中 34.5%（raw/mixtral_real.json:results.swapmoe.hit_pct.ssd = 34.5）
+  [ OK ] M4a: Mixtral OURS CPU 命中 38.0%（raw/mixtral_real.json:results.ours.hit_pct.cpu = 38.0）
+  [ OK ] M4b: Mixtral SwapMoE CPU 命中 23.3%（raw/mixtral_real.json:results.swapmoe.hit_pct.cpu = 23.3）
+  [ OK ] D3: DeepSeek e2e OURS vs SwapMoE 2.55×（main_table_5090.json:results.ours.speedup_vs.swapmoe = 2.554）
+  [ OK ] H1a: 漂移 OURS vs FluxMoE 9.50×（模拟器）（raw/deepseek_real_e2e.json:workloads.1.speedup.vs_flux = 9.502）
+  [ OK ] H1b: 漂移 OURS vs SwapMoE 5.68×（模拟器）（raw/deepseek_real_e2e.json:workloads.1.speedup.vs_swap = 5.68）
+  [ OK ] H2a: 静止 OURS vs FluxMoE 6.26×（模拟器）（raw/deepseek_real_e2e.json:workloads.0.speedup.vs_flux = 6.26）
+  [ OK ] H3a: 静态对照静止负载 SSD 访问 7.5%（模拟器）（raw/deepseek_real_e2e.json:workloads.0.results.1.ssd_hit_pct = 7.5）
+  [ OK ] H3b: 静态对照漂移负载 SSD 访问 11.3%（模拟器）（raw/deepseek_real_e2e.json:workloads.1.results.1.ssd_hit_pct = 11.3）
+  [ OK ] L1h: 5090 HBM 命中延迟 255.8µs（raw/measured_latency_5090.json:tier_latency_us.hbm_hit = 255.8）
+  [ OK ] L1s: 5090 SSD miss 延迟 ~790ms（raw/measured_latency_5090.json:tier_latency_us.ssd_miss = 789738.9）
+
+== 平台/时间字段体检（SCHEMA §5 强制；真机 JSON 须有 platform + run_time）==
+  [ OK ] main_table_prefetch.json: platform='A100 80GB' run_time='2026-06-19T21:05:21+08:00'
+  [ OK ] main_table_batch.json: platform='A100 80GB' run_time='2026-06-19T14:17:52+08:00'
+  [ OK ] main_table_5090.json: platform='A100 80GB' run_time='2026-06-19T11:04:13+08:00'
+  [ OK ] main_table_stream.json: platform='A100 80GB' run_time='2026-06-19T11:49:25+08:00'
+  [ OK ] smoke_test.json: platform='A100 80GB' run_time='2026-06-19T13:19:00+08:00'
+  [ OK ] main_table_amp.json: platform='A100 80GB' run_time='2026-06-19T12:55:52+08:00'
+  [ OK ] main_table_opts.json: platform='A100 80GB' run_time='2026-06-19T12:42:07+08:00'
+  [ OK ] l2_preflight_20260718.json: platform='A100 80GB' run_time='2026-07-18T11:19:12+08:00'
+  [WARN] raw/mixtral_l2_kh2_4policies_20260624.json: 缺字段 platform+run_time —— 旧遗留文件请回填（平台真值见 PROVENANCE M5），新实验落盘必须带齐 platform + run_time
+  [WARN] raw/mixtral_l2_m2_20260623.json: 缺字段 platform+run_time —— 旧遗留文件请回填（平台真值见 PROVENANCE M5），新实验落盘必须带齐 platform + run_time
+  [ OK ] raw/mixtral_l2_kh2_20260622.json: platform='A100 80GB' run_time='2026-06-22T19:03:00+08:00'
+  [ OK ] raw/deepseek_fused.json: platform='A100 80GB' run_time='2026-06-21T16:26:12+08:00'
+  [ OK ] raw/mixtral_fused.json: platform='A100 80GB' run_time='2026-06-21T14:11:55+08:00'
+  [ OK ] raw/mixtral_real.json: platform='A100 80GB' run_time='2026-06-21T10:15:48+08:00'
+  [ OK ] raw/deepseek_e2e_results_old.json: platform='A100 80GB' run_time='2026-06-20T11:56:08+08:00'
+  [ OK ] raw/deepseek_e2e_results.json: platform='A100 80GB' run_time='2026-06-20T20:15:50+08:00'
+  [ OK ] raw/mixtral_io.json: platform='A100 80GB' run_time='2026-06-21T12:01:38+08:00'
+  [ OK ] runs/a100-mixtral-repro-20261011-1500/result.json: platform='a100-80g' run_time='2026-10-11T16:49:24+08:00'
+  [ OK ] runs/a100-mixtral-repro-20261011-1500/partial_result.json: platform='a100-80g' run_time='2026-10-11T16:49:24+08:00'
+  [ OK ] runs/l2-mixtral-20260811-1915-retry2-smoke/result.json: platform='a100-80g' run_time='2026-08-11T20:38:33+08:00'
+  [ OK ] runs/l2-mixtral-20260811-1915-retry2-smoke/partial_result.json: platform='a100-80g' run_time='2026-08-11T20:38:33+08:00'
+  [ OK ] runs/a100-l0-20261010-1731/result.json: platform='cpu-local' run_time='2026-10-10T17:31:34+08:00'
+  [ OK ] runs/a100-l0-20261010-1731/partial_result.json: platform='cpu-local' run_time='2026-10-10T17:31:34+08:00'
+  [ OK ] runs/a100-mixtral-preflight-20261010-1900/result.json: platform='a100-80g' run_time='2026-10-10T19:02:37+08:00'
+  [ OK ] runs/a100-mixtral-preflight-20261010-1900/partial_result.json: platform='a100-80g' run_time='2026-10-10T19:02:37+08:00'
+  [ OK ] reports/a100-l0-20261010-1731/result.json: platform='cpu-local' run_time='2026-10-10T17:31:34+08:00'
+  [ OK ] reports/a100-l0-20261010-1731/partial_result.json: platform='cpu-local' run_time='2026-10-10T17:31:34+08:00'
+  （真机文件 27 个，缺平台/时间 2 个）
+
+== 高风险文本 claim 体检（正式入口与论文材料）==
+  [ OK ] 10 个正式文本通过平台/加速口径/baseline 身份规则
+
+== 已登记矛盾 / 未核实项（禁止当结论引用，详见 docs/PROVENANCE.md §4）==
+  [WARN] X1: 论文表3 DeepSeek e2e（TTFT 7426/tok/s 0.92/1.56×）无对应 JSON —— unverified，禁止外引
+  [WARN] X2: Mixtral 平台 [已澄清]：实验先 5090 后 A100，主结果在 A100 跑定（STRATEGY §2.2 佐证）—— 平台真值已写入各 JSON 顶层 platform=A100；compiled_plan.hardware 降级为编译期配置串，不再作平台依据
+  [WARN] X3: 加速口径：1.33×(综合) 与 1.62×(TPOT) 是两个指标，引用须标口径
+  [WARN] X4: expert 体积：336MB(实测张量) vs 1407MB(理论3矩阵)，口径不同
+  [WARN] X6: mixtral_real.json 的 swapmoe.ppl=36.116 数值存在，但当前 e2e SwapMoePolicy 为 fp16、无量化调用；2-bit baseline 身份未核实，禁止合成主 claim
+  [WARN] X5: results/README.md 顶部硬件 A100 [已澄清，正确] —— 各 JSON 顶层 platform=A100 已与之一致；以 platform 字段为平台真值
+
+== 小结 ==
+  OK=42  WARN=8  FAIL=0
+  ✓ 所有 verified 数字与实测 JSON 一致。
++ /usr/bin/python3 run_e2e.py --smoke --n_prompts 1 --max_new_tokens 2 --store_root /tmp/mecc_cpu_ci_g8wkqfl1/store --out /tmp/mecc_cpu_ci_g8wkqfl1/result.json --status_file /tmp/mecc_cpu_ci_g8wkqfl1/status.json (cwd=/home/qinzy/mecc_package/mecc_package/e2e)
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+----------------------------------------------------------------------
+COMPILED PLAN  model=smoke
+  α=1.0  layers=2  experts/layer=8  expert=0.2MB
+  per-layer  K_H=2 (HBM)  K_C=3 (CPU)  SSD=3
+  total HBM for experts ≈ 0.0GB | CPU ≈ 0.0GB
+  predicted hit  HBM=36.8%  CPU=30.7%  SSD=32.5%
+----------------------------------------------------------------------
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  TTFT=25.08ms  TPOT=24.57ms  throughput=40.555969 tok/s  PPL=exact(lossless)
+  hit: HBM=1.9% CPU=5.1% SSD=92.9% CPUcompute=0.0%
+
+======================================================================
+[POLICY = swapmoe]
+======================================================================
+  TTFT=15.83ms  TPOT=16.94ms  throughput=59.686593 tok/s  PPL=exact(lossless)
+  hit: HBM=2.1% CPU=41.4% SSD=56.6% CPUcompute=0.0%
+
+======================================================================
+[POLICY = fiddler]
+======================================================================
+  TTFT=18.64ms  TPOT=19.89ms  throughput=50.809265 tok/s  PPL=exact(lossless)
+  hit: HBM=25.6% CPU=0.0% SSD=71.2% CPUcompute=3.2%
+
+======================================================================
+[POLICY = naive]
+======================================================================
+  TTFT=17.25ms  TPOT=19.26ms  throughput=52.833619 tok/s  PPL=exact(lossless)
+  hit: HBM=24.8% CPU=0.0% SSD=75.2% CPUcompute=0.0%
+
+======================================================================
+[POLICY = flashmoe_rf_adaptation]
+======================================================================
+  TTFT=34.29ms  TPOT=26.85ms  throughput=35.601361 tok/s  PPL=exact(lossless)
+  hit: HBM=2.7% CPU=4.0% SSD=93.3% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /tmp/mecc_cpu_ci_g8wkqfl1/result.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours            25.08      24.57 40.555969 exact(lossless)
+swapmoe         15.83      16.94 59.686593 exact(lossless)
+fiddler         18.64      19.89 50.809265 exact(lossless)
+naive           17.25      19.26 52.833619 exact(lossless)
+flashmoe_rf_adaptation      34.29      26.85 35.601361 exact(lossless)
+  OURS speedup: vs swapmoe 0.679× | vs fiddler 0.798× | vs naive 0.768× | vs flashmoe_rf_adaptation 1.139×
+======================================================================
+CPU checks PASS
