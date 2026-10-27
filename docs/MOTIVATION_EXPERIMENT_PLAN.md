@@ -1,5 +1,7 @@
 # Motivation 实验补证与 WorkBuddy 下一轮执行计划
 
+> **2026-10-28 更新**：当前审稿修订版为 `paper/MECC_HPCA_review_revision.pptx`。动机已使用实际 D1 受控回放替换手填曲线，协议见 `HPCA_CAUSAL_REPLAY_PROTOCOL.md`；真机下一轮必须优先执行 [`HPCA_REVIEW_AND_REVISION.md §5–§6`](./HPCA_REVIEW_AND_REVISION.md) 的正确性、实际内存和分相位计量门禁，再进入本文件的 L2 补实验。以下 2026-10-11 记录保留为历史，不表示 X7–X9 已关闭。
+
 日期：2026-10-11。用途：为组会 PPT 第 4–6 页补齐“左侧实验结果、右侧原因分析”的主场景证据。本文件是**待执行计划**，不是已完成结果；具体上机命令和门禁以 `docs/WORKBUDDY_A100_RUNBOOK.md`、`docs/EXPERIMENTS.md` 为准。
 
 ## 1. 已收到的远端结果：先审计，不直接纳入主图

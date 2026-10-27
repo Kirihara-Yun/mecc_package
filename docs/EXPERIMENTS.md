@@ -235,6 +235,8 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `flashmoe_rf_adaptation` | FlashMoE 论文机制适配 | 无损 fp16 | 同三层预算；HBM LRU，CPU 用公开 recency/frequency 特征的确定性等权评分；不是作者训练 FFN | active | `e2e/policy_plugin.py:FlashMoeRFAdaptationPolicy`；原论文未发布训练权重/实现，禁称官方复现 |
 | `<新baseline>` | <类别> | <是/否> | <一句话> | active/inactive | <文件:函数> |
 
+独立 D1 分析（不加入上述 e2e active 集合）：`scripts/motivation_causal_replay.py` 的六个初态/保留实验臂，以及容量 H+C 的普通全局 LRU 参考。它们是抽象缓存模型，不冒称现有 CUDA 策略或外部系统实现；协议见 `HPCA_CAUSAL_REPLAY_PROTOCOL.md`。
+
 ### 7.2 Benchmarks / 指标注册表
 
 > 新增规则：追加一行，标明"哪些级别必采"。模板 §4 结果表按此增列。
@@ -248,6 +250,7 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `hit_pct{hbm,cpu,ssd}` | 三级命中率 | ssd 越低越好 | ✅ | ✅ | ✅ | 缓存计数 |
 | `speedup_vs` | 相对各 baseline 加速比 | 越大越好 | ⛔(不可引用) | ⚠️ | ✅ | 派生 |
 | `<新benchmark>` | <如 MMLU/长上下文吞吐> | <方向> | | | | <位置> |
+| `ssd_demand_misses_per_1000` | 需求到来前来源为 SSD 的次数/千请求 | 越低越好 | — | — | — | 独立 D1 回放；非 e2e 速度证据 |
 
 ### 7.3 实验平台注册表
 
@@ -259,6 +262,7 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `a100-80g` | A100 80GB | L1 / L2 | 历史主表与消融常用 |
 | `rtx5090` | RTX 5090 | L2 | `run_5090.sh` 默认目标 |
 | `<新平台>` | <型号/显存> | <L?> | <NVMe/驱动/注意> |
+| `cpu-abstract-cache` | 仅 CPU 执行缓存状态机 | D1 分析，非 L0/L1/L2 推理 | 合成 trace，保存原始计数，不推导 GPU/SSD 时间 |
 
 ### 7.4 模型矩阵（级别由"是否被迫落 SSD"决定，不由模型名决定）
 

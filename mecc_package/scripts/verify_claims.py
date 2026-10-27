@@ -20,10 +20,13 @@ MECC 数字一致性体检（claim ↔ 证据）
 若本脚本与 PROVENANCE 不一致，以 PROVENANCE 为准并同步修订本文件 CLAIMS。
 """
 import argparse
+import hashlib
 import json
 import os
 import re
 import sys
+from collections import Counter
+import statistics
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # mecc_package/
 REPO_ROOT = os.path.dirname(ROOT)
@@ -113,6 +116,9 @@ CLAIMS = [
 
 # 提醒型：PROVENANCE 登记为 discrepancy/unverified 的数字，禁止当结论引用。
 REMINDERS = [
+    ("X7", "同槽位预算未证明同物理CPU字节；镜像/缓冲/预取公平性待核，历史结果只作观测"),
+    ("X8", "跨流拷贝使用前依赖屏障待A100验证；不能把静态风险当作已证PPL根因"),
+    ("X9", "warmup/生成/PPL命中窗口与预取来源计数待拆分；暂不能据此做性能因果归因"),
     ("X1", "论文表3 DeepSeek e2e（TTFT 7426/tok/s 0.92/1.56×）无对应 JSON —— unverified，禁止外引"),
     ("X2", "Mixtral 平台 [已澄清]：实验先 5090 后 A100，主结果在 A100 跑定（STRATEGY §2.2 佐证）—— 平台真值已写入各 JSON 顶层 platform=A100；compiled_plan.hardware 降级为编译期配置串，不再作平台依据"),
     ("X3", "加速口径：1.33×(综合) 与 1.62×(TPOT) 是两个指标，引用须标口径"),
@@ -246,6 +252,50 @@ def check_reminders():
         _warn(f"{xid}: {desc}")
 
 
+def check_causal_replay():
+    """R1–R4: verify frozen D1 evidence without treating it as hardware speed."""
+    rel = 'raw/motivation_causal_replay_20261027_v2.json'
+    d = _load(rel)
+    if d is None:
+        _fail('R1–R4: D1 causal replay evidence missing')
+        return
+    try:
+        assert d['evidence_level'] == 'D1' and 'mode' not in d
+        assert d['platform'] and d['run_time']
+        source = os.path.join(ROOT, 'scripts', 'motivation_causal_replay.py')
+        with open(source, 'rb') as f:
+            assert hashlib.sha256(f.read()).hexdigest() == d['source_sha256']
+        all_trials = {}
+        count = 0
+        for block in d['workloads']:
+            name = block['workload']; trials = block['paired_trials']
+            assert [t['seed'] for t in trials] == d['config']['seeds']
+            all_trials[name] = trials
+            for t in trials:
+                assert hashlib.sha256(json.dumps(t['trace'], separators=(',', ':')).encode()).hexdigest() == t['trace_sha256']
+                for r in t['results']:
+                    assert sum(r['counts'].values()) == r['requests'] == len(t['trace'])
+                    assert _close(r['ssd_per_1000'], r['counts'].get('ssd', 0)*1000/r['requests'], 1e-10)
+                    assert r['peak_slots']['hbm'] <= d['config']['k_h']
+                    assert r['peak_slots']['cpu'] <= d['config']['k_c']
+                    if r['policy'].endswith('joint'):
+                        assert r['equals_global_lru_each_request'] is True
+                    count += 1
+            for arm, summary in d['summaries'][name].items():
+                rows=[next(r for r in t['results'] if r['policy']==arm) for t in trials]
+                assert _close(statistics.mean(r['ssd_per_1000'] for r in rows), summary['ssd_per_1000_mean'], 1e-10)
+                assert _close(statistics.stdev(r['ssd_per_1000'] for r in rows), summary['ssd_per_1000_sd'], 1e-10)
+                assert _close(statistics.mean(r['startup_misses']['64'] for r in rows), summary['startup64_mean'], 1e-10)
+        for a,b in zip(all_trials['drift'],all_trials['phase_shuffled']):
+            mid=d['config']['phase_requests']
+            assert Counter(a['trace'][:mid]) == Counter(b['trace'][:mid])
+            assert Counter(a['trace'][mid:]) == Counter(b['trace'][mid:])
+        assert count == 192
+        _ok(f'R1–R4: {count} D1 records, source/trace hashes, paired phase histograms, summaries and caps verified; no hardware claim')
+    except (AssertionError, KeyError, TypeError, OSError, ValueError, StopIteration) as exc:
+        _fail(f'R1–R4: D1 evidence inconsistent ({type(exc).__name__}: {exc})')
+
+
 def check_platform_time():
     """SCHEMA §5 铁律：每个真机 JSON 顶层须有 platform + run_time（吸取 5090/A100 平台对不上、时间无记录的教训）。
     缺字段记 WARN（提醒回填），不记 FAIL，避免破坏既有全绿；新实验应一律带齐。"""
@@ -298,6 +348,7 @@ def main():
     print("MECC 数字一致性体检 —— 权威源 docs/PROVENANCE.md\n")
     check_docs_present()
     check_claims()
+    check_causal_replay()
     check_platform_time()
     check_text_claims()
     check_reminders()

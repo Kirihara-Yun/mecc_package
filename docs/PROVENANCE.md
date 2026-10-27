@@ -91,6 +91,21 @@
 | L1 | 三级延迟 HBM/CPU/SSD | **255.8µs / 6504µs / 789739µs** | D2 | `raw/measured_latency_5090.json : tier_latency_us`（**该延迟标尺在 5090 上测得**，文件名即平台；Mixtral 端到端主结果另在 A100，见 M5） | `verified`（延迟标尺平台=5090，与 A100 端到端结果是两个量级实验，引用三级延迟时注明"5090 标尺"） |
 | L2 | per-layer α 实测区间 | **[0.63, 0.91]，均值≈0.72** | D2 | `raw/real_alpha_deepseek.json`（需核字段） | `unverified`（待核对具体字段后转 verified） |
 
+### 3.5 受控因果回放（2026-10-27，D1 合成序列）
+
+证据：`raw/motivation_causal_replay_20261027_v2.json`；CPU 抽象缓存模型，N=16、H=2、C=4，8 个配对种子；没有真实 MoE trace、SSD 时间或 GPU 计算。v1 保留但不与 v2 拼图。`summaries` 全部由 `workloads[*].paired_trials[*].results` 归约，图中标准差是合成种子变异。
+
+| # | Claim | 采信值/字段 | 级别 | 状态 |
+|---|---|---|---|---|
+| R1 | 相同联合策略，不同初始排序的启动段需求未命中 | `summaries.stationary.{random_joint,profile_joint}.startup64_mean`；前 64 请求均值 **4.625 / 3.125 次** | D1 | `verified`；仅此受控生成器，画像收益较小，不证明编译器真机收益 |
+| R2 | 原顺序/阶段内保频乱序的保留规则比较 | `summaries.{drift,phase_shuffled}.{profile_static,profile_independent,profile_joint}.ssd_per_1000_mean`，分别约 **413.21/88.87/57.74** 与 **597.66/557.25/383.79** | D1 | `verified`；包含动态性与去重覆盖变化，不能归因为单独 LRU 更新 |
+| R3 | 2×2 初态×在线规则与 uniform 负对照 | 同文件全部 `workloads` 逐 seed 原值及 `summaries`；保留画像静态失配和较小初态差异 | D1 | `verified`；所有图只报 miss 数与迁移对象数，无真机速度推算 |
+| R4 | 此排他联合模型与普通容量 H+C 的全局 LRU 的 SSD miss 逐请求一致 | `checks.joint_equals_global_lru_demand_misses=true`，运行时逐请求断言 | D1 | `verified`；只检验冻结 trace，不写成新定理或新算法 |
+
+产生命令：`python mecc_package/scripts/motivation_causal_replay.py`。协议：`docs/HPCA_CAUSAL_REPLAY_PROTOCOL.md`。日志：`results/logs/20261027_D1_causal_replay.md`。脚本 SHA、平台、运行时刻与 trace 哈希随 JSON 落盘。
+
+**历史数字与归因强度分开**：M1/M3/M4 的 `verified` 指历史 JSON 数值核对成立；它不自动关闭 X7–X9，也不证明画像编译器的独立贡献。审稿修订版中这些数字仅作历史观测，不能宣称已完成实际字节公平性与同计时窗的机制验证。
+
 ---
 
 ## 4. 矛盾登记表（待解决，按危害排序）
@@ -103,6 +118,9 @@
 | X4 | expert 体积 336MB(实测) vs 1407MB(理论) | SCHEMA vs 论文 §2.1 | 低：口径不同非错误 | 论文注明"理论体积"，JSON 注明"实际张量" |
 | ~~X5~~ → **已澄清·已落字段** | `results/README.md` 顶部硬件写 A100，主表 JSON 写 rtx5090 | README(A100) vs JSON | ~~中~~ → 解决 | **README 的 A100 正确**（DeepSeek 对照场景同在 A100），各 JSON 顶层 `platform=A100` 已与之一致；以 `platform` 字段为平台真值，`hardware` 仅为编译期配置串。同 X2。 |
 | **X6** | 主 JSON 将 `swapmoe.ppl=36.116` 解释为 2-bit 有损，但 e2e `SwapMoePolicy` 复用 fp16 store、无量化调用 | `raw/mixtral_real.json` / README / EXPERIMENTS vs `e2e/tiered_engine.py` / `policy_plugin.py` | **高**：速度、质量与 baseline 身份可能来自不同实现，却被合成一个主 claim | **仓库内追溯失败**：数值与“去掉 HQQ、全 fp16”的 harness 同时首次出现在初始提交 `06381a3`，无更早 revision；已提交日志也无独立 Mixtral 量化命令。M2b 保持 unverified，除非取得外部原始记录或重建独立 baseline。详见 `CONSISTENCY_AUDIT.md` CA-005/006。 |
+| **X7** | 相同 K_H/K_C 未证明相同物理 CPU 字节；CPU 镜像、near-miss 缓冲及预取路径不对称 | `tiered_engine.py:229–236,267–285`；`policy_plugin.py:76–123`；`mixtral_tiered.py:56–60` | **高**：历史收益可能混入容量/预取差异 | `unverified` 公平性；新增峰值 pinned/pageable/镜像/staging 去重记账，统一预取并按实际 cap 重跑；不改历史数字 |
+| **X8** | 独立 copy_stream 上的异步权重在 yield 后被计算，sync_copy 在迭代结束；使用前依赖屏障未见 | `tiered_engine.py:253–268,360–364`；`mixtral_tiered.py:85–92` | **高**：可能出现跨流未就绪读取 | 静态代码风险，根因 `unverified`；先比同步参考与异步 logits/router/token，不能称已证实为异常 PPL 原因 |
+| **X9** | hits 计数混入 warmup/PPL；CPU 预取先插 GPU 再记 HBM hit | `run_e2e.py:210–238`；`tiered_engine.py:351–364` | **高**：命中率无法与生成计时直接因果配对 | `unverified` 性能归因；分离 warmup/prefill/decode/PPL 计数窗口，按 demand 到达前来源计数，记录实际 SSD/H2D/D2H 字节 |
 
 > **处理矛盾的纪律**：发现新矛盾→**先登记到本表（标 `discrepancy`/`unverified`）**，不要静默改数字；
 > 只有重跑实测拿到 D2 证据后，才可更新对照表为 `verified` 并同步改正文。

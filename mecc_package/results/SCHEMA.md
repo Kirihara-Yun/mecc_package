@@ -137,6 +137,8 @@
 
 ## 3. 文件归属速查表（防张冠李戴）
 
+2026-10-27 新增 B 类受控回放扩展：`raw/motivation_causal_replay_20261027_v2.json` 沿用顶层 `workloads`，每项有 `paired_trials`，其中保存每个种子的 `trace`、训练/测试哈希、`results`；`summaries` 为其确定性归约。`evidence_level=D1`、无 `mode`，平台为 CPU 抽象模型；指标是需求未命中/千请求、迁移对象数和逻辑物理槽位，不是毫秒或 tok/s。`mean_unique_objects` 与 `mean_overlap_objects` 统计已计费跨层副本，不能称预算外镜像。v1 历史文件保留，v2 图表只用 v2。详见 `docs/HPCA_CAUSAL_REPLAY_PROTOCOL.md`。
+
 | 文件 | Schema | N | expert_mb | α | 代表 | 备注 |
 |------|--------|---|-----------|---|------|------|
 | `raw/mixtral_real.json` | A 真机 | 8 | 336 | 1.0 | **Mixtral 主场景**（落 SSD） | 主表唯一真机 Mixtral 证据 |

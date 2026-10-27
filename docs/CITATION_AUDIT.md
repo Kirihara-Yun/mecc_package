@@ -15,3 +15,16 @@
 
 本文未使用的旧 bib 条目已从 TeX 删除，避免“列了但未核/未引用”的投稿风险。引用核验不证明
 本仓库 baseline 是相关工作原实现；实验中的适配身份仍以 `CONSISTENCY_AUDIT.md` 为准。
+
+## 2026-10-28 汇报审稿修订补充
+
+| 主来源 | 本次核实并用于第 2 页的事实 |
+|---|---|
+| [Fiddler ICLR2025 正式论文 §3.4](https://proceedings.iclr.cc/paper_files/paper/2025/file/8cd1ce03ea58b3d7dfd809e4d42f08ea-Paper-Conference.pdf) | 离线 expert popularity 参与 GPU 初始常驻选择；不能标为不具备画像预热 |
+| [MoE-Lightning ASPLOS2025 §4.2](https://pschafhalter.com/papers/2025-asplos-moe-lightning.pdf) | 在内存约束下搜索执行/驻留策略；不能宽泛标为不具备预算规划 |
+| [SSD-LLaMA arXiv2609.18110](https://arxiv.org/html/2609.18110) | 三级 SSD/RAM/VRAM 驻留与动态保留 |
+| [FlashMoE arXiv2601.17063v2](https://arxiv.org/html/2601.17063v2) | 面向 SSD I/O 的学习式近期性/频率替换 |
+| [MoE-CORE arXiv2610.01950v1](https://arxiv.org/html/2610.01950v1) | 离线领域画像、历史替换、逐层容量与预取组合；预印本，不虚构会议录用 |
+| [ZipMoE ICML2026 官方页](https://proceedings.mlr.press/v306/yang26ds.html) | 无损压缩与缓存亲和调度协同 |
+
+修订仅核文献机制，不借用其性能数字，不证明本仓库已复现其系统。具体审查意见见 `HPCA_REVIEW_AND_REVISION.md`。
