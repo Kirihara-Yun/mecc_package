@@ -1,0 +1,41 @@
+{
+  "run_id": "a100-l0-nearmiss-20261103",
+  "unit": "mecc-exp-a100-l0-nearmiss-20261103",
+  "created_at": "2026-11-03T12:25:22+08:00",
+  "git_commit": "8a092f2e1cf03da318e53194f079cb796ba1dc67",
+  "config_fingerprint": "7fdf7dcb616a3e3c3de04c438f390f38381893508731b6484f8d39339326290a",
+  "environment": {
+    "hostname": "manager",
+    "python": "3.10.12 (main, Jan  8 2026, 06:52:19) [GCC 11.4.0]",
+    "kernel": "Linux-6.8.0-40-generic-x86_64-with-glibc2.35",
+    "cuda_visible_devices": "unset",
+    "git_dirty": "no"
+  },
+  "cwd": "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/e2e",
+  "gpu": "0",
+  "command": [
+    "/usr/bin/python3",
+    "run_e2e.py",
+    "--smoke",
+    "--store_root",
+    "/tmp/mecc_store_smoke",
+    "--prompt_len",
+    "8",
+    "--max_new_tokens",
+    "2",
+    "--n_prompts",
+    "4",
+    "--policies",
+    "all",
+    "--platform",
+    "cpu-local",
+    "--out",
+    "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/results/runs/a100-l0-nearmiss-20261103/result.json",
+    "--partial_out",
+    "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/results/runs/a100-l0-nearmiss-20261103/partial_result.json",
+    "--status_file",
+    "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/results/runs/a100-l0-nearmiss-20261103/status.json"
+  ],
+  "log": "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/results/runs/a100-l0-nearmiss-20261103/run.log",
+  "output": "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/results/runs/a100-l0-nearmiss-20261103/result.json"
+}

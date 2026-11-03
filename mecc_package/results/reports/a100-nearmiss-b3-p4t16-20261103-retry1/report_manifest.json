@@ -1,0 +1,34 @@
+{
+  "run_id": "a100-nearmiss-b3-p4t16-20261103-retry1",
+  "exported_at": "2026-11-03T12:56:25+08:00",
+  "source_run_dir": "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/results/runs/a100-nearmiss-b3-p4t16-20261103-retry1",
+  "source_log": {
+    "path": "/home/qinzy/mecc_a100_nearmiss_ablation/mecc_package/results/runs/a100-nearmiss-b3-p4t16-20261103-retry1/run.log",
+    "exists": true,
+    "size_bytes": 39012,
+    "sha256": "cbbab3a6acbda4c412c76c50199dbe040fb7143ea528d007f1b7b5554c66cd1d",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1949,
+      "sha256": "aa2ef91a1159f08957097add5606b83765c46825742bcda9695ff4b6cfb25bc8"
+    },
+    "status.json": {
+      "size_bytes": 245,
+      "sha256": "4c7e6de58b28eb9f4000fbde89c136613f1a80bcb0d66debf669c3012f08f2d2"
+    },
+    "result.json": {
+      "size_bytes": 1582,
+      "sha256": "da7d341ba59fa4e1dd084cc47704885b05322bb1d601fcdcc3b1ea947a0568ec"
+    },
+    "partial_result.json": {
+      "size_bytes": 1643,
+      "sha256": "910c99d65eddb8d0b179bf0ae0e555f558960a00c9f63623881e08ee058f07f2"
+    },
+    "run_tail.log": {
+      "size_bytes": 39012,
+      "sha256": "cbbab3a6acbda4c412c76c50199dbe040fb7143ea528d007f1b7b5554c66cd1d"
+    }
+  }
+}
