@@ -117,7 +117,7 @@ CLAIMS = [
 # 提醒型：PROVENANCE 登记为 discrepancy/unverified 的数字，禁止当结论引用。
 REMINDERS = [
     ("X7", "同槽位预算未证明同物理CPU字节；镜像/缓冲/预取公平性待核，历史结果只作观测"),
-    ("X8", "跨流拷贝使用前依赖屏障待A100验证；不能把静态风险当作已证PPL根因"),
+    ("X8", "A100短窗naive/ours一致；swapmoe与独立实现等价性未完成，不能把静态风险当作已证PPL根因"),
     ("X9", "warmup/生成/PPL命中窗口与预取来源计数待拆分；暂不能据此做性能因果归因"),
     ("X1", "论文表3 DeepSeek e2e（TTFT 7426/tok/s 0.92/1.56×）无对应 JSON —— unverified，禁止外引"),
     ("X2", "Mixtral 平台 [已澄清]：实验先 5090 后 A100，主结果在 A100 跑定（STRATEGY §2.2 佐证）—— 平台真值已写入各 JSON 顶层 platform=A100；compiled_plan.hardware 降级为编译期配置串，不再作平台依据"),
