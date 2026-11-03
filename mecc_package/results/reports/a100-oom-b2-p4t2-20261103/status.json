@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-03T10:35:22+08:00",
+  "output": "/home/qinzy/mecc_a100_recovery/mecc_package/results/runs/a100-oom-b2-p4t2-20261103/result.json",
+  "completed_policies": [
+    "ours"
+  ]
+}

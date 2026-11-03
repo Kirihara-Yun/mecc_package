@@ -1,0 +1,26 @@
+{
+  "run_id": "a100-oom-b1-p1t16-20261103",
+  "exported_at": "2026-11-03T10:20:23+08:00",
+  "source_run_dir": "/home/qinzy/mecc_a100_recovery/mecc_package/results/runs/a100-oom-b1-p1t16-20261103",
+  "source_log": {
+    "path": "/home/qinzy/mecc_a100_recovery/mecc_package/results/runs/a100-oom-b1-p1t16-20261103/run.log",
+    "exists": true,
+    "size_bytes": 6632,
+    "sha256": "7bb2e1ec60b0d122e441c57147f2ea04a6cc3992eb3fa96ea15b8a4d7546a718",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1789,
+      "sha256": "d6535585ac82683f12e0b27701767981209bd65ad4aa1abed1f4f73ea2777a86"
+    },
+    "status.json": {
+      "size_bytes": 665,
+      "sha256": "be78187a2b3802de688ced8b7450a167385c687477c2d9819f41c9dbc578b786"
+    },
+    "run_tail.log": {
+      "size_bytes": 6632,
+      "sha256": "7bb2e1ec60b0d122e441c57147f2ea04a6cc3992eb3fa96ea15b8a4d7546a718"
+    }
+  }
+}
