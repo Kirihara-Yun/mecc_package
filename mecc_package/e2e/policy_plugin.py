@@ -76,23 +76,24 @@ class OursPolicy(CachePolicy):
     def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
         if uid in cache.gpu:
             cache.gpu.move_to_end(uid)
-            cache.hits[0] += 1
+            cache.record_hit(0)
             return cache.gpu[uid][0]                     # (gpu_ws, cpu_ws) 对
         if uid in cache.cpu:
             ws_cpu = cache.cpu.pop(uid)
             g = cache._to_gpu(ws_cpu)
-            cache.hits[1] += 1
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
         else:
             # Router-logit 预测预取: near-miss 缓冲命中 → 免冷读, 算 CPU hit
             ws_cpu = cache.consume_nearmiss(uid)
             if ws_cpu is not None:
                 g = cache._to_gpu(ws_cpu)
-                cache.hits[1] += 1                       # 预取命中 = CPU hit
+                cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())   # 预取命中 = CPU hit
             else:
                 # M2: pin 后 H2D 走 DMA (~12GB/s vs ~6GB/s staged)
                 ws_cpu = cache._load_from_ssd(uid).pin()
                 g = cache._to_gpu(ws_cpu)
-                cache.hits[2] += 1
+                cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                                 h2d_bytes=ws_cpu.nbytes())
         cache.gpu[uid] = (g, ws_cpu)
         cache.gpu.move_to_end(uid)
         cache._evict_gpu_if_needed(spill_to_cpu=True)
@@ -107,15 +108,16 @@ class SwapMoePolicy(CachePolicy):
     def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
         if uid in cache.gpu:
             cache.gpu.move_to_end(uid)
-            cache.hits[0] += 1
+            cache.record_hit(0)
             return cache.gpu[uid][0]
         if uid in cache.static_cpu:
             g = cache._to_gpu(cache.static_cpu[uid])
-            cache.hits[1] += 1
+            cache.record_hit(1, h2d_bytes=cache.static_cpu[uid].nbytes())
         else:
             # M2: pin 后 H2D 走 DMA
-            g = cache._to_gpu(cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin())
-            cache.hits[2] += 1
+            ws = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
+            g = cache._to_gpu(ws)
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0), h2d_bytes=ws.nbytes())
         cache.gpu[uid] = (g, None)                        # swapmoe 不保留 CPU 镜像
         cache.gpu.move_to_end(uid)
         cache._evict_gpu_if_needed(spill_to_cpu=False)
@@ -130,11 +132,11 @@ class FiddlerPolicy(CachePolicy):
     def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
         if uid in cache.gpu:
             cache.gpu.move_to_end(uid)
-            cache.hits[0] += 1
+            cache.record_hit(0)
             return cache.gpu[uid][0]
         if uid in cache.cpu:
             cache.cpu.move_to_end(uid)
-            cache.hits[3] += 1    # cpu_compute
+            cache.record_hit(3)    # cpu_compute
             return cache.cpu[uid]
         # M2: pin 后 H2D 走 DMA
         src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
@@ -142,7 +144,7 @@ class FiddlerPolicy(CachePolicy):
         cache.cpu.move_to_end(uid)
         while len(cache.cpu) > cache.k_c:
             cache.cpu.popitem(last=False)
-        cache.hits[2] += 1
+        cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0))
         return src
 
 
@@ -154,11 +156,11 @@ class NaivePolicy(CachePolicy):
     def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
         if uid in cache.gpu:
             cache.gpu.move_to_end(uid)
-            cache.hits[0] += 1
+            cache.record_hit(0)
             return cache.gpu[uid][0]
         # M2: pin 后 H2D 走 DMA
         src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
-        cache.hits[2] += 1
+        cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0), h2d_bytes=src.nbytes())
         return cache._to_gpu(src)
 
 
@@ -200,16 +202,17 @@ class FlashMoeRFAdaptationPolicy(CachePolicy):
         self._record_access(cache, uid)
         if uid in cache.gpu:
             cache.gpu.move_to_end(uid)
-            cache.hits[0] += 1
+            cache.record_hit(0)
             return cache.gpu[uid][0]
         if uid in cache.cpu:
             ws_cpu = cache.cpu.pop(uid)
             g = cache._to_gpu(ws_cpu)
-            cache.hits[1] += 1
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
         else:
             ws_cpu = cache._load_from_ssd(uid).pin()
             g = cache._to_gpu(ws_cpu)
-            cache.hits[2] += 1
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                             h2d_bytes=ws_cpu.nbytes())
         cache.gpu[uid] = (g, ws_cpu)
         cache.gpu.move_to_end(uid)
         while len(cache.gpu) > cache.k_h:
@@ -231,15 +234,17 @@ class OursIOPolicy(CachePolicy):
     def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
         if uid in cache.gpu:
             cache.gpu.move_to_end(uid)
-            cache.hits[0] += 1
+            cache.record_hit(0)
             return cache.gpu[uid]
         if uid in cache.cpu:
             ws_cpu = cache.cpu.pop(uid)
             g = cache._to_gpu(ws_cpu)
-            cache.hits[1] += 1
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
         else:
-            g = cache._to_gpu(cache._load_from_ssd(uid))
-            cache.hits[2] += 1
+            ws_cpu = cache._load_from_ssd(uid)
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                             h2d_bytes=ws_cpu.nbytes())
         cache.gpu[uid] = g
         cache.gpu.move_to_end(uid)
         cache._evict_gpu_if_needed(spill_to_cpu=True)

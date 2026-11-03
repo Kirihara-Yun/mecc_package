@@ -267,11 +267,17 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
             ids = tokenizer(p, return_tensors="pt").input_ids[:, :args.prompt_len].to(device)
         input_tokens = ids.shape[1]
         # warmup 一次 (排除首次 kernel 编译/换页抖动)
+        for c in caches:
+            if c is not None:
+                c.set_phase("warmup")
         warmup_trace = memory_observer("warmup", prompt_index, input_tokens)
         if warmup_trace is not None:
             warmup_trace("before_forward", -1, None)
         _ = measure_latency(model, ids, min(4, args.max_new_tokens), device, use_cache,
                             use_amp=use_amp, trace_fn=warmup_trace)
+        for c in caches:
+            if c is not None:
+                c.set_phase("decode")
         measured_trace = memory_observer("measure", prompt_index, input_tokens)
         if measured_trace is not None:
             measured_trace("before_forward", -1, None)
@@ -286,6 +292,9 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
         "tokens_per_s": round(statistics.mean(l["tokens_per_s"] for l in lat), 6),
     }
     # ---- PPL (无损验证) ----
+    for c in caches:
+        if c is not None:
+            c.set_phase("ppl")
     ppl = None if args.skip_ppl else measure_ppl(
         model, tokenizer, ppl_text, args.ppl_tokens, device, use_cache)
     agg["ppl"] = round(ppl, 3) if ppl is not None else "exact(lossless)"
@@ -300,6 +309,20 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
     s = sum(tot) or 1
     agg["hit_pct"] = {"hbm": round(tot[0]/s*100, 1), "cpu": round(tot[1]/s*100, 1),
                       "ssd": round(tot[2]/s*100, 1), "cpu_compute": round(tot[3]/s*100, 1)}
+    # X9 分阶段命中 + 字节计量
+    phase_hits = {}
+    io_bytes = {"ssd_read": 0, "h2d": 0, "d2h": 0}
+    for c in caches:
+        if c is None:
+            continue
+        for ph, arr in c.phase_hits.items():
+            acc = phase_hits.setdefault(ph, [0, 0, 0, 0])
+            for i in range(4):
+                acc[i] += arr[i]
+        for k in io_bytes:
+            io_bytes[k] += c.io_bytes[k]
+    agg["phase_hits"] = phase_hits
+    agg["io_bytes"] = io_bytes
 
     print(f"  TTFT={agg['ttft_ms']}ms  TPOT={agg['tpot_ms']}ms  "
           f"throughput={agg['tokens_per_s']} tok/s  PPL={agg['ppl']}")

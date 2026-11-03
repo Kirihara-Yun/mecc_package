@@ -211,6 +211,10 @@ class LayerExpertCache:
         self.static_cpu: Dict[ExpertUID, ExpertWeights] = {}               # swapmoe 用: 静态 CPU
         # 命中计数: [hbm, cpu, ssd, cpu_compute(fiddler)]
         self.hits = [0, 0, 0, 0]
+        # X9 分阶段命中 + 字节计量 (warmup/prefill/decode/ppl)
+        self.phase = "warmup"
+        self.phase_hits: Dict[str, list] = {}
+        self.io_bytes = {"ssd_read": 0, "h2d": 0, "d2h": 0}
 
         # ── 策略插件化: 支持字符串名或 CachePolicy 实例 ──
         if isinstance(policy, str):
@@ -373,6 +377,16 @@ class LayerExpertCache:
     def _access(self, uid: ExpertUID) -> ExpertWeights:
         """委托给策略插件处理 expert 访问 (插件化替代 if/elif 平铺)。"""
         return self._policy_plugin.access(self, uid)
+
+    def set_phase(self, phase: str) -> None:
+        self.phase = phase
+
+    def record_hit(self, tier: int, ssd_bytes: int = 0, h2d_bytes: int = 0) -> None:
+        """记录一次命中到全局计数与当前阶段桶, 并累计字节."""
+        self.hits[tier] += 1
+        self.phase_hits.setdefault(self.phase, [0, 0, 0, 0])[tier] += 1
+        self.io_bytes["ssd_read"] += ssd_bytes
+        self.io_bytes["h2d"] += h2d_bytes
 
     def hit_summary(self) -> Dict[str, float]:
         tot = sum(self.hits) or 1
