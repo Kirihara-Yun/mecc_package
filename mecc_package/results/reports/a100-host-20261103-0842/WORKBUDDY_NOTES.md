@@ -43,3 +43,27 @@
 - Gate B：CPU 回归（`run_cpu_checks.py`）+ L0 smoke（launcher dry-run→run→status→report）。
 - Gate C：Mixtral L2 preflight（先 dry-run 校验命令/预算，再实跑；设 `HF_HUB_CACHE`；预计物化 ~90 GB store 耗时较长，可能 OOM）。
 - Gate D：仅当 Gate C PASS 才执行；冻结 50/40 口径复现历史 Mixtral `ours,swapmoe`。
+
+## 执行结果（Gate B / C / D，2026-11-03）
+
+### Gate B — PASS
+- `run_cpu_checks.py` 全 PASS（单元测试 + import 链 + 内部 L0 smoke：5 策略均 `exact(lossless)`，三级命中占比和≈100% 且 ssd>0）。
+- launcher L0（`a100-l0-20261103-0846`）：`status=complete`，覆盖全部 5 个 active 策略，PPL 均无损；result `device=cuda`（smoke 模式在 GPU 可用时默认走 cuda，L0 仅验证逻辑故无碍）；`ours speedup 0.58×` 为随机模型无局部性正常现象，不写入结论。
+- L0 报告已 commit + push（`4a38637`）。
+
+### Gate C — PASS（preflight）
+- run `a100-mixtral-preflight-20261103`：`phase=complete`，`ExecMainStatus=0`，无 OOM/NaN。
+- `mode=real`、`platform=a100-80g`、`config.cold_ssd=true`；仅 `ours,swapmoe`；两者 PPL 均 `exact(lossless)`；store manifest 校验成功（**skip materialization**，store 已由历史实验物化于 `/data/mecc_store_mixtral`）。
+- 指标：ours TTFT=84382.7ms TPOT=13322.83ms 0.02047 tok/s，hit HBM/CPU/SSD=27.3/56.2/16.5；swapmoe TTFT=121214.9ms TPOT=54473.06ms 0.011384 tok/s，hit=40.9/20.6/38.5。**OURS SSD 命中 16.5% < swapmoe 38.5%**（主战场压冷读证据，与历史 17.6% vs 34.5% 一致）。
+- 注：preflight 仅 2 token，1.798× 不应入论文（文档明确"预检数据不进入论文"）。报告已 commit + push（`c204495`）。
+
+### Gate D — FAILED（repro，OOM 78.47 GiB）
+- run `a100-mixtral-repro-20261103`：`phase=failed`，`error_type=OutOfMemoryError`。
+- 错误：`CUDA out of memory ... 78.47 GiB is allocated by PyTorch`（GPU 0 总 79.25 GiB）。**该数字与历史 `a100-mixtral-repro-50g-1-20261011-2148` 的 OOM（78.47 GiB）完全一致** → 历史失败被如实复现。
+- 关键洞察：Gate C preflight（max_new_tokens=2, n_prompts=1, skip_ppl=true）在 50/40 下**不 OOM**，而 Gate D repro（max_new_tokens=16, n_prompts=4, skip_ppl=false）**OOM**。区别在生成长度/激活峰值与 PPL 测量，而非单纯 expert 预算 → 50/40 冻结口径在 A100-80g 上对"16-token 生成"不成立。
+- 按 WORKBUDDY 纪律：**未静默改预算/精度/策略/prompt**，如实回传 FAILED，不重跑。报告（含 status.json failed + run.log OOM）已导出、commit，待 push。
+
+## 偏差与新增风险（更新）
+1. **wikitext 不可达**：Gate D `skip_ppl=false` 尝试下载 WikiText-2 失败（`Connection reset by peer`），回退 `builtin prompts` 测 PPL。因此 D 的 PPL 口径与历史 wikitext PPL（24.57 fp16）不一致；若后续复现 PPL，需以 PROVENANCE 规范谨慎引用，或预先离线备好 wikitext。C 因 `skip_ppl=true` 不受影响。
+2. **HF_HUB_CACHE 注入**：launcher 经 `systemd-run --user` 启动的 unit 不继承 shell env；已用 `systemctl --user set-environment HF_HUB_CACHE=/data/qinzy/models` 使模型离线可解析（已验证 `AutoConfig.from_pretrained(..., local_files_only=True)` 成功，layers=32, experts=8）。
+3. 其余 Gate A 已登记的偏差（默认 state-path 不存在、工作区非空、未从 main pull、store 已物化于 HDD/RAID `rota=true`）仍然成立。
