@@ -24,7 +24,7 @@ E2E = ROOT / "mecc_package" / "e2e"
 CONFIG_KEYS = {"smoke", "model", "state_path", "store_root", "hbm_budget",
                "cpu_budget", "alpha", "prompt_len", "max_new_tokens",
                "n_prompts", "policies", "platform", "skip_ppl", "uniform",
-               "trace_memory"}
+               "trace_memory", "ppl_tokens"}
 CONFIG_DEFAULTS = {
     "smoke": False,
     "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -36,6 +36,7 @@ CONFIG_DEFAULTS = {
     "prompt_len": 64,
     "max_new_tokens": 64,
     "n_prompts": 8,
+    "ppl_tokens": 1024,
     "policies": "all",
     "platform": None,
     "skip_ppl": False,
@@ -121,6 +122,7 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
         "--prompt_len", str(args.prompt_len),
         "--max_new_tokens", str(args.max_new_tokens),
         "--n_prompts", str(args.n_prompts),
+        "--ppl_tokens", str(getattr(args, "ppl_tokens", 1024)),
         "--policies", args.policies,
         "--platform", args.platform,
         "--out", str(output),
@@ -404,6 +406,7 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--prompt-len", type=int, default=None)
     run.add_argument("--max-new-tokens", type=int, default=None)
     run.add_argument("--n-prompts", type=int, default=None)
+    run.add_argument("--ppl-tokens", type=int, default=None)
     run.add_argument("--policies", default=None)
     run.add_argument("--platform", default=None)
     run.add_argument("--config", help="explicit L0/L1/L2 JSON config")

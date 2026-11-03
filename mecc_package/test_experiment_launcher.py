@@ -90,7 +90,8 @@ class ExperimentLauncherTest(unittest.TestCase):
     def test_explicit_configs_are_valid_and_level_safe(self):
         configs = launcher.E2E / "configs"
         for name in ("l0_smoke.json", "l1_deepseek_control.json", "l2_mixtral_main.json",
-                     "diag_a100_50g_p1_t16_trace.json"):
+                     "diag_a100_50g_p1_t16_trace.json",
+                     "diag_a100_copy_readiness_ppl128.json"):
             value = launcher.load_config(str(configs / name))
             self.assertIn(value["level"], ("L0", "L1", "L2"))
         bad = {"level": "L0", "smoke": False}
@@ -105,6 +106,15 @@ class ExperimentLauncherTest(unittest.TestCase):
         command = launcher.build_command(merged, Path("/tmp/trace-result.json"))
         self.assertIn("--trace_memory", command)
         self.assertEqual(command[command.index("--max_new_tokens") + 1], "16")
+
+    def test_copy_readiness_config_uses_short_ppl_window(self):
+        config = launcher.E2E / "configs" / "diag_a100_copy_readiness_ppl128.json"
+        args = launcher.parser().parse_args(["run", "ready", "--config", str(config)])
+        merged = launcher.apply_config(args)
+        command = launcher.build_command(merged, Path("/tmp/ready-result.json"))
+        self.assertEqual(command[command.index("--ppl_tokens") + 1], "128")
+        self.assertEqual(command[command.index("--policies") + 1], "ours,swapmoe")
+        self.assertNotIn("--skip_ppl", command)
 
     def test_explicit_cli_values_override_config(self):
         config = launcher.E2E / "configs" / "l2_mixtral_main.json"

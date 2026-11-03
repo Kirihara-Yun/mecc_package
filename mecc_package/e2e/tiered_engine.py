@@ -360,6 +360,13 @@ class LayerExpertCache:
 
         for uid in uids:
             ws = self._access(uid)          # CPU 命中的已在 gpu 中, 直接命中
+            if ws.w1.device.type == "cuda":
+                # The caller computes with this weight immediately after yield.
+                # Copies launched on _copy_stream must finish before that use.
+                self.sync_copy()
+                compute_stream = torch.cuda.current_stream(self.device)
+                for tensor in (ws.w1, ws.w3, ws.w2):
+                    tensor.record_stream(compute_stream)
             yield uid, ws
         self.sync_copy()
 

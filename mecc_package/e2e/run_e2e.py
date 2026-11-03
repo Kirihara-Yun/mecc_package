@@ -23,6 +23,7 @@ run_e2e.py — 真实 MoE 端到端"编译→运行" harness (DAC 主表生成�
 from __future__ import annotations
 import argparse
 from datetime import datetime
+import hashlib
 import json
 import math
 import os
@@ -488,6 +489,11 @@ def _main():
 
     prompts, ppl_text = load_prompts(
         args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl)
+    prompt_digest = hashlib.sha256(json.dumps(prompts, ensure_ascii=False).encode()).hexdigest()
+    ppl_digest = hashlib.sha256(ppl_text.encode()).hexdigest()
+    ppl_input_tokens = tokenizer(ppl_text, return_tensors="pt").input_ids[:, :args.ppl_tokens].shape[1]
+    print(f"  [inputs] prompts_sha256={prompt_digest} ppl_text_sha256={ppl_digest} "
+          f"ppl_input_tokens={ppl_input_tokens}", flush=True)
     results = {}
     for policy in policies:
         _phase("running_policy", policy=policy, completed_policies=list(results),
