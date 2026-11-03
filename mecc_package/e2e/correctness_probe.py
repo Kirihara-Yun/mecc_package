@@ -109,17 +109,25 @@ def compare(ref, got):
         for i, ((ra, ga), (rb, gb)) in enumerate(zip(
                 ref['routes'][lid], got['routes'][lid])):
             if ra != rb and first_route is None:
-                first_route = {'layer': lid, 'step': i}
+                first_route = {'layer': lid, 'step': i,
+                               'reference_selected': ra, 'observed_selected': rb}
             gate_error = max(gate_error, float((ga-gb).abs().max()))
     logit_error = max(float((a-b).abs().max()) for a,b in zip(
         ref['logits'], got['logits']))
     logit_close = all(bool(torch.allclose(a,b,atol=ATOL,rtol=RTOL))
                       for a,b in zip(ref['logits'],got['logits']))
+    first_logit = next((i for i,(a,b) in enumerate(zip(
+        ref['logits'],got['logits'])) if not torch.allclose(
+            a,b,atol=ATOL,rtol=RTOL)), None)
     token_equal = ref['greedy'] == got['greedy']
+    first_token = next((i for i,(a,b) in enumerate(zip(
+        ref['greedy'],got['greedy'])) if a != b), None)
     return {'passed': first_route is None and logit_close and token_equal,
             'route_equal': first_route is None, 'first_route_mismatch': first_route,
             'logits_allclose': logit_close, 'max_logit_abs_error': logit_error,
+            'first_logit_mismatch_step': first_logit,
             'max_gate_abs_error': gate_error, 'tokens_equal': token_equal,
+            'first_token_mismatch_step': first_token,
             'greedy_tokens': got['greedy']}
 
 def run(args):
