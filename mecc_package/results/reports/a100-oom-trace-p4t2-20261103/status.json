@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-03T11:22:17+08:00",
+  "output": "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-oom-trace-p4t2-20261103/result.json",
+  "completed_policies": [
+    "ours"
+  ]
+}

@@ -1,0 +1,90 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+  [compile] uniform allocation (no per-layer alpha)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=4 (HBM)  K_C=3 (CPU)  SSD=1
+  total HBM for experts ≈ 42.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=76.7%  CPU=18.7%  SSD=4.6%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store_mixtral
+  [store] manifest and all expert files verified, skip materialization.
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-11-03 11:01:37.782756: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-11-03 11:01:37.836911: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-11-03 11:01:39.102766: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[4..4] K_C∈[3..3], total HBM=128 slots
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48308429312, "cuda_peak_allocated_bytes": 48308429312, "cuda_reserved_bytes": 48444211200, "elapsed_ms": null, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "before_forward", "step": -1}
+MEMTRACE {"cpu_nearmiss_bytes": 1056964608, "cuda_allocated_bytes": 50433219584, "cuda_peak_allocated_bytes": 51489918464, "cuda_reserved_bytes": 83347111936, "elapsed_ms": 43522.43, "gpu_nearmiss_bytes": 2113929216, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 9, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "prefill", "step": 0}
+MEMTRACE {"cpu_nearmiss_bytes": 1761607680, "cuda_allocated_bytes": 57479077376, "cuda_peak_allocated_bytes": 57832144896, "cuda_reserved_bytes": 66787999744, "elapsed_ms": 15135.626, "gpu_nearmiss_bytes": 9160359936, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 31, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "decode", "step": 1}
+MEMTRACE {"cpu_nearmiss_bytes": 3170893824, "cuda_allocated_bytes": 62764031488, "cuda_peak_allocated_bytes": 63116416000, "cuda_reserved_bytes": 75948359680, "elapsed_ms": 13756.229, "gpu_nearmiss_bytes": 14445182976, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 50, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "decode", "step": 2}
+MEMTRACE {"cpu_nearmiss_bytes": 2818572288, "cuda_allocated_bytes": 68753628672, "cuda_peak_allocated_bytes": 69105996288, "cuda_reserved_bytes": 79823896576, "elapsed_ms": 7927.544, "gpu_nearmiss_bytes": 20082327552, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 65, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "decode", "step": 3}
+MEMTRACE {"cpu_nearmiss_bytes": 2818572288, "cuda_allocated_bytes": 68751598080, "cuda_peak_allocated_bytes": 69105996288, "cuda_reserved_bytes": 79823896576, "elapsed_ms": null, "gpu_nearmiss_bytes": 20082327552, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 65, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "before_forward", "step": -1}
+MEMTRACE {"cpu_nearmiss_bytes": 1056964608, "cuda_allocated_bytes": 67696974848, "cuda_peak_allocated_bytes": 70161485312, "cuda_reserved_bytes": 78414610432, "elapsed_ms": 67939.564, "gpu_nearmiss_bytes": 16559112192, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 50, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "prefill", "step": 0}
+MEMTRACE {"cpu_nearmiss_bytes": 2113929216, "cuda_allocated_bytes": 70867295744, "cuda_peak_allocated_bytes": 71924998144, "cuda_reserved_bytes": 77357645824, "elapsed_ms": 12840.432, "gpu_nearmiss_bytes": 20434649088, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 64, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "decode", "step": 1}
+MEMTRACE {"cpu_nearmiss_bytes": 3170893824, "cuda_allocated_bytes": 75799928320, "cuda_peak_allocated_bytes": 76504609280, "cuda_reserved_bytes": 80176218112, "elapsed_ms": 9805.507, "gpu_nearmiss_bytes": 25367150592, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 81, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "decode", "step": 2}
+MEMTRACE {"cpu_nearmiss_bytes": 2818572288, "cuda_allocated_bytes": 78266310144, "cuda_peak_allocated_bytes": 78618677760, "cuda_reserved_bytes": 78766931968, "elapsed_ms": 4643.652, "gpu_nearmiss_bytes": 28538044416, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 89, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "decode", "step": 3}
+MEMTRACE {"cpu_nearmiss_bytes": 2113929216, "cuda_allocated_bytes": 82141978112, "cuda_peak_allocated_bytes": 82494345728, "cuda_reserved_bytes": 83347111936, "elapsed_ms": 3458.749, "gpu_nearmiss_bytes": 33470545920, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 101, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "decode", "step": 4}
+MEMTRACE {"cpu_nearmiss_bytes": 2466250752, "cuda_allocated_bytes": 84256018432, "cuda_peak_allocated_bytes": 84256302592, "cuda_reserved_bytes": 84404076544, "elapsed_ms": null, "gpu_nearmiss_bytes": 35936796672, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 109, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "oom_decode", "step": 5}
+Traceback (most recent call last):
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/run_e2e.py", line 556, in <module>
+    main()
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/run_e2e.py", line 503, in main
+    return _main()
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/run_e2e.py", line 495, in _main
+    results[policy] = run_policy(policy, args, plan, store, device, prompts, ppl_text,
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/run_e2e.py", line 277, in run_policy
+    lat.append(measure_latency(model, ids, args.max_new_tokens, device, use_cache,
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/run_e2e.py", line 112, in measure_latency
+    logits, past = _forward(model, next_tok, past, True, use_amp=use_amp)
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/run_e2e.py", line 70, in _forward
+    out = model(ids, past_key_values=past, use_cache=True)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 943, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 747, in forward
+    outputs: MoeModelOutputWithPast = self.model(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/utils/generic.py", line 943, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 539, in forward
+    layer_outputs = decoder_layer(
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/modeling_layers.py", line 83, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/transformers/models/mixtral/modeling_mixtral.py", line 365, in forward
+    hidden_states, router_logits = self.block_sparse_moe(hidden_states)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/qinzy/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/mixtral_tiered.py", line 60, in forward
+    self.experts.prefetch_near_miss([(self.layer_id, e) for e in near_miss])
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/tiered_engine.py", line 282, in prefetch_near_miss
+    self._nearmiss_buf[uid] = ws_cpu.to(self.device, non_blocking=True)
+  File "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e/tiered_engine.py", line 62, in to
+    self.w1.to(device, non_blocking=non_blocking),
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 112.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 16.75 MiB is free. Including non-PyTorch memory, this process has 79.12 GiB memory in use. Of the allocated memory 78.47 GiB is allocated by PyTorch, and 141.20 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

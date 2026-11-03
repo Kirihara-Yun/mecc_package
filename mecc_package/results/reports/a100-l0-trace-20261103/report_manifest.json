@@ -1,0 +1,34 @@
+{
+  "run_id": "a100-l0-trace-20261103",
+  "exported_at": "2026-11-03T11:01:29+08:00",
+  "source_run_dir": "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-l0-trace-20261103",
+  "source_log": {
+    "path": "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-l0-trace-20261103/run.log",
+    "exists": true,
+    "size_bytes": 2830,
+    "sha256": "6e8a4b6befd20eb92bee80a1fb6c2ee141a73577fac98d4b365adebc6f54985f",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1467,
+      "sha256": "ba10a8c725b16a660d62063dccdf4e1f815dc1552f26a6e01239e0e9f16c5256"
+    },
+    "status.json": {
+      "size_bytes": 182,
+      "sha256": "c8bff2732f0cdb1f17f7a4515f74285fd600d7be9f7161e3951c5b7c65fc0274"
+    },
+    "result.json": {
+      "size_bytes": 2152,
+      "sha256": "45ed90eaae7ab0fcf27c2bab563a42ee6ef88a57baef7fdf35e3fc6a6ba30e1d"
+    },
+    "partial_result.json": {
+      "size_bytes": 2286,
+      "sha256": "790ad761850ec5c9493914389989af11e9134d2813405bb96c262a0d818564d7"
+    },
+    "run_tail.log": {
+      "size_bytes": 2830,
+      "sha256": "6e8a4b6befd20eb92bee80a1fb6c2ee141a73577fac98d4b365adebc6f54985f"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "run_id": "a100-l0-trace-20261103",
+  "unit": "mecc-exp-a100-l0-trace-20261103",
+  "created_at": "2026-11-03T11:00:37+08:00",
+  "git_commit": "1c7197176525d29d981652ab804e6731236e560d",
+  "config_fingerprint": "aa5d81d5f58fcbcdf787274be7e7ee6ca5534fd7eb9b53dc3eb4b13186ad8f6a",
+  "environment": {
+    "hostname": "manager",
+    "python": "3.10.12 (main, Jan  8 2026, 06:52:19) [GCC 11.4.0]",
+    "kernel": "Linux-6.8.0-40-generic-x86_64-with-glibc2.35",
+    "cuda_visible_devices": "unset",
+    "git_dirty": "no"
+  },
+  "cwd": "/home/qinzy/mecc_a100_memory_trace/mecc_package/e2e",
+  "gpu": "0",
+  "command": [
+    "/usr/bin/python3",
+    "run_e2e.py",
+    "--smoke",
+    "--store_root",
+    "/tmp/mecc_store_smoke",
+    "--prompt_len",
+    "8",
+    "--max_new_tokens",
+    "2",
+    "--n_prompts",
+    "4",
+    "--policies",
+    "all",
+    "--platform",
+    "cpu-local",
+    "--out",
+    "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-l0-trace-20261103/result.json",
+    "--partial_out",
+    "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-l0-trace-20261103/partial_result.json",
+    "--status_file",
+    "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-l0-trace-20261103/status.json"
+  ],
+  "log": "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-l0-trace-20261103/run.log",
+  "output": "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-l0-trace-20261103/result.json"
+}

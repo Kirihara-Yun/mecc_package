@@ -1,0 +1,34 @@
+{
+  "run_id": "a100-oom-trace-p4t2-20261103",
+  "exported_at": "2026-11-03T11:53:33+08:00",
+  "source_run_dir": "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-oom-trace-p4t2-20261103",
+  "source_log": {
+    "path": "/home/qinzy/mecc_a100_memory_trace/mecc_package/results/runs/a100-oom-trace-p4t2-20261103/run.log",
+    "exists": true,
+    "size_bytes": 13060,
+    "sha256": "b600ab565f814d4af7d6a08a856832721fd2a64b252639820172ae90d9d65e11",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1848,
+      "sha256": "c23542c690aa95e9027c6cc2fc41237cb6b67c311ceff5553439224310f8f290"
+    },
+    "status.json": {
+      "size_bytes": 230,
+      "sha256": "92c923fad702b584169e2c46ce69a9278c8d43c578c49710c01ae20e0a0d6332"
+    },
+    "result.json": {
+      "size_bytes": 1582,
+      "sha256": "f688647037efaa38e396fd34c1b02eecd9e4b02d7206b7088bd9d83bef441689"
+    },
+    "partial_result.json": {
+      "size_bytes": 1643,
+      "sha256": "2e8ccff830b3f9784603edff04231c192d5503243e7fef989e02115e83bf9632"
+    },
+    "run_tail.log": {
+      "size_bytes": 13060,
+      "sha256": "b600ab565f814d4af7d6a08a856832721fd2a64b252639820172ae90d9d65e11"
+    }
+  }
+}
