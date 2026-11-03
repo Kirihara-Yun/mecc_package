@@ -1,0 +1,9 @@
+Result=success
+ExecMainStatus=0
+ControlGroup=
+MemoryHigh=infinity
+MemoryMax=infinity
+MemorySwapMax=infinity
+ManagedOOMSwap=auto
+ManagedOOMMemoryPressure=auto
+ActiveState=inactive

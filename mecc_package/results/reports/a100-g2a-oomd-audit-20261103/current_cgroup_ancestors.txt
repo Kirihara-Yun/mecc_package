@@ -1,0 +1,63 @@
+=== /user.slice/user-1002.slice/session-17857.scope / memory.current ===
+3551498240
+=== /user.slice/user-1002.slice/session-17857.scope / memory.max ===
+max
+=== /user.slice/user-1002.slice/session-17857.scope / memory.high ===
+max
+=== /user.slice/user-1002.slice/session-17857.scope / memory.swap.current ===
+0
+=== /user.slice/user-1002.slice/session-17857.scope / memory.swap.max ===
+max
+=== /user.slice/user-1002.slice/session-17857.scope / memory.events ===
+low 0
+high 0
+max 0
+oom 0
+oom_kill 0
+oom_group_kill 0
+=== /user.slice/user-1002.slice/session-17857.scope / memory.pressure ===
+some avg10=0.00 avg60=0.00 avg300=0.00 total=1
+full avg10=0.00 avg60=0.00 avg300=0.00 total=1
+=== /user.slice/user-1002.slice / memory.current ===
+367848591360
+=== /user.slice/user-1002.slice / memory.max ===
+max
+=== /user.slice/user-1002.slice / memory.high ===
+max
+=== /user.slice/user-1002.slice / memory.swap.current ===
+278528
+=== /user.slice/user-1002.slice / memory.swap.max ===
+max
+=== /user.slice/user-1002.slice / memory.events ===
+low 0
+high 0
+max 0
+oom 0
+oom_kill 0
+oom_group_kill 0
+=== /user.slice/user-1002.slice / memory.pressure ===
+some avg10=0.00 avg60=0.00 avg300=0.06 total=1568929231
+full avg10=0.00 avg60=0.00 avg300=0.06 total=1568912030
+=== /user.slice / memory.current ===
+611754151936
+=== /user.slice / memory.max ===
+max
+=== /user.slice / memory.high ===
+max
+=== /user.slice / memory.swap.current ===
+76554240
+=== /user.slice / memory.swap.max ===
+max
+=== /user.slice / memory.events ===
+low 0
+high 0
+max 0
+oom 0
+oom_kill 11
+oom_group_kill 0
+=== /user.slice / memory.pressure ===
+some avg10=0.00 avg60=0.00 avg300=0.01 total=16610156982
+full avg10=0.00 avg60=0.00 avg300=0.01 total=16170973630
+=== / / memory.pressure ===
+some avg10=0.00 avg60=0.00 avg300=0.01 total=23377492057
+full avg10=0.00 avg60=0.00 avg300=0.01 total=23349017216
