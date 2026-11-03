@@ -1,3 +1,4 @@
+# ---------- Python ----------
 __pycache__/
 *.pyc
 *.pyo
@@ -6,8 +7,35 @@ __pycache__/
 build/
 dist/
 *.egg-info/
-.DS_Store
 
+# ---------- OS / IDE ----------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---------- GPU launcher working data ----------
 # GPU launcher working data can contain very large logs and partial artifacts.
 # Use `experiment_launcher.py report <run-id>` to create a compact tracked handoff.
 mecc_package/results/runs/
+
+# ---------- 论文/PPT 构建中间产物 ----------
+# LaTeX 中间产物（保留 .bbl：它是可复现编译所需的参考文献产物）
+mecc_package/paper/**/*.aux
+mecc_package/paper/**/*.log
+mecc_package/paper/**/*.blg
+mecc_package/paper/**/*.out
+mecc_package/paper/**/*.fls
+mecc_package/paper/**/*.fdb_latexmk
+mecc_package/paper/**/*.synctex.gz
+mecc_package/paper/**/*.toc
+mecc_package/paper/**/*.nav
+mecc_package/paper/**/*.snm
+mecc_package/paper/**/*.vrb
+
+# 打包/归档压缩包（可由脚本重建，体积大且不可 diff）
+mecc_package/paper/**/*.zip
+
+# 已废弃的旧演示/汇报产物归档（约 70MB，含大量 build log 与中间 zip）
+# 仅本地保留：其中仍有价值的内容已在 git 历史中，不入库以免污染仓库体积。
+mecc_package/paper/archive_unused_20261102/
