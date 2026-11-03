@@ -116,6 +116,21 @@ class ExperimentLauncherTest(unittest.TestCase):
         self.assertEqual(command[command.index("--policies") + 1], "ours,swapmoe")
         self.assertNotIn("--skip_ppl", command)
 
+    def test_correctness_config_launches_frozen_probe_and_offline_fixture(self):
+        config = launcher.E2E / "configs" / "diag_a100_g1_correctness_v1.json"
+        args = launcher.parser().parse_args([
+            "run", "g1", "--config", str(config),
+            "--state-path", "/data/model-snapshot",
+        ])
+        merged = launcher.apply_config(args)
+        command = launcher.build_command(merged, Path("/tmp/g1-result.json"))
+        self.assertEqual(command[1], "correctness_probe.py")
+        self.assertEqual(command[command.index("--policies") + 1],
+                         "naive,ours,swapmoe")
+        self.assertEqual(command[command.index("--ppl_tokens") + 1], "128")
+        self.assertTrue(Path(command[command.index("--fixtures") + 1]).is_file())
+        self.assertNotIn("--skip_ppl", command)
+
     def test_explicit_cli_values_override_config(self):
         config = launcher.E2E / "configs" / "l2_mixtral_main.json"
         args = launcher.parser().parse_args([

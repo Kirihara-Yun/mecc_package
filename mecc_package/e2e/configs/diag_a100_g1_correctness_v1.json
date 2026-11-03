@@ -1,0 +1,21 @@
+{
+  "level": "L2",
+  "job": "correctness",
+  "smoke": false,
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "a100-80g",
+  "state_path": null,
+  "store_root": "/data/mecc_store_mixtral",
+  "fixtures": "mecc_package/e2e/fixtures/correctness_diagnostic_v1.json",
+  "hbm_budget": 50.0,
+  "cpu_budget": 40.0,
+  "alpha": 1.0,
+  "prompt_len": 64,
+  "max_new_tokens": 3,
+  "n_prompts": 2,
+  "ppl_tokens": 128,
+  "policies": "naive,ours,swapmoe",
+  "skip_ppl": false,
+  "uniform": true,
+  "trace_memory": false
+}

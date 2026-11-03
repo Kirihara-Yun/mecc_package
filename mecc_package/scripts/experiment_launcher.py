@@ -24,8 +24,10 @@ E2E = ROOT / "mecc_package" / "e2e"
 CONFIG_KEYS = {"smoke", "model", "state_path", "store_root", "hbm_budget",
                "cpu_budget", "alpha", "prompt_len", "max_new_tokens",
                "n_prompts", "policies", "platform", "skip_ppl", "uniform",
-               "trace_memory", "ppl_tokens"}
+               "trace_memory", "ppl_tokens", "job", "fixtures"}
 CONFIG_DEFAULTS = {
+    "job": "e2e",
+    "fixtures": None,
     "smoke": False,
     "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
     "state_path": None,
@@ -105,6 +107,27 @@ def config_fingerprint(command: list[str], commit: str) -> str:
 
 
 def build_command(args: argparse.Namespace, output: Path) -> list[str]:
+    if getattr(args, "job", "e2e") == "correctness":
+        if args.smoke or not args.state_path or not args.fixtures:
+            raise ValueError("correctness job requires real model, state_path, and fixtures")
+        return [
+            sys.executable, "correctness_probe.py",
+            "--model", args.model,
+            "--state_path", str(Path(args.state_path).resolve()),
+            "--store_root", str(Path(args.store_root).resolve()),
+            "--fixtures", str(Path(args.fixtures).resolve()),
+            "--hbm_budget", str(args.hbm_budget),
+            "--cpu_budget", str(args.cpu_budget),
+            "--alpha", str(args.alpha),
+            "--max_new_tokens", str(args.max_new_tokens),
+            "--n_prompts", str(args.n_prompts),
+            "--ppl_tokens", str(args.ppl_tokens),
+            "--policies", args.policies,
+            "--platform", args.platform,
+            "--out", str(output),
+            "--partial_out", str(output.parent / "partial_result.json"),
+            "--status_file", str(output.parent / "status.json"),
+        ]
     command = [sys.executable, "run_e2e.py"]
     if args.smoke:
         command += ["--smoke"]
@@ -153,6 +176,13 @@ def load_config(path: str) -> dict:
         raise ValueError("L0 config must set smoke=true")
     if value["level"] != "L0" and value["smoke"]:
         raise ValueError("L1/L2 config must set smoke=false")
+    if value.get("job", "e2e") not in ("e2e", "correctness"):
+        raise ValueError("job must be e2e or correctness")
+    if value.get("job") == "correctness":
+        if value["level"] != "L2" or value.get("skip_ppl") or not value.get("fixtures"):
+            raise ValueError("correctness job requires L2, skip_ppl=false, fixtures")
+        if value.get("policies") != "naive,ours,swapmoe":
+            raise ValueError("correctness policies must be naive,ours,swapmoe")
     return value
 
 

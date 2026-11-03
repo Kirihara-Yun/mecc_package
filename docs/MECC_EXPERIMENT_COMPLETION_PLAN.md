@@ -113,4 +113,4 @@
 
 每个图格的报告至少包含：`run.json`、`status.json`、`result.json`、命令、输入/模型 hash、计数器原始行、日志尾、失败原因及重复编号。大型完整日志留远端，不提交权重和 store。回传格式为 `branch / commit / run IDs / 完成与失败图格 / 阻塞项 / 下一步建议`。
 
-**下一份可立即实施的本地工作包**：实现 G1 的逐层路由/logits/token 一致性工具与离线输入清单；随后实现 G2 的物理字节及分相位计量。完成 CPU 检查、代码审查和冻结配置后，再发布给 Workbuddy 的下一轮 A100 执行文档。
+**当前可执行工作包**：[WORKBUDDY_A100_G1_CORRECTNESS.md](WORKBUDDY_A100_G1_CORRECTNESS.md) 已冻结同仓库 fp16 策略的逐层路由/logits/token 和离线诊断 PPL 比较。其结果只关闭 G1 的第一层内部一致性门禁；随后由本地实现 G2 的物理字节及分相位计量，再发布下一轮 A100 执行文档。
