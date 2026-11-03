@@ -1,0 +1,30 @@
+{
+  "run_id": "a100-g1-correctness-20261103",
+  "exported_at": "2026-11-03T17:07:55+08:00",
+  "source_run_dir": "/home/qinzy/mecc_a100_g1/mecc_package/results/runs/a100-g1-correctness-20261103",
+  "source_log": {
+    "path": "/home/qinzy/mecc_a100_g1/mecc_package/results/runs/a100-g1-correctness-20261103/run.log",
+    "exists": true,
+    "size_bytes": 2385,
+    "sha256": "8c2d7e1dadca1fbf42f3caa91752d2d0c889762ebdb59dc986c5375edd44a0ae",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1863,
+      "sha256": "950bd79824bdead208e25defd01896dd5fcb608e9e8b6622041e3478dfa3158b"
+    },
+    "status.json": {
+      "size_bytes": 162,
+      "sha256": "cc753b23f71df6c70499b5394b3d95db3954b4e1f075bfaf269435c222b21b0e"
+    },
+    "partial_result.json": {
+      "size_bytes": 7597,
+      "sha256": "85d3d73c0852b21342f18d84dd3cbd6dfa5ced82dedc821b28887c690f4653ac"
+    },
+    "run_tail.log": {
+      "size_bytes": 2385,
+      "sha256": "8c2d7e1dadca1fbf42f3caa91752d2d0c889762ebdb59dc986c5375edd44a0ae"
+    }
+  }
+}

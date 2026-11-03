@@ -1,0 +1,53 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+----------------------------------------------------------------------
+COMPILED PLAN  model=smoke
+  α=1.0  layers=2  experts/layer=8  expert=0.2MB
+  per-layer  K_H=2 (HBM)  K_C=3 (CPU)  SSD=3
+  total HBM for experts ≈ 0.0GB | CPU ≈ 0.0GB
+  predicted hit  HBM=36.8%  CPU=30.7%  SSD=32.5%
+----------------------------------------------------------------------
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  TTFT=22.99ms  TPOT=24.12ms  throughput=41.831983 tok/s  PPL=exact(lossless)
+  hit: HBM=0.5% CPU=2.0% SSD=97.5% CPUcompute=0.0%
+
+======================================================================
+[POLICY = swapmoe]
+======================================================================
+  TTFT=17.72ms  TPOT=18.38ms  throughput=54.936249 tok/s  PPL=exact(lossless)
+  hit: HBM=0.3% CPU=37.4% SSD=62.3% CPUcompute=0.0%
+
+======================================================================
+[POLICY = fiddler]
+======================================================================
+  TTFT=17.8ms  TPOT=20.59ms  throughput=50.559203 tok/s  PPL=exact(lossless)
+  hit: HBM=26.6% CPU=0.0% SSD=72.1% CPUcompute=1.3%
+
+======================================================================
+[POLICY = naive]
+======================================================================
+  TTFT=17.98ms  TPOT=19.41ms  throughput=52.311638 tok/s  PPL=exact(lossless)
+  hit: HBM=27.2% CPU=0.0% SSD=72.8% CPUcompute=0.0%
+
+======================================================================
+[POLICY = flashmoe_rf_adaptation]
+======================================================================
+  TTFT=22.8ms  TPOT=23.3ms  throughput=43.098436 tok/s  PPL=exact(lossless)
+  hit: HBM=0.7% CPU=15.1% SSD=84.2% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /home/qinzy/mecc_a100_g1/mecc_package/results/runs/a100-g1-l0-20261103/result.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours            22.99      24.12 41.831983 exact(lossless)
+swapmoe         17.72      18.38 54.936249 exact(lossless)
+fiddler          17.8      20.59 50.559203 exact(lossless)
+naive           17.98      19.41 52.311638 exact(lossless)
+flashmoe_rf_adaptation       22.8       23.3 43.098436 exact(lossless)
+  OURS speedup: vs swapmoe 0.761× | vs fiddler 0.827× | vs naive 0.8× | vs flashmoe_rf_adaptation 0.971×
+======================================================================

@@ -1,0 +1,18 @@
+[inputs] {"source": "repository_diagnostic_not_benchmark", "file_sha256": "913c816407bfd5fa9aacb8476f34648238dd749ff384c1bd96876f8fef6fa3f6", "prompts_sha256": "97b17e92cf83e6f8b47d6a5ee1a13fa44ca48e4e1d62cbb85ff063a7aca17eda", "ppl_text_sha256": "f1fb591f14d55de30d72c69db05b8e3bc22346fa60c838fb04561812cbcc5fc5", "prompt_input_tokens": [21, 22], "prompt_token_sha256": ["5547e1b99f592f0e67b637d9750bb71861ac4b7e34414d2a98fe74a5554591cd", "59146108b04fda85714597502b92d568d4ac4edf9dc5614d0ca0acace1af03aa"], "ppl_input_tokens": 128, "ppl_token_sha256": "fadd0d381efe79235f217f339ea0efb89b4a9801a719bfb47e557eb38a9c2538"}
+[phase] running_policy {'policy': 'naive', 'completed_policies': []}
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-11-03 16:42:44.857967: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-11-03 16:42:44.912163: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-11-03 16:42:46.161913: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] naive: per-layer adaptive K_H∈[4..4] K_C∈[3..3], total HBM=128 slots
+[policy] naive passed= True ppl= 20.443230408996836
+[phase] running_policy {'policy': 'ours', 'completed_policies': ['naive']}
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[4..4] K_C∈[3..3], total HBM=128 slots
+[policy] ours passed= True ppl= 20.443230408996836
+[phase] running_policy {'policy': 'swapmoe', 'completed_policies': ['naive', 'ours']}
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+  [build] loaded 227 trunk/gate tensors → cuda
