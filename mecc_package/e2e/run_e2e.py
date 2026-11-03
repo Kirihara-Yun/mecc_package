@@ -81,33 +81,74 @@ from contextlib import nullcontext
 # ════════════════════════════════════════════════════════════════════
 
 @torch.no_grad()
-def measure_latency(model, input_ids, max_new_tokens, device, use_cache, use_amp=False):
+def measure_latency(model, input_ids, max_new_tokens, device, use_cache, use_amp=False,
+                    trace_fn=None):
     sync(device)
     # ---- prefill: 首 token (TTFT) ----
+    if trace_fn is not None:
+        torch.cuda.reset_peak_memory_stats(device)
     t0 = time.perf_counter()
-    logits, past = _forward(model, input_ids, None, use_cache, use_amp=use_amp)
+    try:
+        logits, past = _forward(model, input_ids, None, use_cache, use_amp=use_amp)
+    except torch.cuda.OutOfMemoryError:
+        if trace_fn is not None:
+            trace_fn("oom_prefill", 0, None)
+        raise
     next_tok = logits[:, -1].argmax(-1, keepdim=True)
     sync(device)
     ttft = time.perf_counter() - t0
+    if trace_fn is not None:
+        trace_fn("prefill", 0, ttft)
 
     # ---- decode: 后续每 token (TPOT) ----
     step_times = []
     seq = input_ids
-    for _ in range(max_new_tokens - 1):
+    for step in range(1, max_new_tokens):
+        if trace_fn is not None:
+            torch.cuda.reset_peak_memory_stats(device)
         t0 = time.perf_counter()
-        if use_cache:
-            logits, past = _forward(model, next_tok, past, True, use_amp=use_amp)
-        else:
-            seq = torch.cat([seq, next_tok], dim=1)
-            logits, _ = _forward(model, seq, None, False, use_amp=use_amp)
+        try:
+            if use_cache:
+                logits, past = _forward(model, next_tok, past, True, use_amp=use_amp)
+            else:
+                seq = torch.cat([seq, next_tok], dim=1)
+                logits, _ = _forward(model, seq, None, False, use_amp=use_amp)
+        except torch.cuda.OutOfMemoryError:
+            if trace_fn is not None:
+                trace_fn("oom_decode", step, None)
+            raise
         next_tok = logits[:, -1].argmax(-1, keepdim=True)
         sync(device)
-        step_times.append(time.perf_counter() - t0)
+        elapsed = time.perf_counter() - t0
+        step_times.append(elapsed)
+        if trace_fn is not None:
+            trace_fn("decode", step, elapsed)
 
     tpot = statistics.mean(step_times) if step_times else ttft
     total = ttft + sum(step_times)
     return {"ttft_ms": ttft * 1e3, "tpot_ms": tpot * 1e3,
             "total_s": total, "tokens_per_s": max_new_tokens / total}
+
+
+def cache_memory_snapshot(caches):
+    """Count live expert tensor references by tier for an opt-in diagnostic trace."""
+    totals = {"gpu_pool_bytes": 0, "gpu_prefetch_bytes": 0,
+              "gpu_nearmiss_bytes": 0, "cpu_nearmiss_bytes": 0,
+              "nearmiss_entries": 0, "prefetch_entries": 0}
+    for cache in caches:
+        if cache is None:
+            continue
+        totals["gpu_pool_bytes"] += sum(ws.nbytes() for ws, _ in cache.gpu.values())
+        pending = getattr(cache, "_prefetch_buf", {})
+        totals["prefetch_entries"] += len(pending)
+        totals["gpu_prefetch_bytes"] += sum(
+            ws.nbytes() for ws in pending.values() if ws.w1.device.type == "cuda")
+        near = getattr(cache, "_nearmiss_buf", {})
+        totals["nearmiss_entries"] += len(near)
+        for ws in near.values():
+            key = "gpu_nearmiss_bytes" if ws.w1.device.type == "cuda" else "cpu_nearmiss_bytes"
+            totals[key] += ws.nbytes()
+    return totals
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -200,18 +241,41 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
     # ── torch.compile 不适合动态 MoE (会触发达纳错误), 跳过 ──
     # cudnn.benchmark + TF32 在 main() 中已启用, 所有策略自动受益
 
+    def memory_observer(run_phase, prompt_index, input_tokens):
+        if not getattr(args, "trace_memory", False) or device.type != "cuda":
+            return None
+
+        def record(stage, step, elapsed_s):
+            row = {"policy": policy, "run_phase": run_phase, "prompt_index": prompt_index,
+                   "input_tokens": input_tokens, "stage": stage, "step": step,
+                   "elapsed_ms": None if elapsed_s is None else round(elapsed_s * 1e3, 3),
+                   "cuda_allocated_bytes": torch.cuda.memory_allocated(device),
+                   "cuda_reserved_bytes": torch.cuda.memory_reserved(device),
+                   "cuda_peak_allocated_bytes": torch.cuda.max_memory_allocated(device),
+                   **cache_memory_snapshot(caches)}
+            print("MEMTRACE " + json.dumps(row, sort_keys=True), flush=True)
+
+        return record
+
     # ---- 计时: 每个 prompt 跑一次, 取均值 ----
     lat = []
-    for p in prompts:
+    for prompt_index, p in enumerate(prompts):
         if args.smoke:
             ids = torch.randint(0, smoke_cfg["vocab"], (1, args.prompt_len), device=device)
         else:
             ids = tokenizer(p, return_tensors="pt").input_ids[:, :args.prompt_len].to(device)
+        input_tokens = ids.shape[1]
         # warmup 一次 (排除首次 kernel 编译/换页抖动)
+        warmup_trace = memory_observer("warmup", prompt_index, input_tokens)
+        if warmup_trace is not None:
+            warmup_trace("before_forward", -1, None)
         _ = measure_latency(model, ids, min(4, args.max_new_tokens), device, use_cache,
-                            use_amp=use_amp)
+                            use_amp=use_amp, trace_fn=warmup_trace)
+        measured_trace = memory_observer("measure", prompt_index, input_tokens)
+        if measured_trace is not None:
+            measured_trace("before_forward", -1, None)
         lat.append(measure_latency(model, ids, args.max_new_tokens, device, use_cache,
-                                   use_amp=use_amp))
+                                   use_amp=use_amp, trace_fn=measured_trace))
 
     agg = {
         "ttft_ms": round(statistics.mean(l["ttft_ms"] for l in lat), 2),
@@ -298,6 +362,8 @@ def _main():
     ap.add_argument("--n_prompts", type=int, default=8)
     ap.add_argument("--ppl_tokens", type=int, default=1024)
     ap.add_argument("--skip_ppl", action="store_true")
+    ap.add_argument("--trace_memory", action="store_true",
+                    help="诊断用：每个 prefill/decode 步把 CUDA 与专家缓冲占用写入日志")
     ap.add_argument("--cold_ssd", action="store_true", default=True, help="SSD 真冷读 (默认开)")
     ap.add_argument("--warm_ssd", dest="cold_ssd", action="store_false")
     ap.add_argument("--uniform", action="store_true", default=False,

@@ -89,13 +89,22 @@ class ExperimentLauncherTest(unittest.TestCase):
 
     def test_explicit_configs_are_valid_and_level_safe(self):
         configs = launcher.E2E / "configs"
-        for name in ("l0_smoke.json", "l1_deepseek_control.json", "l2_mixtral_main.json"):
+        for name in ("l0_smoke.json", "l1_deepseek_control.json", "l2_mixtral_main.json",
+                     "diag_a100_50g_p1_t16_trace.json"):
             value = launcher.load_config(str(configs / name))
             self.assertIn(value["level"], ("L0", "L1", "L2"))
         bad = {"level": "L0", "smoke": False}
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "bad.json"; path.write_text(__import__("json").dumps(bad))
             with self.assertRaises(ValueError): launcher.load_config(str(path))
+
+    def test_memory_trace_config_reaches_e2e_command(self):
+        config = launcher.E2E / "configs" / "diag_a100_50g_p1_t16_trace.json"
+        args = launcher.parser().parse_args(["run", "trace", "--config", str(config)])
+        merged = launcher.apply_config(args)
+        command = launcher.build_command(merged, Path("/tmp/trace-result.json"))
+        self.assertIn("--trace_memory", command)
+        self.assertEqual(command[command.index("--max_new_tokens") + 1], "16")
 
     def test_explicit_cli_values_override_config(self):
         config = launcher.E2E / "configs" / "l2_mixtral_main.json"
