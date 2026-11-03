@@ -1,0 +1,120 @@
+{
+  "notice": "mock entries are illustrative numbers, not measured results or forecasts",
+  "budget": {
+    "status": "mock",
+    "cpu_budget_gb": [
+      20,
+      30,
+      40,
+      50
+    ],
+    "fixed_tpot_s": [
+      36,
+      29,
+      23,
+      18
+    ],
+    "joint_tpot_s": [
+      28,
+      22,
+      17,
+      13
+    ]
+  },
+  "drift": {
+    "status": "mock",
+    "window": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "fixed_ssd_pct": [
+      18,
+      17,
+      18,
+      16,
+      17,
+      18,
+      17,
+      18,
+      40,
+      43,
+      42,
+      41,
+      44,
+      42,
+      43,
+      42
+    ],
+    "online_ssd_pct": [
+      18,
+      17,
+      17,
+      16,
+      16,
+      17,
+      16,
+      17,
+      39,
+      31,
+      26,
+      22,
+      19,
+      18,
+      17,
+      17
+    ]
+  },
+  "ablation": {
+    "status": "mock",
+    "variants": [
+      "固定驻留",
+      "仅画像",
+      "仅在线",
+      "完整方案"
+    ],
+    "relative_performance": [
+      1.0,
+      1.12,
+      1.21,
+      1.36
+    ],
+    "ssd_pct": [
+      35,
+      29,
+      23,
+      17
+    ]
+  },
+  "main": {
+    "status": "verified_D2",
+    "source": "results/raw/mixtral_real.json",
+    "claim_ids": [
+      "M1",
+      "M3",
+      "M4"
+    ],
+    "speedup": 1.333,
+    "cpu_pct": [
+      23.3,
+      38.0
+    ],
+    "ssd_pct": [
+      34.5,
+      17.6
+    ]
+  }
+}

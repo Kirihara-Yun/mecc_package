@@ -252,6 +252,15 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `<新benchmark>` | <如 MMLU/长上下文吞吐> | <方向> | | | | <位置> |
 | `ssd_demand_misses_per_1000` | 需求到来前来源为 SSD 的次数/千请求 | 越低越好 | — | — | — | 独立 D1 回放；非 e2e 速度证据 |
 
+以下是真实数据集的**待执行**工作负载注册项；它们目前没有对应的逐数据集真机结果，也尚未成为上表的 L2 必采项。冻结版本、split、样本 ID 和提示词后，再把执行状态及指标列加入上表。执行协议见 [`../mecc_package/paper/current/REAL_BENCHMARK_PLAN.md`](../mecc_package/paper/current/REAL_BENCHMARK_PLAN.md)。
+
+| 工作负载 ID | 用途 | 状态 |
+|---|---|---|
+| `wikitext2` | 通用文本续写 | 待冻结提示词与执行 |
+| `c4_en` | 网页文本续写 | 待接入提示词与执行 |
+| `gsm8k` | 数学问答提示词 | 待接入提示词与执行 |
+| `mbpp` | Python 代码生成提示词 | 待接入提示词与执行 |
+
 ### 7.3 实验平台注册表
 
 > 新增规则：上新机器/集群就追加一行；正文设备字段统一写"见 §7.3"。
@@ -273,6 +282,8 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `smoke-tiny-moe`（内置随机） | smoke | 2层8专家 | L0 | 仅验证逻辑 |
 | `deepseek-ai/DeepSeek-V2-Lite` | deepseek | 较小 | L1 | CPU 装得下，几乎不落 SSD |
 | `mistralai/Mixtral-8x7B-Instruct-v0.1` | mixtral | ~90GB | L2 | 连 CPU 都装不下，被迫落 SSD |
+| `Qwen/Qwen2-57B-A14B-Instruct` | qwen2_moe（待适配） | 57B 参数 | 待判定 | 计划中的跨模型实验；按实际 CPU 预算与 expert 字节数判定，尚未运行 |
+| `mistralai/Mixtral-8x22B-Instruct-v0.1` | mixtral（待适配验证） | 141B 参数 | 待判定 | 计划中的跨模型实验；先核对 NVMe 容量与加载路径，尚未运行 |
 | `<新模型>` | <loader> | <规模> | <L1/L2> | <装得下=L1 / 落SSD=L2> |
 
 ### 7.5 基线快照（**可过期；以 `results/raw/*.json` 为唯一事实来源**）

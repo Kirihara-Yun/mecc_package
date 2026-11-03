@@ -1,0 +1,71 @@
+{
+  "scope": "Layout/terminology checks only; no accept or evidence certification",
+  "checks": {
+    "author_placeholder_removed": true,
+    "overview_has_framework_on_same_page": true,
+    "all_active_figures_are_vector": true,
+    "figure_text_inside_pdf_bounds": true,
+    "consistent_times_family": true,
+    "no_old_metric_aliases": true,
+    "sixth_body_page_substantially_used": true
+  },
+  "overview_page": [
+    2
+  ],
+  "sixth_body_page_last_text_y_pt": 717.6760864257812,
+  "figure_details": {
+    "figures/fig01_overview.pdf": {
+      "fonts": [
+        "BQZASQ+STIXGeneral-Regular",
+        "DFDVVP+STIXGeneral-Italic",
+        "EZEVEQ+TimesNewRomanPSMT",
+        "GTTDMR+TimesNewRomanPS-BoldMT"
+      ],
+      "embedded_raster_images": 0
+    },
+    "figures/fig03_retention.pdf": {
+      "fonts": [
+        "DQZCTT+STIXGeneral-Italic",
+        "GBNZLB+TimesNewRomanPS-BoldMT",
+        "GXKNKD+STIXGeneral-Regular",
+        "PFDEGX+TimesNewRomanPSMT"
+      ],
+      "embedded_raster_images": 0
+    },
+    "figures/fig08_delivery.pdf": {
+      "fonts": [
+        "BKLVWC+TimesNewRomanPSMT",
+        "DQZCTT+STIXGeneral-Italic",
+        "FELPNY+STIXGeneral-Regular"
+      ],
+      "embedded_raster_images": 0
+    },
+    "ideal_figures/fig02_challenges.pdf": {
+      "fonts": [
+        "CROHXV+STIXGeneral-Italic",
+        "FDEIAZ+TimesNewRomanPSMT",
+        "LDZORD+STIXGeneral-Regular"
+      ],
+      "embedded_raster_images": 0
+    },
+    "ideal_figures/fig04_performance.pdf": {
+      "fonts": [
+        "LYQCVC+TimesNewRomanPSMT"
+      ],
+      "embedded_raster_images": 0
+    },
+    "ideal_figures/fig05_ablation.pdf": {
+      "fonts": [
+        "ZOFTDX+TimesNewRomanPSMT"
+      ],
+      "embedded_raster_images": 0
+    },
+    "ideal_figures/fig06_budget_cost.pdf": {
+      "fonts": [
+        "KLXGDC+TimesNewRomanPSMT"
+      ],
+      "embedded_raster_images": 0
+    }
+  },
+  "outside_text": []
+}

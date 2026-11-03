@@ -28,3 +28,15 @@
 | [ZipMoE ICML2026 官方页](https://proceedings.mlr.press/v306/yang26ds.html) | 无损压缩与缓存亲和调度协同 |
 
 修订仅核文献机制，不借用其性能数字，不证明本仓库已复现其系统。具体审查意见见 `HPCA_REVIEW_AND_REVISION.md`。
+
+## 2026-10-29 用户提供全文后的核对
+
+用户提供 9 个 PDF，均可打开并提取正文；文件页数和哈希保留于本地 `paper/dac2027/editing/fulltext/manifest.json`。PRICE 用于写作参考，不新增无关技术引用。各篇的实际阅读范围与章节锚点见 `paper/dac2027/editing/FULLTEXT_READING_AND_REVISION.md`。
+
+全文细化：FlashMoE §3.2 是以 recency/frequency 为输入的学习式距离/驱逐预测，不等于普通 RF heuristic；SSD-LLaMA §4.2 包含 transient admission、频率/近期性 VRAM 保留和 RAM LRU；MoE-Lightning §4.2 的搜索排除 disk 变量；MoE-CORE 的 exact path 与可选 expert substitution 分开。原文机制与本地适配性能不得互相替代。
+
+## 2026-10-29 DAC 稿文献覆盖补充
+
+DAC 稿从 11 项扩展为 27 项正文实际引用，新增 16 项的原始来源、出版版本及其论述范围见 [CITATION_COVERAGE.md](../mecc_package/paper/dac2027/CITATION_COVERAGE.md)。新增覆盖专家缓存/预测、异构内存规划、稀疏执行和 KV 管理；不借用外部性能数字作为 MECC 结果。此轮核验为元数据及摘要/官方页面，不声称对全部新增论文做了逐页全文精读。引用数量不构成接收保证。
+
+随后的架构图修订核实并补入 Klotski（ASPLOS 2025，DOI `10.1145/3676641.3716261`），现为 28 项实际引用；具体版本及机制记录于上面覆盖文档末节。HPCA/ASPLOS 配图阅读范围与不采用 PRICE 图形的约束见 [VISUAL_POLISH_REVIEW.md](../mecc_package/paper/dac2027/editing/VISUAL_POLISH_REVIEW.md)。

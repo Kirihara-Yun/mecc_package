@@ -1,0 +1,8 @@
+{
+  "tpot": "TPOT (s/token)",
+  "miss": "SSD demand-miss share (%)",
+  "host": "Task host-memory cap (GB)",
+  "hbm": "HBM",
+  "cpu": "CPU pinned memory",
+  "ssd": "SSD backing store"
+}

@@ -1,0 +1,18 @@
+{
+  "sources": {
+    "results\\raw\\motivation_causal_replay_20261027_v2.json": "7d35501827bfef5c6bdcf6d603962cc3d40cde09a471e15b7a5ec21b117eb3ec",
+    "results\\raw\\mixtral_real.json": "9fbcc6ee1d34002824573f7b3cc75d4457286ccd620ee0b00259311e1dab90ab"
+  },
+  "figure_types": {
+    "fig01": "schematic",
+    "fig02": "D1 measured replay",
+    "fig03": "schematic",
+    "fig04": "D1 measured replay",
+    "fig05": "D1 derived from frozen traces",
+    "fig06": "D2 historical observation; not causal",
+    "fig07": "measurement design, no measured speeds"
+  },
+  "hypothetical_results_used": false,
+  "seed_count": 8,
+  "error_bars": "sample standard deviation, ddof=1"
+}

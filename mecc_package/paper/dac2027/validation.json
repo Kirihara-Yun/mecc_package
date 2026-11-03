@@ -1,0 +1,64 @@
+{
+  "scope": "Format and hypothetical-scenario consistency only; NOT evidence or acceptance certification",
+  "pdf_file": "mecc_dac2027_polished.pdf",
+  "reference_count": 28,
+  "checks": {
+    "at_most_six_body_pages_plus_one_reference_page": true,
+    "references_occupy_one_final_page": true,
+    "references_page_has_no_body_sections": true,
+    "ieee_9pt_class": true,
+    "9pt_reported_by_latex": true,
+    "body_font_is_9pt": true,
+    "letter_page": true,
+    "author_metadata_empty": true,
+    "hypothetical_metadata": true,
+    "visible_hypothetical_notice_every_page": true,
+    "ai_disclosure_in_body": true,
+    "abstract_about_100_words": true,
+    "no_undefined_citations_or_references": true,
+    "no_overfull_boxes": true,
+    "single_gpu_speedup_range": true,
+    "eight_gpu_example_equal_gpu_time": true,
+    "placement_comparison_same_slots": true,
+    "overlap_only_preserves_demand_misses": true,
+    "archived_memory_parts_arithmetic_only": true,
+    "bibliography_matches_actual_citations": true,
+    "no_uncited_bibliography_padding": true,
+    "yellow_data_and_blue_ai_markers": true
+  },
+  "page_count": 7,
+  "body_pages": 6,
+  "abstract_whitespace_words": 96,
+  "dominant_pdf_font_sizes": [
+    [
+      8.97,
+      24557
+    ],
+    [
+      7.97,
+      9131
+    ],
+    [
+      7.22,
+      269
+    ],
+    [
+      7.34,
+      166
+    ],
+    [
+      7.74,
+      154
+    ]
+  ],
+  "hypothetical_results": true,
+  "ready_for_submission": false,
+  "open_evidence_issues": [
+    "PROVENANCE X7",
+    "PROVENANCE X8",
+    "PROVENANCE X9",
+    "All scenario outcomes require real experiments",
+    "Archived mirror breakdown is not physically feasible for full mirroring",
+    "Planner guards, async readiness, and phase counters need implementation validation"
+  ]
+}

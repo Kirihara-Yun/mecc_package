@@ -1,0 +1,277 @@
+{
+  "status": "HYPOTHETICAL DESIGN TARGETS; NOT MEASURED; NOT FOR SUBMISSION",
+  "groups": [
+    "8x7B / QA",
+    "8x7B / Code",
+    "8x22B / QA",
+    "8x22B / Code"
+  ],
+  "tpot_seconds": {
+    "Unoptimized streaming": [
+      24,
+      31,
+      49,
+      62
+    ],
+    "Three-tier LRU": [
+      14,
+      18,
+      28,
+      36
+    ],
+    "RF adapter": [
+      11,
+      14,
+      23,
+      29
+    ],
+    "SSD-native adapter": [
+      10,
+      13,
+      21,
+      27
+    ],
+    "MECC": [
+      8,
+      9.5,
+      16,
+      19
+    ],
+    "Resident 8-GPU reference": [
+      1,
+      1.2,
+      1.8,
+      2.1
+    ]
+  },
+  "ttft_seconds": {
+    "Unoptimized streaming": [
+      130,
+      155,
+      230,
+      280
+    ],
+    "MECC": [
+      60,
+      68,
+      96,
+      112
+    ],
+    "Resident 8-GPU reference": [
+      5,
+      5.5,
+      8,
+      9
+    ]
+  },
+  "motivation": {
+    "cpu_slots_uniform": [
+      4,
+      4,
+      4,
+      4
+    ],
+    "cpu_slots_planned": [
+      2,
+      3,
+      5,
+      6
+    ],
+    "ssd_misses_uniform": [
+      18,
+      21,
+      36,
+      44
+    ],
+    "ssd_misses_planned": [
+      21,
+      23,
+      20,
+      22
+    ],
+    "retention_ssd_percent": [
+      32,
+      23,
+      12
+    ],
+    "fixed_windows": [
+      18,
+      17,
+      18,
+      17,
+      18,
+      17,
+      18,
+      17,
+      43,
+      44,
+      43,
+      44,
+      43,
+      44,
+      43,
+      44
+    ],
+    "online_windows": [
+      30,
+      22,
+      16,
+      12,
+      12,
+      12,
+      12,
+      12,
+      32,
+      22,
+      16,
+      13,
+      12,
+      12,
+      12,
+      12
+    ],
+    "mecc_windows": [
+      14,
+      13,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      32,
+      22,
+      16,
+      13,
+      12,
+      12,
+      12,
+      12
+    ]
+  },
+  "ablation_tpot_seconds": [
+    24,
+    18,
+    11,
+    8
+  ],
+  "ablation_ssd_percent": [
+    46,
+    33,
+    20,
+    20
+  ],
+  "insight_ablation_targets": {
+    "status": "HYPOTHETICAL DESIGN TARGETS; NOT MEASURED",
+    "metric": "TPOT seconds per token; lower is better",
+    "stationary_workloads": [
+      "Mixtral 8×7B",
+      "Qwen2 57B-A14B",
+      "Mixtral 8×22B"
+    ],
+    "placement_same_runtime": {
+      "Equal layer budgets": [18.6, 28.9, 54.2],
+      "Global hotness": [16.7, 25.4, 47.8],
+      "Per-layer profile": [14.2, 21.8, 41.6]
+    },
+    "retention_same_initial_plan": {
+      "Fixed CPU": [22.8, 35.7, 67.8],
+      "Independent LRU": [18.3, 28.6, 54.3],
+      "Joint LRU": [14.2, 21.8, 41.6]
+    },
+    "shift_workloads": [
+      "Mixtral 8×7B",
+      "Qwen2 57B-A14B",
+      "Mixtral 8×22B"
+    ],
+    "adaptation_same_initial_plan": {
+      "Fixed residency": [25.1, 40.3, 76.4],
+      "Independent LRU": [20.0, 32.6, 61.1],
+      "Joint LRU": [16.0, 25.5, 48.7]
+    }
+  },
+  "cpu_budget_gb": [
+    16,
+    24,
+    32,
+    40,
+    48
+  ],
+  "budget_tpot_seconds": {
+    "Three-tier LRU": [
+      27,
+      21,
+      17,
+      14,
+      12
+    ],
+    "MECC": [
+      16,
+      12,
+      9.5,
+      8,
+      7
+    ]
+  },
+  "gpus": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "resident_gpu_tpot_seconds": [
+    null,
+    2.8,
+    1.65,
+    1.0
+  ],
+  "mecc_gpu_tpot_seconds": [
+    8,
+    3.9,
+    2.1,
+    1.25
+  ],
+  "startup_cost_seconds": {
+    "reference": 12,
+    "MECC": 30
+  },
+  "startup_decode_tpot_seconds": {
+    "reference": 10,
+    "MECC": 8
+  },
+  "memory_gb": {
+    "gpu_cap": 80,
+    "gpu_parts": [
+      42,
+      22,
+      4,
+      2
+    ],
+    "cpu_cap": 40,
+    "cpu_parts": [
+      28,
+      6,
+      4,
+      2
+    ]
+  },
+  "quality": {
+    "weight_hash_equal": true,
+    "selected_experts_equal": true,
+    "max_logit_error_sync": 0,
+    "ppl_delta": 0
+  },
+  "illustrative_repeat_factors": [
+    0.97,
+    1.0,
+    1.03
+  ],
+  "repeat_note": "Authored +/-3% spread, not observed runs or confidence intervals",
+  "comparison_note": "RF/SSD-native are hypothetical local matched adapters, not published system performance",
+  "gpu_reference_note": "Eight-GPU full-model-resident execution is a scenario reference, not FlashMoE",
+  "withdrawn_or_unused_targets": {
+    "memory_gb": "WITHDRAWN as a feasible configuration: 42 GB HBM experts cannot have only 6 GB mirrors under full CPU mirroring. Arithmetic only; do not execute as a validated plan.",
+    "mecc_gpu_tpot_seconds": "Only index 0 is used. Indices 1-3 are withdrawn from active figures: no multi-GPU MECC design is specified.",
+    "illustrative_repeat_factors": "Archived authored factors; unused in figures and not statistical evidence."
+  }
+}
