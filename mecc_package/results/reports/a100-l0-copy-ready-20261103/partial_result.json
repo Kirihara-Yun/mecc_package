@@ -1,0 +1,113 @@
+{
+  "device": "cuda",
+  "mode": "smoke",
+  "model": "smoke-tiny-moe",
+  "platform": "cpu-local",
+  "run_time": "2026-11-03T15:03:44+08:00",
+  "compiled_plan": {
+    "model": "smoke",
+    "hardware": "rtx5090 (HBM_budget=0.0006GB, CPU_budget=0.0008GB)",
+    "alpha": 1.0,
+    "n_layers": 2,
+    "n_experts": 8,
+    "expert_mb": 0.2,
+    "k_h": 2,
+    "k_c": 3,
+    "per_layer_k_h": [
+      1,
+      1
+    ],
+    "per_layer_k_c": [
+      2,
+      2
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 36.8,
+    "cpu_hit_pct": 30.7,
+    "ssd_hit_pct": 32.5,
+    "hbm_gb_used": 0.0,
+    "cpu_gb_used": 0.0
+  },
+  "config": {
+    "max_new_tokens": 6,
+    "prompt_len": 8,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 23.32,
+      "tpot_ms": 24.83,
+      "tokens_per_s": 40.723288,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.7,
+        "cpu": 2.0,
+        "ssd": 97.3,
+        "cpu_compute": 0.0
+      },
+      "speedup_vs": {
+        "swapmoe": 0.769,
+        "fiddler": 0.789,
+        "naive": 0.834,
+        "flashmoe_rf_adaptation": 0.995
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 17.81,
+      "tpot_ms": 19.16,
+      "tokens_per_s": 52.958658,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.3,
+        "cpu": 38.7,
+        "ssd": 61.0,
+        "cpu_compute": 0.0
+      }
+    },
+    "fiddler": {
+      "ttft_ms": 18.68,
+      "tpot_ms": 19.57,
+      "tokens_per_s": 51.582883,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 25.4,
+        "cpu": 0.0,
+        "ssd": 72.9,
+        "cpu_compute": 1.7
+      }
+    },
+    "naive": {
+      "ttft_ms": 19.52,
+      "tpot_ms": 20.7,
+      "tokens_per_s": 48.821865,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 26.3,
+        "cpu": 0.0,
+        "ssd": 73.7,
+        "cpu_compute": 0.0
+      }
+    },
+    "flashmoe_rf_adaptation": {
+      "ttft_ms": 24.3,
+      "tpot_ms": 24.64,
+      "tokens_per_s": 40.915479,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.7,
+        "cpu": 6.8,
+        "ssd": 92.5,
+        "cpu_compute": 0.0
+      }
+    }
+  },
+  "partial": true,
+  "completed_policies": [
+    "ours",
+    "swapmoe",
+    "fiddler",
+    "naive",
+    "flashmoe_rf_adaptation"
+  ]
+}

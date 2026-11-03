@@ -1,0 +1,9 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-03T15:22:48+08:00",
+  "output": "/home/qinzy/mecc_a100_copy_readiness/mecc_package/results/runs/a100-copy-ready-ppl128-20261103/result.json",
+  "completed_policies": [
+    "ours",
+    "swapmoe"
+  ]
+}

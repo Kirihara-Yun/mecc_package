@@ -1,0 +1,34 @@
+{
+  "run_id": "a100-l0-copy-ready-20261103",
+  "exported_at": "2026-11-03T15:04:30+08:00",
+  "source_run_dir": "/home/qinzy/mecc_a100_copy_readiness/mecc_package/results/runs/a100-l0-copy-ready-20261103",
+  "source_log": {
+    "path": "/home/qinzy/mecc_a100_copy_readiness/mecc_package/results/runs/a100-l0-copy-ready-20261103/run.log",
+    "exists": true,
+    "size_bytes": 2837,
+    "sha256": "507e9c17aad1ea9dfb7ecb428412fd2378afe3397bfd6207caa71f73c182a462",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1546,
+      "sha256": "61b7929720b98b78369f3eee82d40639c1d13e423e224a7ee19ed0a890ff6dea"
+    },
+    "status.json": {
+      "size_bytes": 189,
+      "sha256": "ab3237f49e906940ac7f59928e711e45d60c8ebad4a4a10e4eaa2d6c952d2777"
+    },
+    "result.json": {
+      "size_bytes": 2152,
+      "sha256": "7ded20f7279dca13dfadc3e3d100c5adc80698e615d1ea167210a3fcf19dead7"
+    },
+    "partial_result.json": {
+      "size_bytes": 2286,
+      "sha256": "936c93df15b5200bbf4bce171ec6779be05fe781df842679d5019e3164f69a20"
+    },
+    "run_tail.log": {
+      "size_bytes": 2837,
+      "sha256": "507e9c17aad1ea9dfb7ecb428412fd2378afe3397bfd6207caa71f73c182a462"
+    }
+  }
+}

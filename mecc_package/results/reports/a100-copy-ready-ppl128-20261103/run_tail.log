@@ -1,0 +1,72 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+  [compile] uniform allocation (no per-layer alpha)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=4 (HBM)  K_C=3 (CPU)  SSD=1
+  total HBM for experts ≈ 42.0GB | CPU ≈ 31.5GB
+  predicted hit  HBM=76.7%  CPU=18.7%  SSD=4.6%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store_mixtral
+  [store] manifest and all expert files verified, skip materialization.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: af89affd-9dd9-4ead-9dab-506b865d0125)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 4e779d7c-7421-48ed-b07d-fd99812ee6a2)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 111fbe14-7698-4269-bb2d-9db632f098d7)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 64ae41cc-00b9-4589-a0b1-4b5905de77ed)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 8554a1aa-a18b-4ad0-b4a7-3820716df7be)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 714cadb3-b466-40d7-b707-d623244e5ce3)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+  [inputs] prompts_sha256=2f36def157dd133c64ea7cf19b358aa055b0b9588c9b4485774826bd05e17581 ppl_text_sha256=c425eba97673c93ec2f91c29c7fe4169588bd54b9f0a001161a199bc8585ae81 ppl_input_tokens=77
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-11-03 15:05:11.044601: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-11-03 15:05:11.098622: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-11-03 15:05:12.373164: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[4..4] K_C∈[3..3], total HBM=128 slots
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48308429312, "cuda_peak_allocated_bytes": 48308429312, "cuda_reserved_bytes": 48444211200, "elapsed_ms": null, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "before_forward", "step": -1}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48319290368, "cuda_peak_allocated_bytes": 49375988224, "cuda_reserved_bytes": 80176218112, "elapsed_ms": 41350.783, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "prefill", "step": 0}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48318717440, "cuda_peak_allocated_bytes": 49024105472, "cuda_reserved_bytes": 53399781376, "elapsed_ms": 12024.463, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "decode", "step": 1}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48316948992, "cuda_peak_allocated_bytes": 49024105472, "cuda_reserved_bytes": 53399781376, "elapsed_ms": null, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "before_forward", "step": -1}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48319290368, "cuda_peak_allocated_bytes": 49375988224, "cuda_reserved_bytes": 82290147328, "elapsed_ms": 90959.122, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "prefill", "step": 0}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48318717440, "cuda_peak_allocated_bytes": 49024105472, "cuda_reserved_bytes": 82290147328, "elapsed_ms": 10428.922, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "ours", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "decode", "step": 1}
+  TTFT=90959.12ms  TPOT=10428.92ms  throughput=0.019726 tok/s  PPL=24.569
+  hit: HBM=25.1% CPU=50.1% SSD=24.8% CPUcompute=0.0%
+
+======================================================================
+[POLICY = swapmoe]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] swapmoe: per-layer adaptive K_H∈[4..4] K_C∈[3..3], total HBM=128 slots
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48316948992, "cuda_peak_allocated_bytes": 49387218432, "cuda_reserved_bytes": 48465182720, "elapsed_ms": null, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "swapmoe", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "before_forward", "step": -1}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48319290368, "cuda_peak_allocated_bytes": 49375988224, "cuda_reserved_bytes": 80176218112, "elapsed_ms": 190842.261, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "swapmoe", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "prefill", "step": 0}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48318717440, "cuda_peak_allocated_bytes": 49024093184, "cuda_reserved_bytes": 53047459840, "elapsed_ms": 9124.078, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "swapmoe", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "warmup", "stage": "decode", "step": 1}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48316948992, "cuda_peak_allocated_bytes": 49024093184, "cuda_reserved_bytes": 53047459840, "elapsed_ms": null, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "swapmoe", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "before_forward", "step": -1}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48319290368, "cuda_peak_allocated_bytes": 49727719936, "cuda_reserved_bytes": 80176218112, "elapsed_ms": 104809.306, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "swapmoe", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "prefill", "step": 0}
+MEMTRACE {"cpu_nearmiss_bytes": 0, "cuda_allocated_bytes": 48318717440, "cuda_peak_allocated_bytes": 48671800832, "cuda_reserved_bytes": 80176218112, "elapsed_ms": 16332.451, "gpu_nearmiss_bytes": 0, "gpu_pool_bytes": 45097156608, "gpu_prefetch_bytes": 0, "input_tokens": 12, "nearmiss_entries": 0, "policy": "swapmoe", "prefetch_entries": 0, "prompt_index": 0, "run_phase": "measure", "stage": "decode", "step": 1}
+  TTFT=104809.31ms  TPOT=16332.45ms  throughput=0.01651 tok/s  PPL=24.569
+  hit: HBM=21.1% CPU=32.3% SSD=46.7% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /home/qinzy/mecc_a100_copy_readiness/mecc_package/results/runs/a100-copy-ready-ppl128-20261103/result.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours         90959.12   10428.92  0.019726          24.569
+swapmoe     104809.31   16332.45   0.01651          24.569
+  OURS speedup: vs swapmoe 1.195×
+======================================================================
