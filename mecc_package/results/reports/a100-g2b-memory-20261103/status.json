@@ -1,0 +1,10 @@
+{
+  "phase": "running_policy",
+  "updated_at": "2026-11-03T18:03:29.448316+08:00",
+  "policy": "swapmoe",
+  "stage": "before_load",
+  "completed_policies": [
+    "naive",
+    "ours"
+  ]
+}

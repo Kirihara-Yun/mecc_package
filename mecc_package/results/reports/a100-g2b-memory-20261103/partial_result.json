@@ -1,0 +1,516 @@
+{
+  "mode": "diagnostic_correctness",
+  "platform": "a100-80g",
+  "run_time": "2026-11-03T17:44:33.708404+08:00",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "model_revision": "eba92302a2861cdc0098cc54bc9f17cb2c47eb61",
+  "store_manifest_sha256": "c943c4173e1c6dbac73fe12a8d5f03d51e52acbffabb476e2e3a1cd994b71255",
+  "fixture": {
+    "source": "repository_diagnostic_not_benchmark",
+    "file_sha256": "913c816407bfd5fa9aacb8476f34648238dd749ff384c1bd96876f8fef6fa3f6",
+    "prompts_sha256": "97b17e92cf83e6f8b47d6a5ee1a13fa44ca48e4e1d62cbb85ff063a7aca17eda",
+    "ppl_text_sha256": "f1fb591f14d55de30d72c69db05b8e3bc22346fa60c838fb04561812cbcc5fc5",
+    "prompt_input_tokens": [
+      21,
+      22
+    ],
+    "prompt_token_sha256": [
+      "5547e1b99f592f0e67b637d9750bb71861ac4b7e34414d2a98fe74a5554591cd",
+      "59146108b04fda85714597502b92d568d4ac4edf9dc5614d0ca0acace1af03aa"
+    ],
+    "ppl_input_tokens": 128,
+    "ppl_token_sha256": "fadd0d381efe79235f217f339ea0efb89b4a9801a719bfb47e557eb38a9c2538"
+  },
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=50.0GB, CPU_budget=40.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 4,
+    "k_c": 3,
+    "per_layer_k_h": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "per_layer_k_c": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 76.7,
+    "cpu_hit_pct": 18.7,
+    "ssd_hit_pct": 4.6,
+    "hbm_gb_used": 42.0,
+    "cpu_gb_used": 31.5,
+    "placement": {
+      "0": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "1": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "2": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "3": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "4": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "5": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "6": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "7": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "8": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "9": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "10": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "11": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "12": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "13": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "14": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "15": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "16": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "17": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "18": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "19": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "20": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "21": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "22": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "23": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "24": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "25": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "26": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "27": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "28": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "29": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "30": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "31": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  },
+  "config": {
+    "hbm_budget_gb": 50.0,
+    "cpu_budget_gb": 40.0,
+    "max_new_tokens": 3,
+    "ppl_tokens": 128,
+    "policies": [
+      "naive",
+      "ours",
+      "swapmoe"
+    ],
+    "cold_ssd": true,
+    "uniform": true,
+    "atol": 0.05,
+    "rtol": 0.001,
+    "max_ppl_delta": 0.01
+  },
+  "results": {
+    "naive": {
+      "passed": true,
+      "ppl": 20.443230408996836,
+      "ppl_delta_vs_naive": 0.0,
+      "cases": [
+        {
+          "passed": true,
+          "reference": true,
+          "greedy_tokens": [
+            272,
+            3332,
+            263
+          ]
+        },
+        {
+          "passed": true,
+          "reference": true,
+          "greedy_tokens": [
+            272,
+            5116,
+            1580
+          ]
+        }
+      ],
+      "cuda_allocated_bytes_after": 48316948480,
+      "cuda_reserved_bytes_after": 83372277760
+    },
+    "ours": {
+      "passed": true,
+      "ppl": 20.443230408996836,
+      "ppl_delta_vs_naive": 0.0,
+      "cases": [
+        {
+          "passed": true,
+          "route_equal": true,
+          "first_route_mismatch": null,
+          "logits_allclose": true,
+          "max_logit_abs_error": 0.0,
+          "first_logit_mismatch_step": null,
+          "max_gate_abs_error": 0.0,
+          "tokens_equal": true,
+          "first_token_mismatch_step": null,
+          "greedy_tokens": [
+            272,
+            3332,
+            263
+          ]
+        },
+        {
+          "passed": true,
+          "route_equal": true,
+          "first_route_mismatch": null,
+          "logits_allclose": true,
+          "max_logit_abs_error": 0.0,
+          "first_logit_mismatch_step": null,
+          "max_gate_abs_error": 0.0,
+          "tokens_equal": true,
+          "first_token_mismatch_step": null,
+          "greedy_tokens": [
+            272,
+            5116,
+            1580
+          ]
+        }
+      ],
+      "cuda_allocated_bytes_after": 48316948480,
+      "cuda_reserved_bytes_after": 82348867584
+    }
+  }
+}

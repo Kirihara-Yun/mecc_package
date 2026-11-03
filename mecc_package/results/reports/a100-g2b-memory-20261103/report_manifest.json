@@ -1,0 +1,38 @@
+{
+  "run_id": "a100-g2b-memory-20261103",
+  "exported_at": "2026-11-03T18:07:49+08:00",
+  "source_run_dir": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-g2b-memory-20261103",
+  "source_log": {
+    "path": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-g2b-memory-20261103/run.log",
+    "exists": true,
+    "size_bytes": 2808,
+    "sha256": "b594ff6137aeb9bd13b7859de114d5e18289b1f31b570ce30a18ccf768050485",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1859,
+      "sha256": "984442b57153b757a1d01637e5473dc205676dc3a9879c315b99018cbbceddd7"
+    },
+    "status.json": {
+      "size_bytes": 188,
+      "sha256": "c180d87764c58b02c55f029e96118a50a13a1da650ceff1d542fce978ad8e1b0"
+    },
+    "partial_result.json": {
+      "size_bytes": 7597,
+      "sha256": "f96ff170711e2998a9bb42384af497f282e8a591aff9e7c0e615e428b66cb192"
+    },
+    "resource_trace.jsonl": {
+      "size_bytes": 5052692,
+      "sha256": "b7dbcfc7e3608de8b66fc720c49aaa697707f8b52ec5ef6d378b0e7745efebff"
+    },
+    "memory_checkpoints.jsonl": {
+      "size_bytes": 2876,
+      "sha256": "adad29b797ac545f7ecb2e2e757901807549658db751015a10b86e682b76166a"
+    },
+    "run_tail.log": {
+      "size_bytes": 2808,
+      "sha256": "b594ff6137aeb9bd13b7859de114d5e18289b1f31b570ce30a18ccf768050485"
+    }
+  }
+}
