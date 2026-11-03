@@ -1,0 +1,42 @@
+{
+  "run_id": "a100-p0-swapmoe-20261103",
+  "exported_at": "2026-11-03T20:29:06+08:00",
+  "source_run_dir": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-p0-swapmoe-20261103",
+  "source_log": {
+    "path": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-p0-swapmoe-20261103/run.log",
+    "exists": true,
+    "size_bytes": 2720,
+    "sha256": "c774fc2e50d397f1112f35d715c0dda7d583ae544ed46171ad92c2a88cab6015",
+    "included_tail_lines": 10000
+  },
+  "files": {
+    "run.json": {
+      "size_bytes": 1854,
+      "sha256": "6cff8facb09bb36192d2a7b923b6c44a72881eb4b70278659b5a8422cce6b679"
+    },
+    "status.json": {
+      "size_bytes": 181,
+      "sha256": "02b4618bb3cee4591ba0e65412087374437e1b54155c0c521888885078fc21fb"
+    },
+    "result.json": {
+      "size_bytes": 7604,
+      "sha256": "18e9a931ca12a3c563cc9d78dd52b7b023669ef59b440069fa8f1584cc51fa3b"
+    },
+    "partial_result.json": {
+      "size_bytes": 7586,
+      "sha256": "be57f8de8bc14927c94ff1bfe217ea1f43eaf7cc4beadfe2e8eee1ec1780e537"
+    },
+    "resource_trace.jsonl": {
+      "size_bytes": 5218842,
+      "sha256": "d1e5797f3af664dd327595fc4fc4f93b01b694f5e6b9d29755b4d6c84572d324"
+    },
+    "memory_checkpoints.jsonl": {
+      "size_bytes": 2705,
+      "sha256": "6e750541d42cc8c4428525a57771b08befcf190422f5cc504763bb1ceb73ef16"
+    },
+    "run_tail.log": {
+      "size_bytes": 2720,
+      "sha256": "c774fc2e50d397f1112f35d715c0dda7d583ae544ed46171ad92c2a88cab6015"
+    }
+  }
+}

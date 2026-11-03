@@ -185,8 +185,12 @@ def compare(ref, got):
             'greedy_tokens': got['greedy']}
 
 def run(args):
-    if args.policies != ','.join(POLICIES):
-        raise ValueError('frozen policy order is naive,ours,swapmoe')
+    requested = [p.strip() for p in args.policies.split(',') if p.strip()]
+    if not requested or any(p not in POLICIES for p in requested):
+        raise ValueError('policies must be a nonempty subset of naive,ours,swapmoe')
+    if requested[0] != 'naive':
+        raise ValueError('naive must be the first (reference) policy')
+    policies = [p for p in POLICIES if p in requested]
     if not 2 <= args.max_new_tokens <= 8:
         raise ValueError('max_new_tokens must be 2..8')
     if not torch.cuda.is_available() or 'A100' not in torch.cuda.get_device_name(0):
@@ -230,12 +234,12 @@ def run(args):
         'fixture':meta,'compiled_plan':asdict(plan),
         'config':{'hbm_budget_gb':args.hbm_budget,'cpu_budget_gb':args.cpu_budget,
                   'max_new_tokens':args.max_new_tokens,'ppl_tokens':args.ppl_tokens,
-                  'policies':list(POLICIES),'cold_ssd':True,'uniform':True,
+                  'policies':list(policies),'cold_ssd':True,'uniform':True,
                   'atol':ATOL,'rtol':RTOL,'max_ppl_delta':PPL_DELTA},
         'results':{}}
     reference = None
     reference_ppl = None
-    for policy in POLICIES:
+    for policy in policies:
         phase(args,'running_policy',policy=policy,stage='before_load',
               completed_policies=list(result['results']))
         checkpoint(args,policy,'before_load',device)
