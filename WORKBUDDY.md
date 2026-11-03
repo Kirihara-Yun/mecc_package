@@ -3,6 +3,11 @@
 This repository is developed locally and executed on the remote A100 host.  The
 remote agent is an **experiment operator**, not an independent paper editor.
 
+For the current experiment request, read
+`docs/WORKBUDDY_A100_NEXT_EXPERIMENTS.md` after the four entry documents below.
+It gives the active design branch, the missing-experiment matrix, and the next
+diagnostic gate. Do not treat ideal PPT values as measurements.
+
 Before doing anything, read these files in order:
 
 1. `AGENTS.md`
