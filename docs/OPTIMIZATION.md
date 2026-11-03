@@ -122,6 +122,7 @@
 | `kh_kc_alloc` | A 算法 | 编译期 K_H/K_C 预算分配（避免颠簸） | `compiler.py` | 命中分布合理化 | adopted | `tuning_log.md` 实验3（L1 上界） |
 | `cpu_tier_lru` | A 算法 | CPU tier 联合动态 LRU（对手静态=0%命中） | `mecc_framework/cache/engine.py` | CPU 命中>0 | adopted | `tuning_log.md` 实验3 / L2 主表 |
 | `batch_prefetch` | B 工程 | 批量预取降低 per-token 搬运 | E2E 预取路径 | tok·s↑ | adopted | `results/` 对照(+批量预取行，L1 上界) |
+| `nearmiss_prefetch_proto` | B 工程 | gate top-(k+2) 的预测预取原型；当前从 Mixtral 前向停用 | `e2e/mixtral_tiered.py` / `e2e/tiered_engine.py` | HBM 峰值受控后再测延迟 | parked | `results/reports/a100-memory-trace-20261103/MEMORY_TRACE_SUMMARY.md`（诊断；原型缓冲逐步累积并 OOM，停用效果待 L2 复测） |
 
 ### 6.2 候选 / 待探索（agent 可从这里挑题，做完移到 6.1 并更新 status）
 

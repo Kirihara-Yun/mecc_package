@@ -52,13 +52,6 @@ class TieredSparseMoe(nn.Module):
         routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
         routing_weights = routing_weights.to(hidden_states.dtype)
 
-        # ── Router-logit 预测预取: 取 top-(k+1) 和 top-(k+2) 作为 near-miss ──
-        _, near_miss_experts = torch.topk(full_weights, min(self.top_k + 2, self.num_experts), dim=-1)
-        near_miss = set(near_miss_experts.flatten().tolist())
-        near_miss.difference_update(selected_experts.flatten().tolist())  # 去除已选中的
-        if near_miss:
-            self.experts.prefetch_near_miss([(self.layer_id, e) for e in near_miss])
-
         final_hidden_states = torch.zeros(
             (batch_size * sequence_length, hidden_dim),
             dtype=hidden_states.dtype, device=hidden_states.device)

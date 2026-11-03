@@ -121,6 +121,7 @@
 | **X7** | 相同 K_H/K_C 未证明相同物理 CPU 字节；CPU 镜像、near-miss 缓冲及预取路径不对称 | `tiered_engine.py:229–236,267–285`；`policy_plugin.py:76–123`；`mixtral_tiered.py:56–60` | **高**：历史收益可能混入容量/预取差异 | `unverified` 公平性；新增峰值 pinned/pageable/镜像/staging 去重记账，统一预取并按实际 cap 重跑；不改历史数字 |
 | **X8** | 独立 copy_stream 上的异步权重在 yield 后被计算，sync_copy 在迭代结束；使用前依赖屏障未见 | `tiered_engine.py:253–268,360–364`；`mixtral_tiered.py:85–92` | **高**：可能出现跨流未就绪读取 | 静态代码风险，根因 `unverified`；先比同步参考与异步 logits/router/token，不能称已证实为异常 PPL 原因 |
 | **X9** | hits 计数混入 warmup/PPL；CPU 预取先插 GPU 再记 HBM hit | `run_e2e.py:210–238`；`tiered_engine.py:351–364` | **高**：命中率无法与生成计时直接因果配对 | `unverified` 性能归因；分离 warmup/prefill/decode/PPL 计数窗口，按 demand 到达前来源计数，记录实际 SSD/H2D/D2H 字节 |
+| **X10** | Mixtral 的 near-miss 预测预取缓冲未按步清理，50/40 GB 诊断中随 decode 增长并在第 5 步 OOM | `results/reports/a100-memory-trace-20261103/MEMORY_TRACE_SUMMARY.md`；`mixtral_tiered.py` 与 `tiered_engine.py` 的 near-miss 路径 | **高**：历史 50/40 GB 配置可能超出物理 HBM，性能与公平性结论待复核 | 轨迹支持缓冲累积，根因仍需单变量复测；先停用该预测预取调用，L0 后以同配置验证 OOM 是否消失，再计量实际峰值并更新正式结果。原始历史数字不改。 |
 
 > **处理矛盾的纪律**：发现新矛盾→**先登记到本表（标 `discrepancy`/`unverified`）**，不要静默改数字；
 > 只有重跑实测拿到 D2 证据后，才可更新对照表为 `verified` 并同步改正文。
