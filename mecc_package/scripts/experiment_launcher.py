@@ -24,7 +24,7 @@ E2E = ROOT / "mecc_package" / "e2e"
 CONFIG_KEYS = {"smoke", "model", "state_path", "store_root", "hbm_budget",
                "cpu_budget", "alpha", "prompt_len", "max_new_tokens",
                "n_prompts", "policies", "platform", "skip_ppl", "uniform",
-               "trace_memory", "ppl_tokens", "job", "fixtures"}
+               "trace_memory", "resource_trace", "ppl_tokens", "job", "fixtures"}
 CONFIG_DEFAULTS = {
     "job": "e2e",
     "fixtures": None,
@@ -44,6 +44,7 @@ CONFIG_DEFAULTS = {
     "skip_ppl": False,
     "uniform": False,
     "trace_memory": False,
+    "resource_trace": False,
 }
 
 
@@ -110,7 +111,7 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
     if getattr(args, "job", "e2e") == "correctness":
         if args.smoke or not args.state_path or not args.fixtures:
             raise ValueError("correctness job requires real model, state_path, and fixtures")
-        return [
+        command = [
             sys.executable, "correctness_probe.py",
             "--model", args.model,
             "--state_path", str(Path(args.state_path).resolve()),
@@ -128,6 +129,9 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
             "--partial_out", str(output.parent / "partial_result.json"),
             "--status_file", str(output.parent / "status.json"),
         ]
+        if args.resource_trace:
+            command.append("--resource_trace")
+        return command
     command = [sys.executable, "run_e2e.py"]
     if args.smoke:
         command += ["--smoke"]
@@ -373,7 +377,7 @@ def export_report(run_id: str, runs_root: str, reports_root: str,
     report_dir.mkdir(parents=True)
     copied = []
     for name in ("run.json", "status.json", "result.json", "partial_result.json",
-                 "launch_error.txt"):
+                 "launch_error.txt", "resource_trace.jsonl", "memory_checkpoints.jsonl"):
         source = run_dir / name
         if source.is_file():
             target = report_dir / name
@@ -445,6 +449,8 @@ def parser() -> argparse.ArgumentParser:
                      help="use one fixed per-layer K_H/K_C allocation")
     run.add_argument("--trace-memory", action="store_true", default=None,
                      help="print per-token CUDA and cache memory counters for diagnosis")
+    run.add_argument("--resource-trace", action="store_true", default=None,
+                     help="sample cgroup/process memory while a correctness job runs")
     resume_cmd = sub.add_parser("resume-from-store", help="rerun a prior command with its store")
     resume_cmd.add_argument("from_run")
     resume_cmd.add_argument("run_id")

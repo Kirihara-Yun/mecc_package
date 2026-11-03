@@ -10,6 +10,8 @@ import json
 import math
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import traceback
 import torch
@@ -44,6 +46,58 @@ def phase(args, value, **kw):
     publish(args.status_file, {'phase': value,
         'updated_at': datetime.now().astimezone().isoformat(), **kw})
     print('[phase]', value, kw, flush=True)
+
+
+def pool_bytes(caches):
+    """Logical live storage bytes by cache role, deduplicated by storage pointer."""
+    roles = {'gpu': set(), 'cpu_mirror': set(), 'cpu_pool': set(),
+             'cpu_staging': set()}
+    sizes = {}
+    pinned = set()
+    for cache in caches:
+        entries = [
+            ('gpu', (pair[0] for pair in cache.gpu.values())),
+            ('cpu_mirror', (pair[1] for pair in cache.gpu.values())),
+            ('cpu_pool', cache.cpu.values()),
+            ('cpu_pool', cache.static_cpu.values()),
+            ('cpu_staging', cache._prefetch_buf.values()),
+            ('cpu_staging', getattr(cache, '_nearmiss_buf', {}).values()),
+        ]
+        for role, weights in entries:
+            for ws in weights:
+                if ws is None:
+                    continue
+                for tensor in (ws.w1, ws.w3, ws.w2):
+                    storage = tensor.untyped_storage()
+                    key = (tensor.device.type, tensor.device.index, storage.data_ptr())
+                    sizes[key] = storage.nbytes()
+                    roles[role].add(key)
+                    if tensor.device.type == 'cpu' and tensor.is_pinned():
+                        pinned.add(key)
+    return {
+        'role_unique_bytes': {role: sum(sizes[key] for key in keys)
+                              for role, keys in roles.items()},
+        'all_unique_cpu_bytes': sum(size for key, size in sizes.items()
+                                    if key[0] == 'cpu'),
+        'all_unique_gpu_bytes': sum(size for key, size in sizes.items()
+                                    if key[0] == 'cuda'),
+        'all_unique_cpu_pinned_bytes': sum(sizes[key] for key in pinned),
+        'note': 'live tensor storage only; roles can share a storage; excludes trunk, allocator, page cache',
+    }
+
+
+def checkpoint(args, policy, stage, device, caches=None):
+    if not args.resource_trace:
+        return
+    row = {'time': datetime.now().astimezone().isoformat(timespec='milliseconds'),
+           'policy': policy, 'stage': stage,
+           'cuda_allocated_bytes': torch.cuda.memory_allocated(device),
+           'cuda_reserved_bytes': torch.cuda.memory_reserved(device),
+           'pool_bytes': pool_bytes(caches) if caches is not None else None}
+    path = Path(args.out).resolve().parent / 'memory_checkpoints.jsonl'
+    with path.open('a', encoding='utf-8') as stream:
+        stream.write(json.dumps(row, ensure_ascii=False) + '\n')
+        stream.flush(); os.fsync(stream.fileno())
 
 def fixture(path, n):
     raw = Path(path).read_bytes()
@@ -182,11 +236,15 @@ def run(args):
     reference = None
     reference_ppl = None
     for policy in POLICIES:
-        phase(args,'running_policy',policy=policy,
+        phase(args,'running_policy',policy=policy,stage='before_load',
               completed_policies=list(result['results']))
+        checkpoint(args,policy,'before_load',device)
         model,caches = build_tiered_model(state,state,store,device,
             plan.placement,plan.k_h,plan.k_c,policy=policy,cold_ssd=True,
             per_layer_k_h=plan.per_layer_k_h,per_layer_k_c=plan.per_layer_k_c)
+        checkpoint(args,policy,'after_load',device,caches)
+        phase(args,'running_policy',policy=policy,stage='after_load',
+              completed_policies=list(result['results']))
         cases = [trace(model, inp.to(device), args.max_new_tokens,
                  None if reference is None else reference[i]['greedy'])
                  for i,inp in enumerate(ids)]
@@ -207,8 +265,12 @@ def run(args):
             'cuda_reserved_bytes_after':torch.cuda.memory_reserved(device)}
         publish(args.partial_out,result)
         print('[policy]',policy,'passed=',passed,'ppl=',ppl,flush=True)
+        checkpoint(args,policy,'before_release',device,caches)
         del model,caches,cases
         gc.collect();torch.cuda.empty_cache()
+        checkpoint(args,policy,'after_release',device)
+        phase(args,'policy_released',policy=policy,
+              completed_policies=list(result['results']))
     result['passed'] = all(v['passed'] for v in result['results'].values())
     publish(args.out,result)
     if not result['passed']:
@@ -227,8 +289,18 @@ def main():
     for key in ('max_new_tokens','n_prompts','ppl_tokens'):
         parser.add_argument('--'+key,type=int,required=True)
     parser.add_argument('--policies',required=True)
+    parser.add_argument('--resource_trace',action='store_true')
     args = parser.parse_args()
+    monitor = None
     try:
+        if args.resource_trace:
+            monitor = subprocess.Popen([sys.executable,
+                str(Path(__file__).with_name('resource_monitor.py')),
+                '--pid',str(os.getpid()),
+                '--out',str(Path(args.out).resolve().parent / 'resource_trace.jsonl'),
+                '--status-file',args.status_file,'--interval','1.0'],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL)
         run(args)
     except SystemExit:
         raise
@@ -236,6 +308,13 @@ def main():
         traceback.print_exc()
         phase(args,'failed',error_type=type(exc).__name__,error=str(exc))
         raise
+    finally:
+        if monitor is not None:
+            monitor.terminate()
+            try:
+                monitor.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                monitor.kill(); monitor.wait()
 
 if __name__ == '__main__':
     main()

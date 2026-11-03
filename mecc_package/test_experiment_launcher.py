@@ -131,6 +131,21 @@ class ExperimentLauncherTest(unittest.TestCase):
         self.assertTrue(Path(command[command.index("--fixtures") + 1]).is_file())
         self.assertNotIn("--skip_ppl", command)
 
+    def test_g2b_config_adds_resource_trace_without_changing_g1_inputs(self):
+        config = launcher.E2E / "configs" / "diag_a100_g2b_memory_v1.json"
+        args = launcher.parser().parse_args([
+            "run", "g2b", "--config", str(config),
+            "--state-path", "/data/model-snapshot",
+        ])
+        merged = launcher.apply_config(args)
+        command = launcher.build_command(merged, Path("/tmp/g2b-result.json"))
+        self.assertIn("--resource_trace", command)
+        self.assertEqual(command[command.index("--policies") + 1],
+                         "naive,ours,swapmoe")
+        self.assertEqual(command[command.index("--hbm_budget") + 1], "50.0")
+        self.assertEqual(command[command.index("--cpu_budget") + 1], "40.0")
+        self.assertEqual(command[command.index("--ppl_tokens") + 1], "128")
+
     def test_explicit_cli_values_override_config(self):
         config = launcher.E2E / "configs" / "l2_mixtral_main.json"
         args = launcher.parser().parse_args([
