@@ -4,6 +4,9 @@ One terminology and typography scheme for every active manuscript figure.
 No GPU work, inferred measurements, or new numerical outcomes.
 """
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from media_hdd import figure_text
 import json
 import numpy as np
 import matplotlib
@@ -46,6 +49,7 @@ def clean(ax,y=None):
     if y: ax.set_ylabel(y,labelpad=4)
 
 def save(fig,folder,name,hypothetical=False):
+    figure_text(fig)
     dest=P/folder; dest.mkdir(exist_ok=True)
     if hypothetical:
         fig.text(.992,.992,'HYPOTHETICAL · NOT MEASURED',fontsize=6,

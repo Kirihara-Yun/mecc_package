@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from media_hdd import figure_text
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
@@ -31,6 +32,7 @@ def style(ax,ylabel=None):
  ax.tick_params(length=3,color='#888888')
 
 def save(fig,name):
+ figure_text(fig)
  fig.savefig(ASSETS/(name+'.png'),dpi=240,bbox_inches='tight',pad_inches=.08)
  fig.savefig(ASSETS/(name+'.pdf'),bbox_inches='tight',pad_inches=.08)
  plt.close(fig)

@@ -3,6 +3,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from media_hdd import figure_text
 from matplotlib.patches import Rectangle, FancyArrowPatch
 
 OUT = Path(__file__).resolve().parent / 'current' / 'method_figures'
@@ -33,6 +34,7 @@ def section(ax,x0,x1,title,subtitle):
     txt(ax,x0,3.52,title,15,NAVY,'bold')
     txt(ax,x0,3.15,subtitle,10.5,'#536B7E')
 def save(fig,name):
+    figure_text(fig)
     for ext in ('png','svg','pdf'):
         fig.savefig(OUT/f'{name}.{ext}',dpi=240,facecolor=WHITE,
                     bbox_inches='tight',pad_inches=.035)

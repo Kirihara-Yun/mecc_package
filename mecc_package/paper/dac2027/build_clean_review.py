@@ -9,6 +9,7 @@ import json
 import hashlib
 import matplotlib.pyplot as plt
 import build_paper_figures as figs
+from media_hdd import manuscript_text
 
 P=Path(__file__).resolve().parent
 OUT=P/'clean_review'
@@ -19,6 +20,7 @@ DATA=P/'ideal_assumptions.json'
 def clean_figures():
     old=figs.save
     def save(fig,folder,name,hypothetical=False):
+        figs.figure_text(fig)
         dest=OUT/'figures';dest.mkdir(exist_ok=True)
         for ext in ('pdf','png','svg'):
             fig.savefig(dest/f'{name}.{ext}',dpi=250,bbox_inches='tight',pad_inches=.025)
@@ -51,8 +53,8 @@ Single-GPU mixture-of-experts inference must deliver selected experts even when 
     replacements={
       'We ask whether a profile prior improves finite-horizon service beyond the same retention and delivery machinery. Component controls separate capacity allocation, initialization, and overlap. The resource comparison includes the smallest feasible resident allocation. All numerical outcomes below are authored scenarios.':
       'We evaluate the contribution of profile placement, retention, and transfer scheduling separately. We also compare one-GPU latency with the smallest feasible resident GPU allocation.',
-      'The hypothetical plan moves slots toward layers with greater SSD demand. The first two layers lose coverage while the last two gain it. The measured counterpart must report request-weighted aggregate misses, rather than averaging percentages with different denominators.':
-      'The plan moves slots toward layers with greater SSD demand. The first two layers lose coverage while the last two gain it. Aggregate miss counts weight each layer by its request volume.',
+      'The hypothetical plan moves slots toward layers with greater HDD demand. The first two layers lose coverage while the last two gain it. The measured counterpart must report request-weighted aggregate misses, rather than averaging percentages with different denominators.':
+      'The plan moves slots toward layers with greater HDD demand. The first two layers lose coverage while the last two gain it. Aggregate miss counts weight each layer by its request volume.',
       'The missing control is exclusive LRU with matching per-layer combined capacities and initial stacks, accompanied by duplicate-byte and migration measurements. Figure~\\ref{fig:retention} illustrates the state changes.':
       'Figure~\\ref{fig:retention} shows the resulting promotions and demotions. Capacity-matched exclusive LRU is the direct reference for joint retention.',
       'The required experiment crosses profile/random initialization with static/adaptive residency. Figure~\\ref{fig:challenges}(c) illustrates three of these four configurations across an authored shift. The fourth configuration, profile cost, no-shift control, uniform access, and mismatched profiles remain unmeasured. These curves specify a hypothesis about startup and adaptation; they do not establish natural routing drift.':
@@ -73,7 +75,7 @@ Single-GPU mixture-of-experts inference must deliver selected experts even when 
       'The scenario uses':'The evaluation uses',
       'subject to total-peak checks.':'with other allocations charged separately.',
       'Dataset, model, and input revisions remain to be frozen for execution.':'',
-      'RF and SSD-native are hypothetical local mechanism adapters.':'RF and SSD-native are local mechanism adapters.',
+      'RF and the HDD-backed cache adapter are hypothetical local mechanism adapters.':'RF and the HDD-backed cache adapter are local mechanism adapters.',
       'whose precise rule remains to be frozen':'with recency and frequency scores',
       'Versioned external runs, including MoE-CORE~\\cite{core}, remain separate experiments.':'External systems are discussed separately in Section~\\ref{sec:related}.',
       'The eight-GPU point is an authored scenario reference, independent of the cited systems.':'The resident reference is a capacity and latency comparison.',
@@ -128,6 +130,7 @@ Single-GPU mixture-of-experts inference must deliver selected experts even when 
         for w in problems:
             print(w,[s[max(0,m.start()-55):m.end()+75] for m in re.finditer(re.escape(w),s,re.I)][:8])
         raise ValueError('Visible construction language: '+str(problems))
+    s=manuscript_text(s)
     (P/'mecc_dac2027_clean.tex').write_text(s,encoding='utf-8')
 
 def main():

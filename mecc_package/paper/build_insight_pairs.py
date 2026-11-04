@@ -10,6 +10,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from media_hdd import figure_text
 from matplotlib.patches import Rectangle, PathPatch
 from matplotlib.path import Path as MplPath
 import numpy as np
@@ -37,6 +38,7 @@ plt.rcParams.update({
 
 
 def save(fig, name):
+    figure_text(fig)
     for ext in ('png', 'svg', 'pdf'):
         fig.savefig(OUT / f'{name}.{ext}', dpi=240, facecolor=WHITE,
                     bbox_inches='tight', pad_inches=.025)

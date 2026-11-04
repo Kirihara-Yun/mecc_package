@@ -12,6 +12,7 @@ from pptx.oxml.ns import qn
 import build_hpca_clean_talk as old
 import build_insight_pairs as pairs
 import build_method_figures as method_figures
+from media_hdd import display_text
 
 P=old.PAPER
 A=old.ASSETS
@@ -300,7 +301,13 @@ def main():
    '多卡部署将全部专家分布在 GPU 显存中，因此单 token 延迟更低；MECC 使用一张 GPU 运行\n完整模型。右图以 GPU 数量乘以延迟，比较两种部署的 GPU 资源开销。',
    'allocation','单卡方案适用于 GPU 数量受限、可以接受较长推理延迟的任务。')
  conclusion(prs.slides.add_slide(prs.slide_layouts[6]))
- for slide in prs.slides:slide.notes_slide.notes_text_frame.text=''
+ for slide in prs.slides:
+  slide.notes_slide.notes_text_frame.text=''
+  for shape in slide.shapes:
+   if shape.has_text_frame:
+    for paragraph in shape.text_frame.paragraphs:
+     for run in paragraph.runs:
+      run.text=display_text(run.text)
  prs.core_properties.title='MECC: Single-GPU MoE Inference';prs.core_properties.subject='Internal ideal-results research talk'
  prs.core_properties.author='';prs.core_properties.last_modified_by=''
  OUT.parent.mkdir(exist_ok=True)

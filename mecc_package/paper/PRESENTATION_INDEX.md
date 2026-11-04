@@ -14,6 +14,8 @@
 
 运行 `python refine_hpca_talk.py` 构建 PPT；当前导出 PDF 使用 PowerPoint。脚本依赖同目录的两份参考源：`MECC_HPCA_review_revision.pptx`（旧版布局）和 `MECC_conference_talk.pptx`（第 2 页表格），因此保留在原位。
 
+当前审阅版把冷存储统一标为 HDD，与 A100 测试机的旋转逻辑设备（`ROTA=1`）口径一致。RAID 控制器后的物理盘清单尚未取得；这里不包含 SSD/NVMe 测量或跨介质加速结论。`SSD-LLaMA` 等被引系统名称保留原名。图表数字仍是既有理想示例，未因介质名称调整而重算。
+
 ## 历史材料
 
 - `MECC_HPCA_clean_ideal.pptx/.pdf`：上一轮审阅版。PPT 当前被 PowerPoint 占用，暂留原位；请以 `MECC_HPCA_current` 为准。

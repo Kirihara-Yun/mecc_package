@@ -24,7 +24,7 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-Single-GPU mixture-of-experts inference must deliver selected experts even when the expert pool exceeds the memory assigned to a task. SSD reads then enter the decode path. MECC combines profile-guided placement, cross-tier retention, and dependency-aware transfers across HBM, pinned host memory, and SSD. Its design preserves FP16 weights and the router's selections. Across four Mixtral model/workload combinations, the single-GPU configuration provides 3.00--3.26$\times$ speedup over unoptimized streaming and 1.25--1.42$\times$ speedup over a matched SSD-native adapter. On Mixtral-8x7B question answering, it uses one GPU at 8.0~s/token; a two-GPU resident configuration reaches 2.8~s/token. The comparison exposes the latency and allocation choices of SSD-active MoE serving.
+Single-GPU mixture-of-experts inference must deliver selected experts even when the expert pool exceeds the memory assigned to a task. HDD reads then enter the decode path. MECC combines profile-guided placement, cross-tier retention, and dependency-aware transfers across HBM, pinned host memory, and HDD. Its design preserves FP16 weights and the router's selections. Across four Mixtral model/workload combinations, the single-GPU configuration provides 3.00--3.26$\times$ speedup over unoptimized streaming and 1.25--1.42$\times$ speedup over a matched HDD-backed cache adapter. On Mixtral-8x7B question answering, it uses one GPU at 8.0~s/token; a two-GPU resident configuration reaches 2.8~s/token. The comparison exposes the latency and allocation choices of HDD-backed MoE serving.
 \end{abstract}
 \begin{IEEEkeywords}
 Mixture of experts, single-GPU inference, expert offloading, three-tier caching, hardware/software co-design.
@@ -33,13 +33,13 @@ Mixture of experts, single-GPU inference, expert offloading, three-tier caching,
 \section{Introduction}
 Mixture-of-experts (MoE) models select a subset of experts for each token~\cite{shazeer,switch,gshard}. Mixtral and DeepSeekMoE instantiate sparse routing in language models~\cite{mixtral,deepseekmoe}. A single GPU can execute selected experts without full HBM residency, provided each weight is delivered before computation.
 
-Shared servers assign each service a host-memory allowance. When combined HBM and host residency cannot hold the expert pool, requests reach SSD. FlexGen and DeepSpeed Inference already plan heterogeneous-memory execution~\cite{flexgen,dsinference}; flash-aware inference also addresses models exceeding DRAM~\cite{llmflash}. We study expert delivery under fixed task caps.
+Shared servers assign each service a host-memory allowance. When combined HBM and host residency cannot hold the expert pool, requests reach HDD. FlexGen and DeepSpeed Inference already plan heterogeneous-memory execution~\cite{flexgen,dsinference}; flash-aware inference also addresses models exceeding DRAM~\cite{llmflash}. We study expert delivery under fixed task caps.
 
 Prior work uses CPU/GPU orchestration~\cite{fiddler}, memory-constrained planning~\cite{lightning}, and SSD-native delivery~\cite{ssdllama}. MoE-Infinity traces activations for cache replacement and prefetch~\cite{moeinfinity}. ProMoE predicts future expert use~\cite{promoe}. Learned replacement~\cite{flashmoe} and domain-guided residency~\cite{core} further exploit routes. We compare placement, retention, and scheduling under common physical caps.
 
-Three coupled decisions govern expert delivery. \textbf{First, capacity has to be distributed across layers.} Uniform slots can leave some layers repeatedly reading from SSD. \textbf{Second, HBM eviction has to preserve later reuse.} A fixed CPU pool may discard useful experts, while independent tier caches can retain duplicate copies. \textbf{Third, residency has to track request changes.} An initial profile covers startup demand; online observations update that placement as the working set changes.
+Three coupled decisions govern expert delivery. \textbf{First, capacity has to be distributed across layers.} Uniform slots can leave some layers repeatedly reading from HDD. \textbf{Second, HBM eviction has to preserve later reuse.} A fixed CPU pool may discard useful experts, while independent tier caches can retain duplicate copies. \textbf{Third, residency has to track request changes.} An initial profile covers startup demand; online observations update that placement as the working set changes.
 
-Our design treats the route profile as an initial residency prior and actual requests as online corrections. \mecc{} assigns these roles across HBM, CPU pinned memory, and SSD. The compiler assigns expert rankings and layer capacities. The runtime promotes requested experts and demotes HBM victims into the host working set. Transfer overlap requires independent work and enforced readiness before computation. Section~\ref{sec:overview} presents the framework; Section~\ref{sec:implementation} defines physical accounting and metrics.
+Our design treats the route profile as an initial residency prior and actual requests as online corrections. \mecc{} assigns these roles across HBM, CPU pinned memory, and HDD. The compiler assigns expert rankings and layer capacities. The runtime promotes requested experts and demotes HBM victims into the host working set. Transfer overlap requires independent work and enforced readiness before computation. Section~\ref{sec:overview} presents the framework; Section~\ref{sec:implementation} defines physical accounting and metrics.
 
 We evaluate the contribution of profile placement, retention, and transfer scheduling separately. We also compare one-GPU latency with the smallest feasible resident GPU allocation.
 
@@ -48,14 +48,14 @@ We evaluate the contribution of profile placement, retention, and transfer sched
 \subsection{Single-GPU Execution with Bounded Host Memory}
 Consider $L$ MoE layers. Layer $\ell$ contains $N_\ell$ experts and selects $k_\ell$ per token. Expert $e=(\ell,j)$ is an immutable weight object of size $s_e$. The GPU also stores dense weights, activations, the KV cache, and temporary buffers. The expert-residency allowance is $\BH$; the total task-level host allowance is $\BC$. Host mirrors and staging buffers count toward $\BC$.
 
-Let $\bar B_{\mathrm H}$ and $\bar B_{\mathrm C}$ denote unique expert-residency capacities after charging other allocations. The target regime satisfies $\sum_e s_e>\bar B_{\mathrm H}+\bar B_{\mathrm C}$ and exceeds the task host allowance. Post-initialization SSD demand traffic measures its operational impact; startup reads alone do not establish this regime. Models that fit in host memory serve as two-tier controls. Models that fit in HBM need no expert offloading.
+Let $\bar B_{\mathrm H}$ and $\bar B_{\mathrm C}$ denote unique expert-residency capacities after charging other allocations. The target regime satisfies $\sum_e s_e>\bar B_{\mathrm H}+\bar B_{\mathrm C}$ and exceeds the task host allowance. Post-initialization HDD demand traffic measures its operational impact; startup reads alone do not establish this regime. Models that fit in host memory serve as two-tier controls. Models that fit in HBM need no expert offloading.
 
-An HBM hit uses resident weights. A CPU hit requires host-to-device (H2D) transfer. An SSD miss adds an SSD-to-host read. We record the expert's tier when demand arrives, before servicing the request. Separate counters record physical SSD and transfer traffic, including prefetches.
+An HBM hit uses resident weights. A CPU hit requires host-to-device (H2D) transfer. An HDD miss adds an HDD-to-host read. We record the expert's tier when demand arrives, before servicing the request. Separate counters record physical HDD and transfer traffic, including prefetches.
 
 \subsection{Challenge 1: Allocate Capacity across Layers}
 The value of a cache slot depends on the layer's request distribution and miss cost. A small working set needs few slots. A broader working set can cause repeated cold reads under the same allocation. This difference motivates moving capacity between layers while holding total memory fixed.
 
-Figure~\ref{fig:challenges}(a) compares four representative layers sharing 16 equal-size CPU slots. Uniform allocation assigns four slots per layer; profile-guided allocation assigns two, three, five, and six. HBM capacity and replacement are fixed. The plan moves slots toward layers with greater SSD demand. The first two layers lose coverage while the last two gain it. Aggregate miss counts weight each layer by its request volume.
+Figure~\ref{fig:challenges}(a) compares four representative layers sharing 16 equal-size CPU slots. Uniform allocation assigns four slots per layer; profile-guided allocation assigns two, three, five, and six. HBM capacity and replacement are fixed. The plan moves slots toward layers with greater HDD demand. The first two layers lose coverage while the last two gain it. Aggregate miss counts weight each layer by its request volume.
 
 \subsection{Challenge 2: Preserve Reuse after HBM Eviction}
 An expert can be requested again soon after HBM eviction. A fixed CPU pool retains only its predefined members. Independent tier caches may instead retain copies of the same expert. These policies differ in both reuse coverage and physical duplication.
@@ -77,11 +77,11 @@ Figure~\ref{fig:challenges}(c) compares profile initialization, online adaptatio
 \label{sec:overview}
 \begin{figure*}[!b]
 \centering\includegraphics[width=\textwidth]{clean_review/figures/fig01_overview.pdf}
-\caption{\mecc{} framework. Offline compilation emits capacities $K_{\mathrm H,\ell}$ and $K_{\mathrm C,\ell}$ and ranked expert IDs. Online lookup resolves unchanged router selections against HBM, CPU pinned memory, and SSD. Weight delivery records a readiness event before GPU execution. Dashed arrows carry control/plan metadata; solid arrows move weights. Expert IDs and occupancy are schematic.}
+\caption{\mecc{} framework. Offline compilation emits capacities $K_{\mathrm H,\ell}$ and $K_{\mathrm C,\ell}$ and ranked expert IDs. Online lookup resolves unchanged router selections against HBM, CPU pinned memory, and HDD. Weight delivery records a readiness event before GPU execution. Dashed arrows carry control/plan metadata; solid arrows move weights. Expert IDs and occupancy are schematic.}
 \label{fig:overview}
 \end{figure*}
 
-Figure~\ref{fig:overview} separates offline compilation from online execution. An independent route profile, model metadata, task memory caps, and delivery costs define the compilation inputs. The output specifies layer capacities and initial expert IDs. Mirrors and staging are charged outside unique primary residency; SSD retains all backing weights.
+Figure~\ref{fig:overview} separates offline compilation from online execution. An independent route profile, model metadata, task memory caps, and delivery costs define the compilation inputs. The output specifies layer capacities and initial expert IDs. Mirrors and staging are charged outside unique primary residency; HDD retains all backing weights.
 
 The unchanged router supplies demand IDs. Residency lookup selects a source tier; the runtime promotes requested experts and demotes HBM victims. The delivery path enforces weight readiness before execution. Layer capacities stay fixed during a run, while expert identities and recency change. Planner controls therefore fix online rules; replacement controls fix quotas and initialization (Section~\ref{sec:mechanisms}).
 
@@ -95,7 +95,7 @@ The compiler takes model metadata, memory budgets, delivery costs, and an indepe
 \end{equation}
 Here $q_{\ell,r}$ is conditional on an expert selection in layer $\ell$. Let $w_\ell$ be that layer's fraction of all selections. The global probability is $p_e=w_\ell q_{\ell,r}$, with $\sum_\ell w_\ell=1$. For fixed top-$k$ routing, $w_\ell=k_\ell/\sum_j k_j$. Each rank retains its profiled expert ID. Empirical probabilities can replace the fitted Zipf distribution. Neither representation encodes request order.
 
-Let $x_{e,t}\in\{0,1\}$ indicate the primary tier of expert $e$. The tiers are HBM, CPU, and SSD, denoted by $\mathrm H$, $\mathrm C$, and $\mathrm S$. Residency budgets $\bar B_t$ must exclude buffers and mirrors. The following static objective is a reference model, not a claim that the current planner solves the full problem:
+Let $x_{e,t}\in\{0,1\}$ indicate the primary tier of expert $e$. The tiers are HBM, CPU, and HDD, denoted by $\mathrm H$, $\mathrm C$, and $\mathrm S$. Residency budgets $\bar B_t$ must exclude buffers and mirrors. The following static objective is a reference model, not a claim that the current planner solves the full problem:
 \begin{align}
  \min_x\quad &\sum_e p_e\sum_t x_{e,t}T_t(s_e),\label{eq:placement}\\
  \text{s.t.}\quad&\sum_t x_{e,t}=1,\quad
@@ -104,7 +104,7 @@ Let $x_{e,t}\in\{0,1\}$ indicate the primary tier of expert $e$. The tiers are H
 The affine model $T_t(s)=a_t+s/b_t$ represents fixed overhead and effective bandwidth. Calibration uses the target machine. Equation~\ref{eq:placement} estimates static delivery cost under the profile. Runtime locality, migration, and overlap are evaluated separately.
 
 \begin{proposition}
-Assume equal-size objects, fixed request probabilities, independent tier capacities, and $T_{\mathrm H}\le T_{\mathrm C}\le T_{\mathrm S}$. An optimal static placement fills HBM with the most probable objects, CPU with the next most probable objects, and SSD with the remainder.
+Assume equal-size objects, fixed request probabilities, independent tier capacities, and $T_{\mathrm H}\le T_{\mathrm C}\le T_{\mathrm S}$. An optimal static placement fills HBM with the most probable objects, CPU with the next most probable objects, and HDD with the remainder.
 \end{proposition}
 \noindent\emph{Proof sketch.} Suppose $p_i>p_j$ and object $i$ occupies the slower tier. Exchanging the two objects changes expected cost by $(p_i-p_j)(T_{\mathrm{fast}}-T_{\mathrm{slow}})\le0$. Repeated exchanges produce ranked placement. Filling an empty faster-tier slot also cannot increase cost. The result applies to the stated static model.
 
@@ -117,7 +117,7 @@ This is a coverage score, not the exact latency marginal of Equation~\ref{eq:pla
 The plan records per-layer capacities, ranked expert IDs, initial tiers, and modeled hit fractions. Input model/profile hashes, object sizes, and the ranking mode identify its provenance. A missing profile selects the natural-order fallback; the plan records the ranking mode. Initialization traffic and planning time are charged before comparing finite service horizons.
 
 \subsection{Runtime: Cross-Tier Retention}
-Each layer has ordered HBM and CPU residency maps. An HBM hit updates recency. A CPU hit removes the expert from CPU residency and promotes it to HBM as most recently used. An SSD miss reads the weights into staging before H2D transfer. When HBM is full, its least-recently used expert is demoted to CPU. CPU pressure evicts the least-recently used host resident. The SSD backing weights remain available.
+Each layer has ordered HBM and CPU residency maps. An HBM hit updates recency. A CPU hit removes the expert from CPU residency and promotes it to HBM as most recently used. An HDD miss reads the weights into staging before H2D transfer. When HBM is full, its least-recently used expert is demoted to CPU. CPU pressure evicts the least-recently used host resident. The HDD backing weights remain available.
 
 Figure~\ref{fig:retention} starts with HBM $[e_0,e_1]$ and CPU $[e_2,e_3,e_4]$. Requesting $e_2$ promotes it and demotes $e_0$. The next request for $e_0$ hits CPU. This example uses exclusive logical residency. An implementation can keep a CPU mirror to avoid device-to-host (D2H) transfer on eviction. The mirror consumes host memory and is charged separately.
 
@@ -134,7 +134,7 @@ A correct asynchronous implementation requires a readiness event after each pinn
 
 At batch one, routing reveals the selected IDs only after the current layer's gate. Copying one selected expert may overlap computation of another already-ready expert if kernel and aggregation order permit. This provides no knowledge of a later layer's route. In-flight weights must be protected from eviction. Replacement comparisons must disable predictive prefetch; the overlap control must hold admission, residency, and requests fixed. The available overlap and its exposed critical path remain measurements, rather than an assumed gain from a copy stream.
 
-Figure~\ref{fig:delivery} pairs one HBM-resident expert with one SSD-backed expert from the same gate. SSD read precedes H2D and readiness. Copy completion releases the pinned source; final-consumer completion permits GPU eviction. Useful independent computation determines the available overlap.
+Figure~\ref{fig:delivery} pairs one HBM-resident expert with one HDD-backed expert from the same gate. HDD read precedes H2D and readiness. Copy completion releases the pinned source; final-consumer completion permits GPU eviction. Useful independent computation determines the available overlap.
 
 \begin{figure}[t]
 \centering\includegraphics[width=\columnwidth]{clean_review/figures/fig08_delivery.pdf}
@@ -155,11 +155,11 @@ Physical accounting deduplicates storage identities, not expert IDs: distinct li
 \end{align}
 Full mirroring requires $D_{\mathrm H}\ge R_{\mathrm H}$. Residency must be reduced or a mirror-free path validated. Peak measurements must include initialization and transient copies, not only steady residency.
 
-Counters must separate initialization, warmup, prefill, decode, and quality evaluation. TPOT divides decode time by measured intervals; TTFT includes prefill and the first output. Demand-miss share is the fraction of selected-expert arrivals without ready HBM/CPU weights. In-flight prefetch is logged separately. Physical SSD/H2D/D2H bytes use the same phase boundaries. These counters define the same phase boundaries for every policy.
+Counters must separate initialization, warmup, prefill, decode, and quality evaluation. TPOT divides decode time by measured intervals; TTFT includes prefill and the first output. Demand-miss share is the fraction of selected-expert arrivals without ready HBM/CPU weights. In-flight prefetch is logged separately. Physical HDD/H2D/D2H bytes use the same phase boundaries. These counters define the same phase boundaries for every policy.
 
 \begin{figure*}[tb]
 \centering\includegraphics[width=\textwidth]{clean_review/figures/fig04_performance.pdf}
-\caption{Performance. (a) TPOT for single-A100 policies. RF adapter and SSD-native adapter are local mechanisms, not published-system measurements. Nominal allowances are 50~GB for experts and 40~GB for host memory; mirrors and staging belong to the task host cap. (b) Speedup over SSD-native adapter, calculated from the same TPOT targets. Plots show point estimates.}
+\caption{Performance. (a) TPOT for single-A100 policies. RF adapter and HDD-backed cache adapter are local mechanisms, not published-system measurements. Nominal allowances are 50~GB for experts and 40~GB for host memory; mirrors and staging belong to the task host cap. (b) Speedup over HDD-backed cache adapter, calculated from the same TPOT targets. Plots show point estimates.}
 \label{fig:performance}
 \end{figure*}
 
@@ -170,18 +170,20 @@ Counters must separate initialization, warmup, prefill, decode, and quality eval
 \subsection{Experimental Methodology}
 \textbf{Models and workloads.} The evaluation uses Mixtral-8x7B and Mixtral-8x22B~\cite{mixtral,mixtral22} with question-answering and code prompts. One A100 provides 80~GB of physical HBM. The nominal expert allowance is 50~GB; dense weights, KV cache, and staging consume additional HBM. The task host cap is 40~GB. Profile and evaluation splits are independent. Main comparisons use batch one, 128 input tokens, 128 output tokens, and deterministic decoding. 
 
-\textbf{Unoptimized streaming.} This baseline executes the same selected FP16 experts on one GPU, sharing the model, tokenizer, kernels, SSD-read semantics, and task caps with \mecc{}. Demand staging disables profile placement, dynamic CPU retention, and overlap. Report its default residency and achieved occupancy; equal caps alone do not establish an equally provisioned comparison.
+\textbf{Backing medium.} The current A100 testbed stores expert weights on a local RAID logical device that reports rotational media (\texttt{ROTA=1}). We call this cold tier HDD throughout the evaluation. The controller's physical-drive inventory has not been obtained; no NVMe/SSD measurement is claimed for this testbed.
 
-\textbf{Cache baselines.} Three-tier LRU controls for basic caching. RF and SSD-native are local mechanism adapters. The recency/frequency (RF) adapter uses a heuristic with recency and frequency scores; FlashMoE~\cite{flashmoe} learns a predictor from these signals. SSD-native represents three-tier residency motivated by SSD-LLaMA~\cite{ssdllama}. Neither establishes a reproduction of the cited system. External systems are discussed separately in Section~\ref{sec:related}.
+\textbf{Unoptimized streaming.} This baseline executes the same selected FP16 experts on one GPU, sharing the model, tokenizer, kernels, HDD-read semantics, and task caps with \mecc{}. Demand staging disables profile placement, dynamic CPU retention, and overlap. Report its default residency and achieved occupancy; equal caps alone do not establish an equally provisioned comparison.
 
-\textbf{Multi-GPU reference.} The resident reference partitions the full FP16 model across two, four, or eight A100s where capacity permits. It uses matched inputs and decoding without SSD delivery. Its resource record includes GPU count, parallelism, interconnect, software revision, and memory peak. The resident reference is a capacity and latency comparison.
+\textbf{Cache baselines.} Three-tier LRU controls for basic caching. RF and the HDD-backed cache adapter are local mechanism adapters. The recency/frequency (RF) adapter uses a heuristic with recency and frequency scores; FlashMoE~\cite{flashmoe} learns a predictor from these signals. The HDD-backed cache adapter represents three-tier residency motivated by SSD-LLaMA~\cite{ssdllama}. Neither establishes a reproduction of the cited system. External systems are discussed separately in Section~\ref{sec:related}.
 
-\textbf{Metrics.} We report TPOT, TTFT, throughput, demand-miss share, SSD/H2D/D2H bytes, and physical memory peaks. GPU-time comparisons use the same workload. The charts report deterministic point estimates under the stated workload.
+\textbf{Multi-GPU reference.} The resident reference partitions the full FP16 model across two, four, or eight A100s where capacity permits. It uses matched inputs and decoding without HDD delivery. Its resource record includes GPU count, parallelism, interconnect, software revision, and memory peak. The resident reference is a capacity and latency comparison.
+
+\textbf{Metrics.} We report TPOT, TTFT, throughput, demand-miss share, HDD/H2D/D2H bytes, and physical memory peaks. GPU-time comparisons use the same workload. The charts report deterministic point estimates under the stated workload.
 
 \subsection{Latency under Matched Single-GPU Budgets}
 Figure~\ref{fig:performance}(a) fixes one A100 and the task host cap across four model/workload combinations. TPOT is 8.0, 9.5, 16.0, and 19.0~s for \mecc{}, versus 24, 31, 49, and 62~s for unoptimized streaming. These values correspond to $3.00\times$, $3.26\times$, $3.06\times$, and $3.26\times$ speedup. Section~\ref{sec:mechanisms} decomposes the complete stack.
 
-SSD-native adapter takes 10, 13, 21, and 27~s per token. Figure~\ref{fig:performance}(b) gives the corresponding $1.25$--$1.42\times$ gains. This is the closer local cache comparison; the larger streaming gain does not establish an advantage over other cache systems.
+HDD-backed cache adapter takes 10, 13, 21, and 27~s per token. Figure~\ref{fig:performance}(b) gives the corresponding $1.25$--$1.42\times$ gains. This is the closer local cache comparison; the larger streaming gain does not establish an advantage over other cache systems.
 
 TTFT is 60/68/96/112~s for \mecc{} and 130/155/230/280~s for streaming. These values describe first response. TPOT describes later token intervals. Initialization is charged separately in the cost analysis below.
 
@@ -206,7 +208,7 @@ Resident, 8 GPUs & 1.0 & 8.0\\\bottomrule
 \label{sec:mechanisms}
 Figure~\ref{fig:ablation} adds components to streaming on the first workload. Profile placement reduces TPOT from 24 to 18~s. Retention reduces it to 11~s. Overlap reduces it to 8~s. Each change measures a component within that stack. Component interactions require additional leave-one-out and factorial comparisons.
 
-SSD demand-miss shares are 46\%, 33\%, 20\%, and 20\%. Placement and retention reduce the illustrated SSD demand share. Overlap keeps the same miss share and reduces exposed waiting. The 12\% point in Figure~\ref{fig:challenges}(b) belongs to a separate controlled trace.
+HDD demand-miss shares are 46\%, 33\%, 20\%, and 20\%. Placement and retention reduce the illustrated HDD demand share. Overlap keeps the same miss share and reduces exposed waiting. The 12\% point in Figure~\ref{fig:challenges}(b) belongs to a separate controlled trace.
 
 Mechanism controls hold requests fixed. Separate controls must vary layer allocation and initial expert identities while holding the other fixed, and charge initial transfers. The retention comparison must record duplicate bytes under each policy. Within-phase shuffling preserves expert histograms and tests sensitivity to order. The shift workload tests adaptation to a changed expert distribution.
 
@@ -226,7 +228,7 @@ Overlap & Schedule & Requests, transfers, kernel order\\\bottomrule
 
 \begin{figure*}[tb]
 \centering\includegraphics[width=\textwidth]{clean_review/figures/fig05_ablation.pdf}
-\caption{Component ablation. (a) TPOT after adding each component. (b) SSD demand-miss share. The overlap-only step fixes admission, residency, and requests. Its miss share stays at 20\%; exposed transfer time decreases.}
+\caption{Component ablation. (a) TPOT after adding each component. (b) HDD demand-miss share. The overlap-only step fixes admission, residency, and requests. Its miss share stays at 20\%; exposed transfer time decreases.}
 \label{fig:ablation}
 \end{figure*}
 
@@ -242,11 +244,11 @@ Figure~\ref{fig:budget}(a) increases the host cap from 16 to 48~GB on a fixed GP
 
 Figure~\ref{fig:budget}(b) varies GPU count for 8x7B question answering. The resident configuration does not fit on one GPU. Its two-, four-, and eight-GPU latencies are 2.8, 1.65, and 1.0~s/token. Only the single-GPU \mecc{} configuration is shown. The one-GPU result is compared with the smallest feasible resident allocation.
 
-Figure~\ref{fig:budget}(c) adds initialization to decode time. Initialization costs 30~s for \mecc{} and 12~s for the SSD-native adapter. Decode costs 8 and 10~s/token, respectively. The plotted terms are equal at nine decode intervals after the first token. This is not a full-request crossover. For $n$ output tokens, full cost is $J(n)=I+\mathrm{TTFT}+(n-1)\mathrm{TPOT}$, with amortized profiling/loading included in $I$ and no double counting. The adapter TTFT and profile costs are unspecified, so no numerical full-request break-even follows.
+Figure~\ref{fig:budget}(c) adds initialization to decode time. Initialization costs 30~s for \mecc{} and 12~s for the HDD-backed cache adapter. Decode costs 8 and 10~s/token, respectively. The plotted terms are equal at nine decode intervals after the first token. This is not a full-request crossover. For $n$ output tokens, full cost is $J(n)=I+\mathrm{TTFT}+(n-1)\mathrm{TPOT}$, with amortized profiling/loading included in $I$ and no double counting. The adapter TTFT and profile costs are unspecified, so no numerical full-request break-even follows.
 
 Other sensitivity axes include HBM capacity, input/output lengths, batch size, and profile coverage or mismatch. Leave-one-out controls separate zero-copy eviction, pinning, batch H2D, and prefetching. A reverse resource comparison fixes a TPOT limit and finds each policy's minimum feasible host cap. The plots focus on host-cap, GPU-count, and service-horizon sensitivity.
 
-The profile's service horizon matters. Its collection cost is charged once per frozen model/workload profile, then amortized over the requests that actually reuse it. A shorter horizon can favor the same runtime without profile initialization. Report planning time, initial SSD/H2D bytes, and request count before interpreting a steady-state TPOT gain. Cold-start and warm-service measurements answer different deployment questions.
+The profile's service horizon matters. Its collection cost is charged once per frozen model/workload profile, then amortized over the requests that actually reuse it. A shorter horizon can favor the same runtime without profile initialization. Report planning time, initial HDD/H2D bytes, and request count before interpreting a steady-state TPOT gain. Cold-start and warm-service measurements answer different deployment questions.
 
 The exactness protocol compares weight hashes, expert selections, logits against synchronous execution, output tokens, and perplexity on a fixed corpus. Nondeterministic kernels require prespecified error tolerances and token comparisons. Weight checks and execution checks test separate properties.
 
@@ -264,10 +266,10 @@ The exactness protocol compares weight hashes, expert selections, logits against
 
 \textbf{Coordinated residency.} MoE-CORE combines layer hit-rate curves, domain initialization, and routing history/scores~\cite{core}; optional substitution is separate from exact execution. ZipMoE combines lossless compression, compression-aware caching, and cache-affinity scheduling~\cite{zipmoe}. These overlaps require matched controls, not novelty claims based on module names.
 
-The scope is SSD-active single-GPU serving. Local adapters do not establish superiority over these systems. 
+The scope is HDD-backed single-GPU serving. Local adapters do not establish superiority over these systems.
 
 \section{Conclusion}
-\mecc{} combines profile-guided placement, cross-tier retention, and readiness-checked FP16 delivery for SSD-active single-GPU inference. The evaluation distinguishes fixed-budget latency from the GPU-allocation tradeoff. The comparisons show the latency cost of constrained GPU allocation and the benefit of coordinating placement, retention, and delivery.
+\mecc{} combines profile-guided placement, cross-tier retention, and readiness-checked FP16 delivery for HDD-backed single-GPU inference. The evaluation distinguishes fixed-budget latency from the GPU-allocation tradeoff. The comparisons show the latency cost of constrained GPU allocation and the benefit of coordinating placement, retention, and delivery.
 
 \clearpage
 \nobalance
