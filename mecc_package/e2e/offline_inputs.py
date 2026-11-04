@@ -10,6 +10,7 @@
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 # ── 内置固定样本（评估与画像不重叠）────────────────────────────────────
@@ -46,6 +47,24 @@ PROFILE_TEXTS: List[str] = [
     "developmental patterns, and molecular phylogenetic evidence.",
 ]
 
+# WikiText-2 test 本地固定文件（从 hf-mirror 下载导出；见 scripts/build_input_manifest.py）。
+WIKITEXT2_TEST_PATH = Path(__file__).parent / "data" / "wikitext2_raw_v1_test.json"
+PPL_N_LINES = 64  # PPL 文本取前 N 行（与原 load_prompts 的 lines[:64] 一致）
+
+
+def load_ppl_text(path=None) -> str:
+    """返回 PPL 文本：优先用本地 WikiText-2 test 前 64 行；否则回退内置 PPL_TEXT。"""
+    p = Path(path) if path else WIKITEXT2_TEST_PATH
+    if p.exists():
+        try:
+            lines = json.loads(p.read_text(encoding="utf-8"))["lines"]
+            if lines:
+                return "\n\n".join(lines[:PPL_N_LINES])
+        except (OSError, ValueError, KeyError):
+            pass
+    return PPL_TEXT
+
+
 MANIFEST_VERSION = 1
 
 
@@ -81,7 +100,8 @@ def build_manifest(tokenizer, tokenizer_name: str = "") -> Dict:
     qa = [_entry(tokenizer, i, t) for i, t in enumerate(QA_PROMPTS)]
     code = [_entry(tokenizer, i, t) for i, t in enumerate(CODE_PROMPTS)]
     profile = [_entry(tokenizer, i, t) for i, t in enumerate(PROFILE_TEXTS)]
-    ppl_sha, ppl_len = token_sha256(tokenizer, PPL_TEXT)
+    ppl_text = load_ppl_text()
+    ppl_sha, ppl_len = token_sha256(tokenizer, ppl_text)
     return {
         "version": MANIFEST_VERSION,
         "tokenizer": tokenizer_name,
@@ -89,8 +109,8 @@ def build_manifest(tokenizer, tokenizer_name: str = "") -> Dict:
             "qa": qa,
             "code": code,
             "ppl": {
-                "text": PPL_TEXT,
-                "sha256": sha256_hex(PPL_TEXT),
+                "text": ppl_text,
+                "sha256": sha256_hex(ppl_text),
                 "token_sha256": ppl_sha,
                 "token_len": ppl_len,
             },
