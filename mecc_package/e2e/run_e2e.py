@@ -627,6 +627,30 @@ def _detect_platform(args, device):
     return "CPU"
 
 
+def _profile_identity(profile_path):
+    """返回画像文件身份：路径、sha256、是否含 per_layer_counts / per_layer_trace。
+
+    对应 Insight I 前置：主 JSON 须保存画像身份，才能复现「逐层真实画像」初态。
+    """
+    if not profile_path:
+        return None
+    ident = {"path": profile_path, "has_per_layer_counts": False,
+             "has_per_layer_trace": False, "sha256": None}
+    try:
+        with open(profile_path, "rb") as f:
+            ident["sha256"] = hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        pass
+    try:
+        with open(profile_path, encoding="utf-8") as f:
+            prof = json.load(f)
+        ident["has_per_layer_counts"] = bool(prof.get("per_layer_counts"))
+        ident["has_per_layer_trace"] = bool(prof.get("per_layer_trace"))
+    except (OSError, ValueError):
+        pass
+    return ident
+
+
 def _build_result(args, device, plan, results, smoke, block_io=None):
     _compute_speedups(results)
     out = {
@@ -640,6 +664,9 @@ def _build_result(args, device, plan, results, smoke, block_io=None):
                    "n_prompts": args.n_prompts, "cold_ssd": args.cold_ssd},
         "results": results,
     }
+    prof_ident = _profile_identity(args.profile)
+    if prof_ident is not None:
+        out["profile"] = prof_ident
     if block_io is not None:
         out["block_io"] = block_io
     return out

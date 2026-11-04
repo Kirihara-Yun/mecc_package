@@ -47,6 +47,25 @@ PROFILE_TEXTS: List[str] = [
     "developmental patterns, and molecular phylogenetic evidence.",
 ]
 
+# GSM8K 任务样本（Insight III 任务切换的「任务 B」）。占位固定样本，正式实验前替换为真实 GSM8K。
+GSM8K_PROMPTS: List[str] = [
+    "Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning "
+    "and bakes muffins for her friends with four. How many eggs does she have left to sell each day?",
+    "A robe takes 2 bolts of blue fiber and half that much white fiber. How many bolts in total does it take?",
+]
+
+# 任务切换序列（Insight III）：固定任务 A/B 与切换点。
+# task_a / task_b 指向任务名；switch_after 为任务 A 的 prompt 数后再切到任务 B。
+# no-shift 为对照（A→A），用于区分「缓存漂移」与「自然抖动」。
+TASK_SWITCH_SEQUENCES = {
+    "wikitext2_to_gsm8k": {"task_a": "wikitext2", "task_b": "gsm8k", "switch_after": 8,
+                            "desc": "WikiText-2 → GSM8K"},
+    "gsm8k_to_wikitext2": {"task_a": "gsm8k", "task_b": "wikitext2", "switch_after": 8,
+                            "desc": "GSM8K → WikiText-2"},
+    "no_shift_wikitext2": {"task_a": "wikitext2", "task_b": "wikitext2", "switch_after": 8,
+                            "desc": "no-shift (WikiText-2 → WikiText-2)"},
+}
+
 # WikiText-2 test 本地固定文件（从 hf-mirror 下载导出；见 scripts/build_input_manifest.py）。
 WIKITEXT2_TEST_PATH = Path(__file__).parent / "data" / "wikitext2_raw_v1_test.json"
 PPL_N_LINES = 64  # PPL 文本取前 N 行（与原 load_prompts 的 lines[:64] 一致）
@@ -100,6 +119,7 @@ def build_manifest(tokenizer, tokenizer_name: str = "") -> Dict:
     qa = [_entry(tokenizer, i, t) for i, t in enumerate(QA_PROMPTS)]
     code = [_entry(tokenizer, i, t) for i, t in enumerate(CODE_PROMPTS)]
     profile = [_entry(tokenizer, i, t) for i, t in enumerate(PROFILE_TEXTS)]
+    gsm8k = [_entry(tokenizer, i, t) for i, t in enumerate(GSM8K_PROMPTS)]
     ppl_text = load_ppl_text()
     ppl_sha, ppl_len = token_sha256(tokenizer, ppl_text)
     return {
@@ -115,6 +135,10 @@ def build_manifest(tokenizer, tokenizer_name: str = "") -> Dict:
                 "token_len": ppl_len,
             },
             "profile": profile,
+        },
+        "task_switch": {
+            "gsm8k_prompts": gsm8k,
+            "sequences": TASK_SWITCH_SEQUENCES,
         },
         "profile_disjoint_from_eval": True,
     }
