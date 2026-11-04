@@ -41,6 +41,7 @@ import deepseek_tiered as DT
 from store_manifest import (expected_manifest, validate_store, write_manifest,
                             write_pending_manifest)
 from result_schema import atomic_write_result
+from offline_inputs import load_manifest, select_prompts, select_ppl_text
 
 POLICIES = ["ours", "swapmoe", "fiddler", "naive", "flashmoe_rf_adaptation"]
 
@@ -83,9 +84,11 @@ from contextlib import nullcontext
 
 @torch.no_grad()
 def measure_latency(model, input_ids, max_new_tokens, device, use_cache, use_amp=False,
-                    trace_fn=None):
+                    trace_fn=None, phase_cb=None):
     sync(device)
     # ---- prefill: 首 token (TTFT) ----
+    if phase_cb is not None:
+        phase_cb("prefill")
     if trace_fn is not None:
         torch.cuda.reset_peak_memory_stats(device)
     t0 = time.perf_counter()
@@ -102,6 +105,8 @@ def measure_latency(model, input_ids, max_new_tokens, device, use_cache, use_amp
         trace_fn("prefill", 0, ttft)
 
     # ---- decode: 后续每 token (TPOT) ----
+    if phase_cb is not None:
+        phase_cb("decode")
     step_times = []
     seq = input_ids
     for step in range(1, max_new_tokens):
@@ -187,8 +192,11 @@ BUILTIN_PROMPTS = [
 
 
 def load_prompts(n_prompts: int, max_len: int = 64,
-                 use_wikitext: bool = True) -> (List[str], str):
-    """返回 (prompts, ppl_text)；仅在需要 PPL 时探测 WikiText-2。"""
+                 use_wikitext: bool = True, manifest=None) -> (List[str], str):
+    """返回 (prompts, ppl_text)。优先从离线 manifest 读；否则探测 WikiText-2。"""
+    if manifest is not None:
+        # 离线清单：QA 评估 prompt + 固定 PPL 文本；失败即抛异常，不静默回退。
+        return select_prompts(manifest, "qa", n_prompts), select_ppl_text(manifest)
     if not use_wikitext:
         return BUILTIN_PROMPTS[:n_prompts], " ".join(BUILTIN_PROMPTS)
     try:
@@ -259,6 +267,11 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
         return record
 
     # ---- 计时: 每个 prompt 跑一次, 取均值 ----
+    def set_phase_all(phase):
+        for c in caches:
+            if c is not None:
+                c.set_phase(phase)
+
     lat = []
     for prompt_index, p in enumerate(prompts):
         if args.smoke:
@@ -267,22 +280,19 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
             ids = tokenizer(p, return_tensors="pt").input_ids[:, :args.prompt_len].to(device)
         input_tokens = ids.shape[1]
         # warmup 一次 (排除首次 kernel 编译/换页抖动)
-        for c in caches:
-            if c is not None:
-                c.set_phase("warmup")
+        set_phase_all("warmup")
         warmup_trace = memory_observer("warmup", prompt_index, input_tokens)
         if warmup_trace is not None:
             warmup_trace("before_forward", -1, None)
         _ = measure_latency(model, ids, min(4, args.max_new_tokens), device, use_cache,
                             use_amp=use_amp, trace_fn=warmup_trace)
-        for c in caches:
-            if c is not None:
-                c.set_phase("decode")
+        # measure 阶段：prefill 与 decode 分桶（X9 修复）
         measured_trace = memory_observer("measure", prompt_index, input_tokens)
         if measured_trace is not None:
             measured_trace("before_forward", -1, None)
         lat.append(measure_latency(model, ids, args.max_new_tokens, device, use_cache,
-                                   use_amp=use_amp, trace_fn=measured_trace))
+                                   use_amp=use_amp, trace_fn=measured_trace,
+                                   phase_cb=set_phase_all))
 
     agg = {
         "ttft_ms": round(statistics.mean(l["ttft_ms"] for l in lat), 2),
@@ -399,6 +409,8 @@ def _main():
     ap.add_argument("--partial_out", default=None,
                     help="atomic Schema-A checkpoint updated after each completed policy")
     ap.add_argument("--status_file", default=None, help="atomic phase-status JSON for persistent runs")
+    ap.add_argument("--input_manifest", default=None,
+                    help="离线固定输入清单 JSON（QA/Code/PPL/画像 + token 哈希），优先于网络下载")
     args = ap.parse_args()
     _STATUS_FILE = args.status_file
     _phase("initializing")
@@ -510,8 +522,10 @@ def _main():
         write_manifest(args.store_root, manifest)
         print("  [store] manifest finalized after integrity check.")
 
+    input_manifest = load_manifest(args.input_manifest) if args.input_manifest else None
     prompts, ppl_text = load_prompts(
-        args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl)
+        args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl,
+        manifest=input_manifest)
     prompt_digest = hashlib.sha256(json.dumps(prompts, ensure_ascii=False).encode()).hexdigest()
     ppl_digest = hashlib.sha256(ppl_text.encode()).hexdigest()
     ppl_input_tokens = tokenizer(ppl_text, return_tensors="pt").input_ids[:, :args.ppl_tokens].shape[1]

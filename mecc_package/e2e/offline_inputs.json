@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "tokenizer": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "categories": {
+    "qa": [
+      {
+        "id": "000",
+        "text": "Janet buys 3 packs of 4 pencils and 2 packs of 6 erasers. How many items in total?",
+        "sha256": "654dcf9e45f514bc27b26e500cfafa2418e88b55c4be9f4864570feeb98b04fc",
+        "token_sha256": "dbca480af79695c34f47e5a9a4395647afb280e1f109e51709bd50a75fbf62e0",
+        "token_len": 33
+      },
+      {
+        "id": "001",
+        "text": "A train travels 240 kilometers in 3 hours. What is its average speed in km per hour?",
+        "sha256": "e639661122d25a71b72496cd9ff0eef917632f8ec47be44d499c94a99323f7db",
+        "token_sha256": "52e1e06dcf54e3082f382832956917a34ad89907e268dca0668c68c2d82642cc",
+        "token_len": 25
+      },
+      {
+        "id": "002",
+        "text": "If x plus 3 equals 10, what is the value of x?",
+        "sha256": "c60abf2eb57b4b3de46c2520d886f1edacdfd9ff463bd6e2071f53d7e18e1dc3",
+        "token_sha256": "a8cdf7151493fce0915a6bb66c71613a8cfd214641e1a9d69d9bba03f21397f4",
+        "token_len": 18
+      }
+    ],
+    "code": [
+      {
+        "id": "000",
+        "text": "def fibonacci(n):\n    \"\"\"Return the n-th Fibonacci number.\"\"\"\n",
+        "sha256": "c89688c8d6ff4fdd27f675ba94763d924543cd7c29e0596da6b58e483e1b616b",
+        "token_sha256": "d60894eff03acc4edab59ac80d2fdd3bc87b51f9a9433144d111c8b4290e2530",
+        "token_len": 23
+      },
+      {
+        "id": "001",
+        "text": "def reverse_list(items):\n    \"\"\"Return a reversed copy of items.\"\"\"\n",
+        "sha256": "30b5099ee1068d2d21c621f9f5fa925f4c44d5c6e64f7688539f5363c411dc46",
+        "token_sha256": "e97c2d7e0338280d6a31f00a6fd02c51b6196b27c16208ea3c7dee2382d71ebd",
+        "token_len": 20
+      },
+      {
+        "id": "002",
+        "text": "def is_palindrome(s):\n    \"\"\"Return True if s is a palindrome.\"\"\"\n",
+        "sha256": "dbbcf931790d1f43316776854b1cf9664e71dfa967b03436dacb97526e73ccdc",
+        "token_sha256": "608e527f703d7598c34099f843cb729f48de22c1cf5065d79306ed1ae7593f33",
+        "token_len": 24
+      }
+    ],
+    "ppl": {
+      "text": "The history of computing spans the development of machines that perform calculations automatically. Early devices such as the abacus and the slide rule aided arithmetic long before electronic computers existed. The modern era of computing began in the twentieth century with electromechanical and electronic machines. Over successive decades, computing hardware grew faster and smaller, while software became more abstract and portable. These advances transformed science, industry, and daily life in ways that continue to unfold.",
+      "sha256": "da1e5b15b1a785f3013a359b1c48e77ec8717cd1d20075198f0b5380170e75d8",
+      "token_sha256": "2ffae88c9709a27249d1847221151fad0fb45bcaeb726eb8516a4bb8076e1fb6",
+      "token_len": 96
+    },
+    "profile": [
+      {
+        "id": "000",
+        "text": "Meteorological observations over several decades reveal long-term trends in average temperature and precipitation across continental regions.",
+        "sha256": "bc20eac15ce03797d20fd31a09dbd9c097b39741bd3385c3f12ff3ef2eff5f4a",
+        "token_sha256": "c7b482e335babd6159d9547b7789ce8426318e07925fc9a95e604ecc66c2060a",
+        "token_len": 25
+      },
+      {
+        "id": "001",
+        "text": "The taxonomy of marine invertebrates classifies organisms by body symmetry, developmental patterns, and molecular phylogenetic evidence.",
+        "sha256": "a1927d94de86f458aee10bb8856e11ff8dca4f66c0dfa99c91ffebf2c782f9d1",
+        "token_sha256": "bad35283239e6f985427af01a148ccfdd1b112d0bf3a6c51161c91607b9e68a8",
+        "token_len": 32
+      }
+    ]
+  },
+  "profile_disjoint_from_eval": true
+}
