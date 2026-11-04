@@ -29,22 +29,57 @@ QUEUE="20 swapmoe
 60 naive
 60 flashmoe_rf_adaptation"
 
-FAILED=0
 TOTAL=0
+MAX_WALL_SECONDS=7200
 
 while read -r cpu policy; do
   [ -z "$cpu" ] && continue
   TOTAL=$((TOTAL+1))
   run_id="a100-p2-cpu${cpu}-${policy}-20261104"
-  log "START $run_id cpu=$cpu policy=$policy"
-  $LAUNCHER run "$run_id" --config "$CONFIG" --state-path "$STATE" --gpu 0 \
-    --policies "$policy" --n-prompts 4 --cpu-budget "$cpu" >> "$LOGFILE" 2>&1
+  run_dir="$RUNS_ROOT/$run_id"
+  unit="mecc-exp-${run_id}.service"
+  if [ -d "$run_dir" ]; then
+    phase=$(python3 -c "import json;print(json.load(open('$run_dir/status.json')).get('phase',''))" 2>/dev/null || echo "")
+    if [ "$phase" = "complete" ] && [ -s "$run_dir/result.json" ]; then
+      log "SKIP_COMPLETE $run_id"
+      continue
+    fi
+    state=$(systemctl --user is-active "$unit" 2>/dev/null || true)
+    if [ "$state" != "active" ] && [ "$state" != "activating" ]; then
+      log "STOP_INCOMPLETE $run_id phase=$phase unit=inactive"
+      exit 1
+    fi
+    log "RESUME_MONITOR $run_id phase=$phase"
+  else
+    log "START $run_id cpu=$cpu policy=$policy"
+    if ! $LAUNCHER run "$run_id" --config "$CONFIG" --state-path "$STATE" --gpu 0 \
+      --policies "$policy" --n-prompts 4 --cpu-budget "$cpu" >> "$LOGFILE" 2>&1; then
+      log "STOP_LAUNCH_FAILED $run_id"
+      exit 1
+    fi
+  fi
+  started_at=$(date +%s)
   while true; do
-    phase=$(python3 -c "import json,sys;print(json.load(open('$RUNS_ROOT/$run_id/status.json')).get('phase',''))" 2>/dev/null || echo "")
-    if [ "$phase" = "complete" ]; then log "COMPLETE $run_id"; break; fi
-    if [ "$phase" = "failed" ]; then log "FAILED $run_id"; FAILED=$((FAILED+1)); break; fi
-    sleep 120
+    phase=$(python3 -c "import json;print(json.load(open('$run_dir/status.json')).get('phase',''))" 2>/dev/null || echo "")
+    if [ "$phase" = "complete" ] && [ -s "$run_dir/result.json" ]; then
+      log "COMPLETE $run_id"
+      break
+    fi
+    if [ "$phase" = "failed" ]; then
+      log "STOP_FAILED $run_id"
+      exit 1
+    fi
+    state=$(systemctl --user is-active "$unit" 2>/dev/null || true)
+    if [ "$state" != "active" ] && [ "$state" != "activating" ]; then
+      log "STOP_UNIT_INACTIVE $run_id phase=$phase state=$state"
+      exit 1
+    fi
+    if [ $(( $(date +%s) - started_at )) -ge "$MAX_WALL_SECONDS" ]; then
+      log "STOP_TIMEOUT $run_id phase=$phase elapsed_s=$MAX_WALL_SECONDS"
+      exit 1
+    fi
+    sleep 30
   done
 done <<< "$QUEUE"
 
-log "ALL_DONE total=$TOTAL failed=$FAILED"
+log "ALL_DONE total=$TOTAL failed=0"
