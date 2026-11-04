@@ -1,0 +1,49 @@
+======================================================================
+MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)
+======================================================================
+Device: cuda
+[opts] baseline (no torch-level optimizations)
+  [compile] uniform allocation (no per-layer alpha)
+----------------------------------------------------------------------
+COMPILED PLAN  model=mistralai/Mixtral-8x7B-Instruct-v0.1
+  α=1.0  layers=32  experts/layer=8  expert=336.0MB
+  per-layer  K_H=4 (HBM)  K_C=1 (CPU)  SSD=3
+  total HBM for experts ≈ 42.0GB | CPU ≈ 10.5GB
+  predicted hit  HBM=76.7%  CPU=7.4%  SSD=16.0%
+----------------------------------------------------------------------
+  [model_type] mixtral
+
+[materialize] streaming 256 experts → /data/mecc_store_mixtral
+  [store] manifest and all expert files verified, skip materialization.
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 428e87da-0f8e-4a16-9882-d3e2410f8de2)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 1s [Retry 1/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: dfe87540-3677-46b5-8150-08f5f744b44b)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 2s [Retry 2/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: e7942835-c17d-4f0e-a7dc-85628e751003)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 4s [Retry 3/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: b83f6f9b-1580-4d6f-a3f4-1d30b7a4988c)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 4/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: ec4116a8-a42e-434e-bbcb-c884b2fd6afe)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+Retrying in 8s [Retry 5/5].
+'(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')), '(Request ID: 9558bd58-713d-4387-a5b0-6dfb363a3296)')' thrown while requesting HEAD https://huggingface.co/datasets/wikitext/resolve/main/README.md
+  [data] WikiText-2 unavailable (Couldn't reach 'wikitext' on the Hub (LocalEntryNotFoundError)); using builtin prompts.
+  [inputs] prompts_sha256=d4a7675b0e52013e90c9538f962613609264b08ab8757cbe9ac35adff0fe8ff9 ppl_text_sha256=c425eba97673c93ec2f91c29c7fe4169588bd54b9f0a001161a199bc8585ae81 ppl_input_tokens=77
+
+======================================================================
+[POLICY = ours]
+======================================================================
+  [build] skeleton on meta device (32 layers, 8 experts/layer)...
+2026-11-04 07:13:24.916211: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-11-04 07:13:24.970033: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-11-04 07:13:26.199177: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+  [build] loaded 227 trunk/gate tensors → cuda
+  [build] ours: per-layer adaptive K_H∈[4..4] K_C∈[1..1], total HBM=128 slots
+  TTFT=185276.33ms  TPOT=21612.44ms  throughput=0.031636 tok/s  PPL=24.569
+  hit: HBM=50.9% CPU=7.6% SSD=41.5% CPUcompute=0.0%
+
+======================================================================
+MAIN TABLE → /home/qinzy/mecc_package/mecc_package/results/runs/a100-p2-cpu20-ours-20261104/result.json
+policy       TTFT(ms)   TPOT(ms)     tok/s             PPL
+ours        185276.33   21612.44  0.031636          24.569
+======================================================================

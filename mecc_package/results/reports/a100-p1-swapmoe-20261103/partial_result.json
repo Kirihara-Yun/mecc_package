@@ -1,0 +1,140 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "a100-80g",
+  "run_time": "2026-11-03T23:34:35+08:00",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=50.0GB, CPU_budget=40.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 4,
+    "k_c": 3,
+    "per_layer_k_h": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "per_layer_k_c": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 76.7,
+    "cpu_hit_pct": 18.7,
+    "ssd_hit_pct": 4.6,
+    "hbm_gb_used": 42.0,
+    "cpu_gb_used": 31.5
+  },
+  "config": {
+    "max_new_tokens": 16,
+    "prompt_len": 64,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "swapmoe": {
+      "ttft_ms": 152216.47,
+      "tpot_ms": 21600.03,
+      "tokens_per_s": 0.033604,
+      "ppl": 24.569,
+      "hit_pct": {
+        "hbm": 49.8,
+        "cpu": 13.7,
+        "ssd": 36.5,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          571,
+          392,
+          772,
+          0
+        ],
+        "decode": [
+          2792,
+          444,
+          1571,
+          0
+        ],
+        "ppl": [
+          20,
+          96,
+          140,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 874814373888,
+        "h2d": 1203178045440,
+        "d2h": 0
+      }
+    }
+  },
+  "partial": true,
+  "completed_policies": [
+    "swapmoe"
+  ]
+}

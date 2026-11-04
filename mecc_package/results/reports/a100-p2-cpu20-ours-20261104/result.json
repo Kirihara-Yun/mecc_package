@@ -1,0 +1,136 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "a100-80g",
+  "run_time": "2026-11-04T08:07:05+08:00",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=50.0GB, CPU_budget=20.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 4,
+    "k_c": 1,
+    "per_layer_k_h": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "per_layer_k_c": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 76.7,
+    "cpu_hit_pct": 7.4,
+    "ssd_hit_pct": 16.0,
+    "hbm_gb_used": 42.0,
+    "cpu_gb_used": 10.5
+  },
+  "config": {
+    "max_new_tokens": 16,
+    "prompt_len": 64,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 185276.33,
+      "tpot_ms": 21612.44,
+      "tokens_per_s": 0.031636,
+      "ppl": 24.569,
+      "hit_pct": {
+        "hbm": 50.9,
+        "cpu": 7.6,
+        "ssd": 41.5,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          644,
+          247,
+          844,
+          0
+        ],
+        "decode": [
+          2764,
+          251,
+          1792,
+          0
+        ],
+        "ppl": [
+          51,
+          21,
+          184,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 993546731520,
+        "h2d": 1176401608704,
+        "d2h": 0
+      }
+    }
+  }
+}

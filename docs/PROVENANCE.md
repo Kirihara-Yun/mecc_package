@@ -62,6 +62,20 @@
 
 > **M6 关键澄清**：1.62× 是 **TPOT（每 token）比**，1.33× 是 `speedup_vs`（综合/吞吐口径）。二者都"真"，但**不是同一个指标**。对外默认用 **1.33×（综合）**，提 1.62× 时必须写"TPOT 比"。
 
+### 3.1bis P1 主对比（本轮新数据，2026-11-03/04，A100）
+
+> 本轮 `docs/G0_CONTRACT_20261103.md` 冻结契约下的 P1 主对比：HBM=50.0 / CPU=40.0（诊断值，非物理峰值冻结）、`alpha=1.0`、`n_prompts=4`、`max_new_tokens=16`、`cold_ssd=true`、`uniform=true`，5 策略各独立 run（规避顺序装载 OOM）。
+> **介质为 HDD（RAID，非 SSD/NVMe，见 G0 契约 §1）**；**PPL 输入为 WikiText-2 下载失败回退的 77-token 内置文本（非标准 WikiText-2）**。与历史 `raw/mixtral_real.json`（HBM=30）配置不同，**不得与其数值混用**（见 X12）。
+
+| # | Claim | 采信值 | 级别 | 证据（文件 : 字段） | 状态 |
+|---|---|---|---|---|---|
+| P1-1 | ours vs swapmoe 吞吐加速 | **2.33×** | D2 | `runs/a100-p1-ours-20261103/result.json`、`runs/a100-p1-swapmoe-20261103/result.json` : `results.*.tokens_per_s`（0.078429 / 0.033604） | `verified` |
+| P1-2 | ours vs naive / fiddler | **1.64× / 1.18×** | D2 | `runs/a100-p1-naive-20261103/result.json`（0.047785）、`runs/a100-p1-fiddler-20261103/result.json`（0.066384） : `results.*.tokens_per_s` | `verified` |
+| P1-3 | ours vs flashmoe_rf_adaptation | **≈1.0×（打平，1.015×）** | D2 | `runs/a100-p1-flashmoe-20261103/result.json` : `results.flashmoe_rf_adaptation.tokens_per_s`（0.079564 vs ours 0.078429） | `verified`（**须如实呈现：flashmoe 与 ours 打平，非 ours 胜出**） |
+| P1-4 | 5 策略 PPL 全无损 | **24.569**（ours/swapmoe/naive/flashmoe）；fiddler **24.589** | D2 | `runs/a100-p1-*/result.json` : `results.*.ppl` | `verified`（**PPL 输入为 77-token 内置回退文本，非 WikiText-2**） |
+| P1-5 | ours SSD 命中 vs swapmoe | **15.5% vs 36.5%** | D2 | `runs/a100-p1-{ours,swapmoe}-20261103/result.json` : `results.*.hit_pct.ssd` | `verified` |
+| P1-6 | swapmoe fp16 PPL 无损（澄清 X6/M2b） | **24.569**（非 36.116） | D2 | `runs/a100-p1-swapmoe-20261103/result.json` : `results.swapmoe.ppl` | `verified`（当前 fp16 `SwapMoePolicy` 无损，历史 36.116 属不同实现/量化，支持 X6 判断） |
+
 ### 3.2 对照场景 — DeepSeek-V2-Lite（CPU 装得下，不落 SSD，非主战场）
 
 | # | Claim | 采信值 | 级别 | 证据 | 状态 |
@@ -123,6 +137,7 @@
 | **X9** | hits 计数混入 warmup/PPL；CPU 预取先插 GPU 再记 HBM hit | `run_e2e.py:210–238`；`tiered_engine.py:351–364` | **高**：命中率无法与生成计时直接因果配对 | `unverified` 性能归因；分离 warmup/prefill/decode/PPL 计数窗口，按 demand 到达前来源计数，记录实际 SSD/H2D/D2H 字节 |
 | **X10（诊断已确认，正式证据待重建）** | Mixtral 的 near-miss 预测预取缓冲未按步清理，50/40 GB 诊断中随 decode 增长并在第 5 步 OOM | `results/reports/a100-memory-trace-20261103/MEMORY_TRACE_SUMMARY.md`；`results/reports/a100-nearmiss-ablation-20261103/NEARMISS_ABLATION_SUMMARY.md` | **高**：旧性能与物理容量公平性仍待复核 | 单变量停用调用后，1×16 与 4×16 完成，近失缓冲为零且已分配显存不再随步数增长。此结论限于 OOM 诊断；正式结果仍需正确性、物理字节、分相位与重复测量。原始历史数字不改。 |
 | **X11（事件已记录，内存来源未定位）** | G1 三策略顺序诊断在 `swapmoe` 装载阶段中断，缺少终态 `result.json`；Workbuddy 报告称 systemd-oomd 终止任务 | `results/reports/a100-g1-correctness-20261103/G1_SUMMARY.md`、`partial_result.json`、`status.json` | **高**：三策略正确性门禁未完整通过，可能暴露 CPU/cgroup 内存压力 | `naive` 与 `ours` 的短窗结果有效；`swapmoe` 缺失不得补推。先做 G2a journal/cgroup 只读审计，再增加事发时 CPU RSS、锁页与 cgroup 采样。顺序装载导致内存累积仅是候选解释，未获证实。 |
+| **X12** | 本轮 P1 主对比 ours vs swapmoe **2.33×**，与历史 `raw/mixtral_real.json` 的 **1.33×** 相差大 | `runs/a100-p1-*-20261103` vs `raw/mixtral_real.json` | 中：两批数据口径不同，易混用 | 原因：预算（50/40 → K_H=4 vs 30/40 → K_H=2）、口径（`tokens_per_s` vs `speedup_vs` 综合）、`n_prompts`（4 vs 历史）。**禁止混用**；对外引用须指明「P1 本轮（HBM50）2.33×」或「历史（HBM30）1.33×」 |
 
 > **处理矛盾的纪律**：发现新矛盾→**先登记到本表（标 `discrepancy`/`unverified`）**，不要静默改数字；
 > 只有重跑实测拿到 D2 证据后，才可更新对照表为 `verified` 并同步改正文。
@@ -158,5 +173,6 @@
 | `raw/deepseek_real_e2e.json` | `python3 scripts/tiered_cache.py`（缓存模拟器，DeepSeek 合成规模） | D1 | 漂移 9.50× 来源 |
 | `real_e2e_*.json` / `raw/real_e2e_results.json` | `python3 scripts/tiered_cache.py`（不同 N/expert 配置） | D1 | 模拟器，非真机 |
 | `raw/real_alpha_deepseek.json` | `python3 scripts/profile_deepseek.py` | D2 | α 实测 |
+| `runs/a100-p1-*-20261103/result.json`（P1 主对比，5 策略 @HBM50/CPU40） | `python3 scripts/experiment_launcher.py run a100-p1-<policy>-20261103 --config e2e/configs/l2_mixtral_repro.json --state-path <Mixtral snapshot> --gpu 0 --policies <policy> --n-prompts 4`（5 策略各独立 run） | D2 | P1 主对比；`<policy>` ∈ ours/swapmoe/fiddler/naive/flashmoe_rf_adaptation |
 
 > 命令未经本环境重跑验证（无 GPU），如与脚本实际入参不符，请以脚本 `--help` 为准并在此订正。

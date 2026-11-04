@@ -1,0 +1,5 @@
+[2026-11-04 08:10:56] START a100-p2-cpu20-swapmoe-20261104 cpu=20 policy=swapmoe
+Running as unit: mecc-exp-a100-p2-cpu20-swapmoe-20261104.service
+started mecc-exp-a100-p2-cpu20-swapmoe-20261104
+run: /home/qinzy/mecc_package/mecc_package/results/runs/a100-p2-cpu20-swapmoe-20261104
+status: experiment_launcher.py status a100-p2-cpu20-swapmoe-20261104
