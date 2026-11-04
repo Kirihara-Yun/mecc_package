@@ -212,6 +212,57 @@ def load_prompts(n_prompts: int, max_len: int = 64,
 
 
 # ════════════════════════════════════════════════════════════════════
+# 块设备物理读字节采样（口径核对）
+#
+# `io_bytes.ssd_read`（tiered_engine.record_hit 累计）是「应用请求字节」：
+# miss 次数 × expert 大小，属逻辑口径，未考虑块对齐/RAID 条带/页缓存命中。
+# 这里补两个实测口径供核对：
+#   * disk_read_bytes —— /proc/diskstats 的 sectors_read×512，块设备层实际读字节（不含页缓存命中）；
+#   * proc_read_bytes —— /proc/self/io 的 read_bytes，进程 read() 请求字节（含页缓存命中）。
+# 两者在 run 前后各采样一次，差值随 result 落盘，与 ssd_read 并列对照。
+# ════════════════════════════════════════════════════════════════════
+
+def _store_device_name(store_root):
+    """解析 store_root 所在块设备名（如 sdb）；失败返回 None。"""
+    try:
+        import subprocess
+        out = subprocess.check_output(
+            ["findmnt", "-n", "-o", "SOURCE", "-T", str(store_root)],
+            text=True, stderr=subprocess.DEVNULL).strip()
+        name = out.split("/")[-1]
+        return name or None
+    except Exception:
+        return None
+
+
+def _disk_sectors_read(dev):
+    """返回 /proc/diskstats 中 dev 的累计 sectors_read×512。"""
+    if not dev:
+        return 0
+    try:
+        with open("/proc/diskstats") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 6 and parts[2] == dev:
+                    return int(parts[5]) * 512
+    except OSError:
+        pass
+    return 0
+
+
+def _proc_read_bytes():
+    """返回 /proc/self/io 的 read_bytes。"""
+    try:
+        with open("/proc/self/io") as f:
+            for line in f:
+                if line.startswith("read_bytes:"):
+                    return int(line.split(":")[1].strip())
+    except OSError:
+        pass
+    return 0
+
+
+# ════════════════════════════════════════════════════════════════════
 # 主流程
 # ════════════════════════════════════════════════════════════════════
 
@@ -531,6 +582,10 @@ def _main():
     ppl_input_tokens = tokenizer(ppl_text, return_tensors="pt").input_ids[:, :args.ppl_tokens].shape[1]
     print(f"  [inputs] prompts_sha256={prompt_digest} ppl_text_sha256={ppl_digest} "
           f"ppl_input_tokens={ppl_input_tokens}", flush=True)
+    # 块设备物理读字节采样（口径核对：应用请求字节 ssd_read vs 块设备物理读 vs 进程 read）
+    block_dev = _store_device_name(args.store_root)
+    disk_start = _disk_sectors_read(block_dev)
+    proc_start = _proc_read_bytes()
     results = {}
     for policy in policies:
         _phase("running_policy", policy=policy, completed_policies=list(results),
@@ -538,7 +593,12 @@ def _main():
         results[policy] = run_policy(policy, args, plan, store, device, prompts, ppl_text,
                                      tokenizer, use_cache=True, model_type=mtype)
         _emit_partial(args, device, plan, results, smoke=False)
-    _emit(args, device, plan, results, smoke=False)
+    block_io = {
+        "device": block_dev,
+        "disk_read_bytes": _disk_sectors_read(block_dev) - disk_start,
+        "proc_read_bytes": _proc_read_bytes() - proc_start,
+    }
+    _emit(args, device, plan, results, smoke=False, block_io=block_io)
     _phase("complete", output=os.path.abspath(args.out), completed_policies=list(results))
 
 def main():
@@ -567,9 +627,9 @@ def _detect_platform(args, device):
     return "CPU"
 
 
-def _build_result(args, device, plan, results, smoke):
+def _build_result(args, device, plan, results, smoke, block_io=None):
     _compute_speedups(results)
-    return {
+    out = {
         "device": str(device),
         "mode": "smoke" if smoke else "real",
         "model": args.model if not smoke else "smoke-tiny-moe",
@@ -580,10 +640,13 @@ def _build_result(args, device, plan, results, smoke):
                    "n_prompts": args.n_prompts, "cold_ssd": args.cold_ssd},
         "results": results,
     }
+    if block_io is not None:
+        out["block_io"] = block_io
+    return out
 
 
-def _emit(args, device, plan, results, smoke):
-    out = _build_result(args, device, plan, results, smoke)
+def _emit(args, device, plan, results, smoke, block_io=None):
+    out = _build_result(args, device, plan, results, smoke, block_io)
     atomic_write_result(args.out, out, results.keys())
     print(f"\n{'='*70}\nMAIN TABLE → {args.out}")
     print(f"{'policy':<10}{'TTFT(ms)':>11}{'TPOT(ms)':>11}{'tok/s':>10}{'PPL':>16}")
