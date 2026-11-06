@@ -59,12 +59,12 @@ def ribbon(ax,x0,x1,y0,y1,color,width=.020,alpha=.7):
        MPath.LINETO,MPath.CURVE4,MPath.CURVE4,MPath.CURVE4,MPath.CLOSEPOLY]
     ax.add_patch(PathPatch(MPath(v,c),fc=color,ec='none',alpha=alpha,zorder=2))
 
-def insights():
+def insights(stem='insights_en', letters='abc'):
     fig,axs=plt.subplots(1,3,figsize=(7.1,1.65))
     fig.subplots_adjust(left=.01,right=.99,bottom=.04,top=.94,wspace=.22)
     for ax in axs: axis(ax)
     a,b,c=axs
-    txt(a,0,1.04,'(a) Rank, then divide capacity',8.3,ha='left',weight='bold')
+    txt(a,0,1.04,f'({letters[0]}) Rank, then divide capacity',8.3,ha='left',weight='bold')
     xs=np.linspace(.07,.94,8); ps=np.array([.77,.64,.53,.44,.35,.28,.22,.17])
     a.plot(xs,.18+ps*.68,color=INK,lw=.85)
     for j,(x,p) in enumerate(zip(xs,ps)):
@@ -77,7 +77,7 @@ def insights():
     txt(a,.05,.91,'Selection probability',7,ha='left')
     for lo,hi,label,col in [(.03,.255,'HBM',BLUE),(.255,.63,'CPU',TEAL),(.63,.98,'HDD',GRAY)]:
         a.plot([lo,hi],[0,0],color=col,lw=3);txt(a,(lo+hi)/2,-.08,label,7)
-    txt(b,0,1.04,'(b) Promote and retain the victim',8.3,ha='left',weight='bold')
+    txt(b,0,1.04,f'({letters[1]}) Promote and retain the victim',8.3,ha='left',weight='bold')
     xs=np.linspace(.08,.93,5); before=[1,2,3,4,5]; after=[3,1,2,4,5]
     for i,e in enumerate(before):
         ribbon(b,xs[i],xs[after.index(e)],.66,.30,
@@ -92,7 +92,7 @@ def insights():
     txt(b,.17,.93,'HBM',7.2,color=BLUE);txt(b,.70,.93,'CPU',7.2)
     txt(b,.02,.58,'MRU',6.3,ha='left');txt(b,.97,.58,'LRU',6.3,ha='right')
     txt(b,.50,-.07,'Request $e_3$: host hit; $e_2$ stays warm',7)
-    txt(c,0,1.04,'(c) Correct the initial profile online',8.3,ha='left',weight='bold')
+    txt(c,0,1.04,f'({letters[2]}) Correct the initial profile online',8.3,ha='left',weight='bold')
     for block,ybase,label in [(0,.53,'Route'),(1,.08,'Cache')]:
         txt(c,0,ybase+.15,label,7.2,ha='left')
         for r,e in enumerate([1,2,6,7]):
@@ -105,7 +105,7 @@ def insights():
     c.vlines(.475,.04,.90,color=ORANGE,lw=.7,ls='--')
     txt(c,.475,.94,'Task switch',7,color=ORANGE)
     txt(c,.60,-.07,r'Time $\longrightarrow$',7)
-    save(fig,'insights_en')
+    save(fig,stem)
 
 def compiler():
     fig,ax=plt.subplots(figsize=(3.45,1.65));fig.subplots_adjust(.01,.02,.99,.98);axis(ax)

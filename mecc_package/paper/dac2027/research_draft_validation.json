@@ -1,0 +1,147 @@
+{
+  "pages": 7,
+  "body_pages": 6,
+  "references": 44,
+  "figures": {
+    "fig:intro": {
+      "number": 1,
+      "page": 1,
+      "first_reference_page": 1
+    },
+    "fig:insights": {
+      "number": 2,
+      "page": 2,
+      "first_reference_page": 2
+    },
+    "fig:overview": {
+      "number": 3,
+      "page": 3,
+      "first_reference_page": 3
+    },
+    "fig:compile": {
+      "number": 4,
+      "page": 3,
+      "first_reference_page": 3
+    },
+    "fig:retention": {
+      "number": 5,
+      "page": 4,
+      "first_reference_page": 4
+    },
+    "fig:delivery": {
+      "number": 6,
+      "page": 4,
+      "first_reference_page": 4
+    },
+    "fig:target_mechanisms": {
+      "number": 7,
+      "page": 5,
+      "first_reference_page": 5
+    },
+    "fig:performance": {
+      "number": 8,
+      "page": 5,
+      "first_reference_page": 5
+    },
+    "fig:target_ablation": {
+      "number": 9,
+      "page": 5,
+      "first_reference_page": 5
+    },
+    "fig:target_models": {
+      "number": 10,
+      "page": 5,
+      "first_reference_page": 5
+    },
+    "fig:target_gpu": {
+      "number": 11,
+      "page": 5,
+      "first_reference_page": 5
+    },
+    "fig:budget": {
+      "number": 12,
+      "page": 6,
+      "first_reference_page": 6
+    },
+    "fig:target_quota": {
+      "number": 13,
+      "page": 6,
+      "first_reference_page": 6
+    }
+  },
+  "contributions": "three separate lines/items",
+  "abstract_words": 98,
+  "intro_caption_gap_pt": 4.28,
+  "motivation_position": "top of page 2",
+  "target_panels": {
+    "motivation_evidence": {
+      "explicit_target_label": true,
+      "source": {
+        "target_fields": [
+          "motivation.ssd_misses_*",
+          "motivation.*_windows"
+        ],
+        "measured": "DATA_AUDIT.json: independent, main.swapmoe, main.ours; all-phase hit_pct.ssd"
+      }
+    },
+    "mechanism_sweeps": {
+      "explicit_target_label": true,
+      "source": {
+        "target_fields": [
+          "insight_ablation_targets.placement_same_runtime",
+          "insight_ablation_targets.retention_same_initial_plan",
+          "insight_ablation_targets.adaptation_same_initial_plan"
+        ]
+      }
+    },
+    "cross_model": {
+      "explicit_target_label": true,
+      "source": {
+        "target_fields": [
+          "groups",
+          "tpot_seconds.Unoptimized streaming",
+          "tpot_seconds.RF adapter",
+          "tpot_seconds.MECC"
+        ]
+      }
+    },
+    "ablation_startup": {
+      "explicit_target_label": true,
+      "source": {
+        "target_fields": [
+          "ablation_tpot_seconds",
+          "ablation_ssd_percent",
+          "startup_cost_seconds",
+          "startup_decode_tpot_seconds"
+        ],
+        "derived": "amortized = startup_cost / output_tokens + decode_tpot; fixed illustrative costs"
+      }
+    },
+    "gpu_tradeoff": {
+      "explicit_target_label": true,
+      "source": {
+        "target_fields": [
+          "gpus",
+          "resident_gpu_tpot_seconds",
+          "mecc_gpu_tpot_seconds[0]"
+        ],
+        "excluded": "No multi-GPU MECC values. No attribution to published FlashMoE."
+      }
+    },
+    "quota_targets": {
+      "explicit_target_label": true,
+      "source": {
+        "target_fields": [
+          "cpu_budget_gb",
+          "budget_tpot_seconds"
+        ],
+        "scope": "Authored dense-quota sweep; not merged with the measured four-prompt protocol."
+      }
+    }
+  },
+  "pending_text_blocks": 37,
+  "tex_issues": [],
+  "data_status": "Measured values retained; all unmeasured plots explicitly yellow-tagged.",
+  "source_targets_sha256": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
+  "pdf_sha256": "3b39ad9c3cc1ec1ab48dca27d40ef5df4855910f4315789f213e4dbd266c69e4"
+}

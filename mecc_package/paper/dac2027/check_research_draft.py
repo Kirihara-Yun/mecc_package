@@ -1,0 +1,69 @@
+"""Artifact checks for the yellow experiment-completion copy."""
+from pathlib import Path
+import hashlib
+import json
+import re
+import pymupdf
+from PIL import Image,ImageDraw
+
+HERE=Path(__file__).resolve().parent
+STEM='MECC_DAC_research_draft'
+
+def main():
+    source=(HERE/f'{STEM}.tex').read_text(encoding='utf-8')
+    pdf=pymupdf.open(HERE/f'{STEM}.pdf')
+    assert len(pdf)==7
+    texts=[page.get_text() for page in pdf]
+    assert 'References' in texts[6] and all('References' not in t for t in texts[:6])
+    assert all(len(t)>2000 for t in texts[:6])
+    abstract=re.search(r'\\begin\{abstract\}(.*?)\\end\{abstract\}',source,re.S).group(1)
+    intro=source[source.index(r'\section{Introduction}'):source.index(r'\twocolumn')]
+    assert all(r'\item[('+str(i)+')]' in intro for i in (1,2,3))
+    item_y=[pdf[0].search_for(f'({i})')[0].y0 for i in (1,2,3)]
+    assert item_y[0]<item_y[1]<item_y[2]
+    aux=(HERE/f'{STEM}.aux').read_text(errors='replace')
+    figures={}
+    for key,number,page in re.findall(r'\\newlabel\{(fig:[^}]+)\}\{\{(\d+)\}\{(\d+)\}',aux):
+        refs=[i+1 for i,t in enumerate(texts) if re.search(r'Figure\s+'+number+r'\b',t)]
+        assert refs and refs[0]==int(page),(key,page,refs)
+        figures[key]={'number':int(number),'page':int(page),'first_reference_page':refs[0]}
+    assert len(figures)==13
+    assert figures['fig:insights']['page']==2
+    assert 'Motivation and Insights' in texts[1]
+    assert texts[1].index('Layer group')<texts[1].index('Background')
+    log=(HERE/f'{STEM}.log').read_text(errors='replace')
+    issues=[x for x in log.splitlines() if any(y in x for y in ('Overfull','undefined','multiply defined','same identifier'))]
+    assert not issues,issues
+    refs=len(re.findall(r'\\bibitem\{',(HERE/f'{STEM}.bbl').read_text()))
+    assert refs==44
+    manifest=json.loads((HERE/'completion_figures/SOURCE_MANIFEST.json').read_text())
+    target_checks={}
+    for name in manifest:
+        if name.startswith('_'):continue
+        plot=pymupdf.open(HERE/'completion_figures'/f'{name}.pdf')
+        text=' '.join(page.get_text() for page in plot).upper()
+        assert 'IDEAL TARGET' in text,name
+        target_checks[name]={'explicit_target_label':True,'source':manifest[name]}
+    caption=pdf[0].search_for('Fig. 1.')[0]
+    axis=pdf[0].search_for('Demand share (%)')[0]
+    caption_gap=round(caption.y0-axis.y1,2)
+    assert 0<caption_gap<10,caption_gap
+    report={'pages':7,'body_pages':6,'references':refs,'figures':figures,
+        'contributions':'three separate lines/items','abstract_words':len(abstract.split()),
+        'intro_caption_gap_pt':caption_gap,'motivation_position':'top of page 2',
+        'target_panels':target_checks,'pending_text_blocks':source.count(r'\pending{'),
+        'tex_issues':issues,'data_status':'Measured values retained; all unmeasured plots explicitly yellow-tagged.',
+        'source_targets_sha256':manifest['_source_sha256'],
+        'pdf_sha256':hashlib.sha256((HERE/f'{STEM}.pdf').read_bytes()).hexdigest()}
+    (HERE/'research_draft_validation.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
+    out=HERE/'editing/research_review';out.mkdir(exist_ok=True,parents=True)
+    sheet=Image.new('RGB',(1264,832),'#EDF0F3');draw=ImageDraw.Draw(sheet)
+    for i,page in enumerate(pdf):
+        pix=page.get_pixmap(matrix=pymupdf.Matrix(1,1),alpha=False)
+        im=Image.frombytes('RGB',(pix.width,pix.height),pix.samples);im.thumbnail((306,396))
+        x=(i%4)*316+5;y=(i//4)*416+17
+        sheet.paste(im,(x,y));draw.text((x,y-14),f'Page {i+1}',fill='#203244')
+    sheet.save(out/'MECC_research_contact_sheet.png')
+    print(f'PASS: 6+1 pages, 44 refs, 13/13 figures with first explanations, caption gap {caption_gap}pt, {len(target_checks)} target-plot files labelled.')
+
+if __name__=='__main__':main()

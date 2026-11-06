@@ -1,0 +1,50 @@
+{
+  "motivation_evidence": {
+    "target_fields": [
+      "motivation.ssd_misses_*",
+      "motivation.*_windows"
+    ],
+    "measured": "DATA_AUDIT.json: independent, main.swapmoe, main.ours; all-phase hit_pct.ssd"
+  },
+  "mechanism_sweeps": {
+    "target_fields": [
+      "insight_ablation_targets.placement_same_runtime",
+      "insight_ablation_targets.retention_same_initial_plan",
+      "insight_ablation_targets.adaptation_same_initial_plan"
+    ]
+  },
+  "cross_model": {
+    "target_fields": [
+      "groups",
+      "tpot_seconds.Unoptimized streaming",
+      "tpot_seconds.RF adapter",
+      "tpot_seconds.MECC"
+    ]
+  },
+  "ablation_startup": {
+    "target_fields": [
+      "ablation_tpot_seconds",
+      "ablation_ssd_percent",
+      "startup_cost_seconds",
+      "startup_decode_tpot_seconds"
+    ],
+    "derived": "amortized = startup_cost / output_tokens + decode_tpot; fixed illustrative costs"
+  },
+  "gpu_tradeoff": {
+    "target_fields": [
+      "gpus",
+      "resident_gpu_tpot_seconds",
+      "mecc_gpu_tpot_seconds[0]"
+    ],
+    "excluded": "No multi-GPU MECC values. No attribution to published FlashMoE."
+  },
+  "quota_targets": {
+    "target_fields": [
+      "cpu_budget_gb",
+      "budget_tpot_seconds"
+    ],
+    "scope": "Authored dense-quota sweep; not merged with the measured four-prompt protocol."
+  },
+  "_source_sha256": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
+  "_status": "Yellow-tagged targets are authored placeholders, not experiment results."
+}

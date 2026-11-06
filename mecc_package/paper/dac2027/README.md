@@ -1,8 +1,12 @@
-# MECC：DAC 2027 理想结果论文设计稿
+# MECC：DAC 2027 论文与实验补全草稿
 
 按用户指定主线写成：**单卡部署 MoE → 三项部署挑战 → 对应方法 → 未优化单卡 / MECC 单卡 / 多卡参考 → 消融与资源分析**。
 
 ## 直接阅读
+
+- **当前黄标研究草稿**：[论文 PDF](./MECC_DAC_research_draft.pdf) / [LaTeX](./MECC_DAC_research_draft.tex) / [整篇预览](./editing/research_review/MECC_research_contact_sheet.png)。仍为 IEEE 9 pt、六页正文加一页引用。贡献分项换行，第 2 页顶部采用实验／机制上下对照图，图注间距收紧。13 张图覆盖现有实测、三模型机制目标、多模型 QA／Code、消融／启动、单卡／多卡和容量扫描；另有数值／物理资源检查表。所有未实测目标在图内、图注和相应正文用黄色明确标注。
+- 对这版的判断与处理见 [体系结构会议标准自审](./editing/ARCHITECTURE_REVIEW_20261106.md)。黄色占位如何逐项替换见 [实验图替换清单](./editing/RESEARCH_DRAFT_EXPERIMENT_REGISTER.md)。此稿用于补齐证据，不能据理想图宣称新增实测收益。
+- 重建黄标稿：`python build_completion_figures.py` → `python build_research_draft.py` → `latexmk -pdf -interaction=nonstopmode -halt-on-error MECC_DAC_research_draft.tex` → `python check_research_draft.py`。目标字段及源哈希在 [SOURCE_MANIFEST.json](./completion_figures/SOURCE_MANIFEST.json)，没有使用撤回的内存假设、虚构误差条或未设计的 MECC 多卡点。
 
 - **A100 实测阅读版**：[新版论文 PDF](./MECC_DAC_visual_revision.pdf) / [LaTeX 源文件](./mecc_dac2027_measured.tex)；配套 [组会 PPT](../current/MECC_A100_measured.pptx) / [PDF](../current/MECC_A100_measured.pdf)。实验图由 [build_measured_a100.py](./build_measured_a100.py) 从已提交的单次 A100 原始 JSON 生成，来源及哈希见 [DATA_AUDIT.json](./measured_figures/DATA_AUDIT.json)。主对比使用统一初态，反映当前运行期缓存机制；逐层画像、任务切换和多卡性能尚无可纳入的同口径实测。此前理想结果版保留在下项。
 
