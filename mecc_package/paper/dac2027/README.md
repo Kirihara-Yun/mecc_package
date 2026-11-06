@@ -6,6 +6,8 @@
 
 - **A100 实测阅读版**：[论文 PDF](./mecc_dac2027_measured.pdf) / [LaTeX 源文件](./mecc_dac2027_measured.tex)；配套 [组会 PPT](../current/MECC_A100_measured.pptx) / [PDF](../current/MECC_A100_measured.pdf)。图表由 [build_measured_a100.py](./build_measured_a100.py) 从已提交的单次 A100 原始 JSON 生成，来源及哈希见 [DATA_AUDIT.json](./measured_figures/DATA_AUDIT.json)。主对比使用统一初态，反映当前运行期缓存机制；逐层画像、任务切换和多卡性能尚无可纳入的同口径实测。此前理想结果版保留在下项。
 
+论文图借鉴 PPT 的颜色、纹理和并列比较方式，重新以英文和双栏尺寸绘制；没有把中文幻灯片截图嵌入论文。实测主图包含 TPOT、TTFT 与冷层需求比例，缓存消融图同时展示延迟和 HBM／CPU／HDD 访问来源。PPT 第二页另标明相关工作与同机单卡对照的区别。
+
 - **内部审阅版论文**：[无过程标记 PDF](./mecc_dac2027_clean.pdf) / [LaTeX 源文件](./mecc_dac2027_clean.tex)。沿用理想数字和 IEEE 9 pt 排版，共 6 页正文 + 1 页参考文献；数据身份与投稿要求保存在 [独立说明](./clean_review/SOURCE_NOTE.json)。配套 PPT 是基于现有 `MECC_HPCA_review_revision.pptx` 修改的 [17 页版本](../current/MECC_HPCA_current.pptx) / [PDF](../current/MECC_HPCA_current.pdf)。
 - 当前论文与 PPT 将 MECC 的冷存储统一称为 HDD。A100 测试机提供的是 `ROTA=1` 的 RAID 逻辑设备，控制器后的物理盘清单尚未取得；目前没有 SSD/NVMe 对照测量。被引工作的 `SSD-LLaMA` 名称及其 SSD 设计描述不改动。此次只调整介质口径和配图标注，理想示例数值未重算。
 - **历史配图候选**：[HPCA / ASPLOS / OSDI 三套设计](../archive_unused_20261102/dac2027_variants/venue_designs/MECC_venue_design_chooser.html) / [早期 A/B/C 版](../archive_unused_20261102/dac2027_variants/figure_variants/MECC_figure_chooser.html)。两组候选均已归档，当前论文未使用。

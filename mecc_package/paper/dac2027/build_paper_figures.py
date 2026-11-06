@@ -246,8 +246,8 @@ def motivation():
     save(fig,'ideal_figures','fig02_challenges',True)
 
 def main_performance():
-    fig,(ax,h)=plt.subplots(1,2,figsize=(7.05,2.62),gridspec_kw={'width_ratios':[2.45,1]})
-    fig.subplots_adjust(left=.063,right=.989,bottom=.23,top=.76,wspace=.53)
+    fig,(ax,h)=plt.subplots(1,2,figsize=(7.05,2.60),gridspec_kw={'width_ratios':[1.55,1]})
+    fig.subplots_adjust(left=.068,right=.984,bottom=.23,top=.77,wspace=.39)
     keys=list(A['tpot_seconds'])[:5]
     colors=[GRAY,LIGHT,ORANGE,TEAL,BLUE]; x=np.arange(4)
     for j,(name,c) in enumerate(zip(keys,colors)):
@@ -255,22 +255,22 @@ def main_performance():
           edgecolor='white',lw=.35,label=name,zorder=3)
     clean(ax,LABELS['tpot']); ax.set_ylim(0,70); ax.set_yticks([0,20,40,60])
     ax.set_xticks(x,['Mixtral-8x7B\nQA','Mixtral-8x7B\nCode','Mixtral-8x22B\nQA','Mixtral-8x22B\nCode'],fontsize=7)
-    ax.legend(ncol=3,loc='lower center',bbox_to_anchor=(.5,1.015),frameon=False,
-       fontsize=7,columnspacing=.9,handlelength=1.2,handletextpad=.35)
-    ax.set_title('(a) Single-GPU latency',y=1.37)
-    gains=np.array(A['tpot_seconds']['SSD-native adapter'])/np.array(A['tpot_seconds']['MECC'])
-    vals=gains.reshape(2,2)
-    h.set_xlim(-.5,1.5); h.set_ylim(1.5,-.5); h.set_aspect('equal')
-    for (r,c),v in np.ndenumerate(vals):
-        box(h,c-.5,r-.5,1,1,plt.cm.Blues((v-1)/.5),'white',1)
-        h.text(c,r,f'{v:.2f}×',ha='center',va='center',fontsize=11,
-               color='white' if v>1.34 else INK)
-    h.set_xticks([0,1],['QA','Code']); h.set_yticks([0,1],['Mixtral-8x7B','Mixtral-8x22B'],fontsize=7)
-    h.tick_params(length=0,pad=4)
-    for sp in h.spines.values(): sp.set_visible(False)
-    h.set_xticks(np.arange(-.5,2,1),minor=True); h.set_yticks(np.arange(-.5,2,1),minor=True)
-    h.grid(which='minor',color='white',lw=2); h.tick_params(which='minor',length=0)
-    h.set_title('(b) Speedup over\nSSD-native adapter',pad=10)
+    ax.legend(ncol=3,loc='lower center',bbox_to_anchor=(.5,1.14),frameon=False,
+       fontsize=6.8,columnspacing=.8,handlelength=1.1,handletextpad=.3)
+    ax.set_title('(a) Single-GPU latency',pad=7)
+    for name,c,mark in [('Three-tier LRU',GRAY,'s'),('SSD-native adapter',TEAL,'o')]:
+        gains=np.array(A['tpot_seconds'][name])/np.array(A['tpot_seconds']['MECC'])
+        h.plot(gains,np.arange(4),marker=mark,ms=4.2,color=c,lw=1.25,label=name,zorder=3)
+        for x,y in zip(gains,np.arange(4)):
+            h.annotate(f'{x:.2f}×',(x,y),xytext=(3,-8 if name=='Three-tier LRU' else 4),
+                       textcoords='offset points',fontsize=6.7,color=c)
+    h.set_xlim(1.08,2.3); h.set_ylim(3.42,-.43)
+    h.set_yticks(np.arange(4),['8×7B QA','8×7B Code','8×22B QA','8×22B Code'])
+    h.set_xticks([1.25,1.5,1.75,2.0]); h.set_xlabel('TPOT ratio to MECC (×)')
+    h.grid(axis='x',color=RULE,lw=.45); h.set_axisbelow(True)
+    h.spines[['top','right']].set_visible(False)
+    h.legend(frameon=False,fontsize=6.5,loc='lower center',bbox_to_anchor=(.5,1.14),ncol=1)
+    h.set_title('(b) Local cache controls',pad=7)
     save(fig,'ideal_figures','fig04_performance',True)
 
 def ablation():

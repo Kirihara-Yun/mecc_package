@@ -52,7 +52,7 @@ The compared policies are unoptimized streaming (\texttt{naive}), fixed-CPU rete
 
 \begin{figure*}[tb]
 \centering\includegraphics[width=\textwidth]{measured_figures/main.pdf}
-\caption{Single-A100 Mixtral-8x7B comparison (eight WikiText-2 prompts, 64 output tokens, one run per policy). (a) Decode time per output token. (b) Reported cold-tier demand share across all instrumented phases, including warmup and perplexity; it is not a decode-only share. All six local policies are shown.}
+\caption{Single-A100 Mixtral-8x7B comparison (eight WikiText-2 prompts, 64 output tokens, one run per policy). (a) Decode time per output token. (b) First-token latency. (c) Reported cold-tier demand share across all instrumented phases, including warmup and perplexity; it is not a decode-only share. All six local policies are shown.}
 \label{fig:performance}
 \end{figure*}
 
@@ -67,7 +67,7 @@ The independent-cache run matches the main runs' model, nominal slots, input sca
 
 \begin{figure*}[tb]
 \centering\includegraphics[width=\textwidth]{measured_figures/retention.pdf}
-\caption{Matched single-A100 cache-policy control at 50/40~GB nominal allowances, eight WikiText-2 prompts, and 64 output tokens. Independent and fixed-CPU policies are local mechanisms. Cold-tier share spans all instrumented phases. One run per policy.}
+\caption{Matched single-A100 cache-policy control at 50/40~GB nominal allowances, eight WikiText-2 prompts, and 64 output tokens. (a) Decode latency. (b) Selected-expert demand resolved from HBM, CPU, or HDD across all instrumented phases. Independent and fixed-CPU policies are local mechanisms. One run per policy.}
 \label{fig:retention_result}
 \end{figure*}
 

@@ -153,6 +153,9 @@ def related_work(s):
  t(s,1.01,1.04,11.55,1.08,
    '现有方法支持跨显存、CPU 内存和 SSD 读取专家，并缓存常用专家。在共享服务器中，还需要\n根据任务的内存预算确定初始放置、提前加载常用专家，并适应任务变化。',18,True,DARK)
  t(s,.6,.1,12.1,.58,'Related Work: 现有方法与 MECC 的对比',29,True,'#111111',PP_ALIGN.CENTER)
+ t(s,.81,6.52,11.85,.43,
+   '表内主要比较单卡卸载方法；MoE-Lightning 也测试多卡。8 卡 FlashMoE 是分布式算子参照，不是同机单卡基线。',
+   14,False,NAVY,PP_ALIGN.CENTER)
 
 def mot_common(s,n,title,lead,l,r,img,readout,question):
  base(s,n,title,lead)

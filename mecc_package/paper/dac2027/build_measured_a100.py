@@ -96,24 +96,26 @@ def save(fig, stem: str):
 def main_figure(data: dict):
     main = data["main"]
     order = ["swapmoe", "naive", "fiddler", "ours_io", "ours", "flashmoe_rf_adaptation"]
-    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.65), gridspec_kw={"width_ratios": [1.13, 1]})
-    fig.subplots_adjust(left=.18, right=.985, bottom=.16, top=.86, wspace=.22)
+    fig, ax = plt.subplots(1, 3, figsize=(10.7, 3.65),
+                           gridspec_kw={"width_ratios": [1.13, 1, 1]})
+    fig.subplots_adjust(left=.17, right=.985, bottom=.18, top=.84, wspace=.23)
     labels = [NAMES[p] for p in order]
     n = len(order)
     colors = [ORANGE, GRAY, GRAY, MID, BLUE, TEAL]
     hatches = ["\\\\", "///", "...", "---", "xxx", "+++"]
     for a, metric, limit, ticks, title, xlabel in [
-        (ax[0], "tpot_ms", 25, [0, 5, 10, 15, 20], "(a) Decode latency", "TPOT (s/token)  ·  lower is better"),
-        (ax[1], "ssd", 39, [0, 10, 20, 30], "(b) Cold-tier access", "Demand share (%)  ·  lower is better")]:
+        (ax[0], "tpot_ms", 25, [0, 10, 20], "(a) Decode latency", "TPOT (s/token)"),
+        (ax[1], "ttft_ms", 455, [0, 200, 400], "(b) First token", "TTFT (s)"),
+        (ax[2], "ssd", 39, [0, 10, 20, 30], "(c) Cold-tier access", "Demand share (%)")]:
         values = []
         for y, p in enumerate(order):
             value = (main[p]["metrics"]["hit_pct"]["ssd"] if metric == "ssd"
-                     else main[p]["metrics"]["tpot_ms"] / 1000)
+                     else main[p]["metrics"][metric] / 1000)
             values.append(value)
-        bars = a.barh(range(n), values, height=.66, color=colors,
+        bars = a.barh(range(n), values, height=.68, color=colors,
                       edgecolor=DARK, linewidth=.65, zorder=3)
         for bar, hatch in zip(bars, hatches): bar.set_hatch(hatch)
-        a.bar_label(bars, labels=[f"{v:.1f}" for v in values], padding=4, fontsize=9)
+        a.bar_label(bars, labels=[f"{v:.1f}" for v in values], padding=3, fontsize=8)
         a.set_xlim(0, limit)
         a.set_xticks(ticks)
         a.set_yticks(range(n), labels if a is ax[0] else [""] * n)
@@ -129,30 +131,41 @@ def retention_figure(data: dict):
     indep = data["independent"]
     groups = [("Independent", indep), ("Fixed CPU", main["swapmoe"]),
               ("MECC", main["ours"])]
-    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.2))
-    fig.subplots_adjust(left=.17, right=.985, bottom=.18, top=.84, wspace=.23)
-    for a, field, div, xlabel, limit, title in [
-        (ax[0], "tpot_ms", 1000, "TPOT (s/token)  ·  lower is better", 40, "(a) Decode latency"),
-        (ax[1], "ssd", 1, "Demand share (%)  ·  lower is better", 56, "(b) Cold-tier access")]:
-        vals = [(r["metrics"]["hit_pct"][field] if field == "ssd"
-                 else r["metrics"][field] / div) for _, r in groups]
-        bars = a.barh(range(3), vals, height=.58, color=[GRAY, ORANGE, BLUE],
+    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.45),
+                           gridspec_kw={"width_ratios": [1, 1.22]})
+    fig.subplots_adjust(left=.16, right=.985, bottom=.21, top=.83, wspace=.28)
+    vals = [r["metrics"]["tpot_ms"] / 1000 for _, r in groups]
+    bars = ax[0].barh(range(3), vals, height=.56, color=[GRAY, ORANGE, BLUE],
                       edgecolor=DARK, linewidth=.65, zorder=3)
-        for bar, hatch in zip(bars, ["///", "\\\\", "xxx"]): bar.set_hatch(hatch)
-        a.bar_label(bars, labels=[f"{v:.1f}" for v in vals], padding=4, fontsize=9)
-        a.set_xlim(0, limit)
-        a.set_yticks(range(3), [name for name, _ in groups] if a is ax[0] else [""] * 3)
-        a.invert_yaxis()
-        a.set_xlabel(xlabel)
-        a.set_title(title, loc="left", fontweight="bold", color=DARK)
-        style(a)
+    for bar, hatch in zip(bars, ["///", "\\\\", "xxx"]): bar.set_hatch(hatch)
+    ax[0].bar_label(bars, labels=[f"{v:.1f}" for v in vals], padding=4, fontsize=9)
+    ax[0].set_xlim(0, 40); ax[0].set_xticks([0,10,20,30,40])
+    ax[0].set_yticks(range(3), [name for name, _ in groups]); ax[0].invert_yaxis()
+    ax[0].set_xlabel("TPOT (s/token)")
+    ax[0].set_title("(a) Decode latency", loc="left", fontweight="bold", color=DARK)
+    style(ax[0])
+    left = np.zeros(3)
+    for tier, color, hatch in [("hbm",BLUE,"xxx"),("cpu",TEAL,"///"),("ssd",ORANGE,"\\\\")]:
+        values=np.array([r["metrics"]["hit_pct"][tier] for _,r in groups])
+        ax[1].barh(range(3),values,left=left,height=.56,color=color,edgecolor=DARK,
+                   linewidth=.5,hatch=hatch,label={"hbm":"HBM","cpu":"CPU","ssd":"HDD"}[tier])
+        for y,(start,value) in enumerate(zip(left,values)):
+            if value>=7: ax[1].text(start+value/2,y,f"{value:.1f}",ha="center",va="center",
+                                    color="white" if tier=="hbm" else DARK,fontsize=8)
+        left+=values
+    ax[1].set_xlim(0,101); ax[1].set_xticks([0,25,50,75,100])
+    ax[1].set_yticks(range(3),[""]*3); ax[1].invert_yaxis()
+    ax[1].set_xlabel("Selected-expert demand share (%)")
+    ax[1].set_title("(b) Demand source by tier", loc="left", fontweight="bold", color=DARK)
+    ax[1].legend(frameon=False,ncol=3,loc="upper center",bbox_to_anchor=(.5,1.25),fontsize=8)
+    style(ax[1])
     save(fig, "retention")
 
 
 def budget_figure(data: dict):
     budget = data["budget"]
     order = ["naive", "swapmoe", "ours", "flashmoe_rf_adaptation", "fiddler"]
-    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.65))
+    fig, ax = plt.subplots(1, 2, figsize=(10.7, 4.25))
     fig.subplots_adjust(left=.18, right=.985, bottom=.17, top=.82, wspace=.22)
     for a, field, limit, title, xlabel in [
         (ax[0], "tpot_ms", 29, "(a) Decode latency", "TPOT (s/token)  ·  lower is better"),

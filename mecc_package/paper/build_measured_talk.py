@@ -35,7 +35,7 @@ def protocol(prs):
         ("模型与设备", "Mixtral-8×7B · 单张 A100 · FP16 权重"),
         ("输入与输出", "WikiText-2 测试集 · 8 条输入 · 每条生成 64 token"),
         ("缓存配置", "每层显存 4 个槽位 · CPU 内存 3 个槽位 · 其余冷存储"),
-        ("对比方案", "流式读取 · 固定 CPU 缓存 · 独立缓存 · MECC · RF 适配版"),
+        ("同机单卡对照", "流式读取 · 固定 CPU 缓存 · 独立缓存 · MECC · RF 本地适配版"),
     ]
     for i, (head, body) in enumerate(items):
         y = 2.34 + i * .83
