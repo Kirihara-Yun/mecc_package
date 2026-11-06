@@ -58,7 +58,10 @@ def finish(name):
     for key,num,page in re.findall(r'\\newlabel\{(fig:[^}]+)\}\{\{(\d+)\}\{(\d+)\}',aux):
         refs=[i+1 for i,p in enumerate(doc) if re.search(r'Figure\s+'+num+r'\b',p.get_text())]
         figs[key]={'number':int(num),'page':int(page),'references':refs}
-    validation={'pages':len(doc),'body_pages':len(doc)-1,'issues':issues,'figures':figs,
+    ref_pages=[i+1 for i,p in enumerate(doc) if p.get_text().lstrip().startswith('References')]
+    appendix_pages=[i+1 for i,p in enumerate(doc) if p.get_text().lstrip().startswith('Appendix')]
+    validation={'pages':len(doc),'body_pages':ref_pages[0]-1 if ref_pages else len(doc),
+                'reference_pages':ref_pages,'appendix_pages':appendix_pages,'issues':issues,'figures':figs,
                 'references':len(re.findall(r'\\bibitem\{',(out/'manuscript.bbl').read_text())),
                 'no_banner':'ILLUSTRATIVE TARGET' not in text,
                 'sha256':hashlib.sha256((out/'manuscript.pdf').read_bytes()).hexdigest()}
