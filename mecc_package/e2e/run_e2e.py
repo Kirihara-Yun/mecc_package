@@ -41,7 +41,7 @@ import deepseek_tiered as DT
 from store_manifest import (expected_manifest, validate_store, write_manifest,
                             write_pending_manifest)
 from result_schema import atomic_write_result
-from offline_inputs import load_manifest, select_prompts, select_ppl_text
+from offline_inputs import load_manifest, select_prompts, select_ppl_text, GSM8K_PROMPTS
 
 POLICIES = ["ours", "swapmoe", "fiddler", "naive", "flashmoe_rf_adaptation"]
 
@@ -220,30 +220,41 @@ def load_prompts(n_prompts: int, max_len: int = 64,
     return lines[:n_prompts], "\n\n".join(lines[:64])
 
 
-def organize_task_sequence(prompts: List[str], task_seq: str
+def organize_task_sequence(prompts: List[str], task_seq: str,
+                           task_b_prompts: Optional[List[str]] = None
                            ) -> Tuple[List[str], List[int]]:
-    """Motivation III: 把 prompts 分成任务 A/B 两半，按切换序列组织。
+    """Motivation III: 按真实任务切换序列组织 prompts。
 
-    返回 (ordered_prompts, window_sizes):
-      - a_b: A→B（前半=A，后半=B）
-      - b_a: B→A
-      - a_a: A→A（对照，无切换，两个相同窗口）
+    task A = prompts（评估输入，如 WikiText-2 前 N 条）
+    task B = task_b_prompts（切换目标，如 GSM8K）
+    返回 (ordered_prompts, window_sizes)：
+      - a_b: A→B（WikiText-2 → GSM8K）
+      - b_a: B→A（GSM8K → WikiText-2）
+      - a_a: A→A（no-shift 对照，两段相同任务）
       - none: 单窗口（原顺序）
+
+    铁律：a_b/b_a 必须用真实任务 B（GSM8K），拒绝把同一组 WikiText-2 切成前后半
+    冒充任务切换（那只是同一任务的两个片段，不构成 A→B）。
     """
     n = len(prompts)
     if task_seq == "none" or n < 2:
         return list(prompts), [n]
-    half = max(1, n // 2)
-    A = list(prompts[:half])
-    B = list(prompts[half:half * 2])
-    if not B:                      # 后半为空（如 n=1 已在上方拦截，此处防御）
-        B = list(A)
+    if task_seq == "a_a":
+        # no-shift 对照：A→A，两段相同任务，用于区分「缓存漂移」与「自然抖动」
+        half = max(1, n // 2)
+        return list(prompts[:half]) + list(prompts[:half]), [half, half]
+    # a_b / b_a 需要真实任务 B（GSM8K）
+    if not task_b_prompts:
+        raise ValueError(
+            f"task_seq={task_seq} 需要 task_b_prompts（GSM8K 任务 B），"
+            f"但未提供；拒绝把同一组 WikiText-2 切成前后半冒充任务切换")
+    m = min(len(task_b_prompts), n)
+    A = list(prompts[:m])
+    B = list(task_b_prompts[:m])
     if task_seq == "a_b":
         return A + B, [len(A), len(B)]
     if task_seq == "b_a":
         return B + A, [len(B), len(A)]
-    if task_seq == "a_a":
-        return A + A, [len(A), len(A)]
     return list(prompts), [n]
 
 
@@ -656,7 +667,8 @@ def _main():
     prompts, ppl_text = load_prompts(
         args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl,
         manifest=input_manifest)
-    prompts, window_sizes = organize_task_sequence(prompts, args.task_seq)
+    task_b_prompts = GSM8K_PROMPTS if args.task_seq in ("a_b", "b_a") else None
+    prompts, window_sizes = organize_task_sequence(prompts, args.task_seq, task_b_prompts)
     prompt_digest = hashlib.sha256(json.dumps(prompts, ensure_ascii=False).encode()).hexdigest()
     ppl_digest = hashlib.sha256(ppl_text.encode()).hexdigest()
     ppl_input_tokens = tokenizer(ppl_text, return_tensors="pt").input_ids[:, :args.ppl_tokens].shape[1]
