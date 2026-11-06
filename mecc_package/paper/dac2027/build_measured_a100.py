@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Rectangle, FancyArrowPatch
 
 HERE = Path(__file__).resolve().parent
 RUNS = HERE.parent.parent / "results" / "runs"
@@ -91,6 +92,42 @@ def save(fig, stem: str):
     fig.savefig(OUT / f"{stem}.pdf", bbox_inches="tight", pad_inches=.08)
     fig.savefig(OUT / f"{stem}.png", dpi=240, bbox_inches="tight", pad_inches=.08)
     plt.close(fig)
+
+
+def intro_figure(data: dict):
+    """A one-column motivation figure using the same measured runs as Fig. 4."""
+    main = data["main"]
+    fig, (tiers, bars) = plt.subplots(1, 2, figsize=(7.10, 2.05),
+                                     gridspec_kw={"width_ratios": [1, 1.2]})
+    fig.subplots_adjust(left=.02, right=.985, bottom=.23, top=.83, wspace=.31)
+    tiers.set_xlim(0, 1); tiers.set_ylim(0, 1); tiers.axis("off")
+    tiers.text(.02, 1.05, "(a) Selected expert", fontsize=9, weight="bold", color=DARK)
+    for y, label, color, ids in [(.68,"HBM",BLUE,"e0  e1"),
+                                  (.40,"CPU",TEAL,"e2  e3"),
+                                  (.12,"HDD",ORANGE,"e4  e5")]:
+        tiers.add_patch(Rectangle((.02,y),.86,.22,fc="white",ec=color,lw=.8))
+        tiers.add_patch(Rectangle((.02,y),.30,.22,fc=color,ec=color,lw=.8))
+        tiers.text(.17,y+.11,label,ha="center",va="center",fontsize=8.5,color="white")
+        tiers.text(.60,y+.11,ids,ha="center",va="center",fontsize=8.5,color=DARK)
+    tiers.add_patch(FancyArrowPatch((.93,.21),(.93,.78),arrowstyle="-|>",
+                                    mutation_scale=8,lw=.8,color=ORANGE))
+    tiers.text(.94,.49,"read",rotation=90,ha="left",va="center",fontsize=8,color=DARK)
+    names=["Stream","Fixed CPU","MECC"]
+    keys=["naive","swapmoe","ours"]
+    values=[main[k]["metrics"]["tpot_ms"]/1000 for k in keys]
+    bb=bars.barh(np.arange(3),values,height=.54,color=[GRAY,ORANGE,BLUE],
+                 edgecolor=DARK,lw=.5)
+    for b,h in zip(bb,["///","\\\\","xxx"]): b.set_hatch(h)
+    bars.bar_label(bb,labels=[f"{v:.1f}" for v in values],padding=2,fontsize=8.5)
+    bars.set_yticks(range(3),[""]*3); bars.invert_yaxis()
+    for i, (name, value) in enumerate(zip(names, values)):
+        bars.text(.35, i, name, va="center", ha="left", fontsize=8.5,
+                  color="white" if value > 11 else DARK, weight="bold")
+    bars.set_xlim(0,26); bars.set_xticks([0,10,20]); bars.tick_params(labelsize=8,pad=2)
+    bars.set_xlabel("TPOT (s/token)",fontsize=8.5,labelpad=2)
+    bars.set_title("(b) Single-A100 latency",fontsize=9,loc="left",weight="bold",color=DARK)
+    style(bars)
+    save(fig,"intro")
 
 
 def main_figure(data: dict):
@@ -194,6 +231,7 @@ def budget_figure(data: dict):
 
 def main():
     data = load()
+    intro_figure(data)
     main_figure(data)
     retention_figure(data)
     budget_figure(data)

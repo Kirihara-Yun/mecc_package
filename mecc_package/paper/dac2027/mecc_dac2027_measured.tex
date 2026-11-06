@@ -32,32 +32,53 @@ Mixture of experts, single-GPU inference, expert offloading, three-tier caching,
 \end{IEEEkeywords}
 
 \section{Introduction}
-Mixture-of-experts (MoE) models select a subset of experts for each token~\cite{shazeer,switch,gshard}. Mixtral and DeepSeekMoE instantiate sparse routing in language models~\cite{mixtral,deepseekmoe}. A single GPU can execute selected experts without full HBM residency, provided each weight is delivered before computation.
+Mixture-of-experts (MoE) models activate only a few experts for each token, yet deployment must keep every expert addressable~\cite{shazeer,switch,mixtral,deepseekmoe}. On a single accelerator, the selected expert can be absent from HBM. A server may also assign a task less host memory than the machine physically contains. If the expert set exceeds both allocations, some requests must reach a backing store.
 
-Shared servers assign each service a host-memory allowance. When combined HBM and host residency cannot hold the expert pool, requests reach HDD. FlexGen and DeepSpeed Inference already plan heterogeneous-memory execution~\cite{flexgen,dsinference}; flash-aware inference also addresses models exceeding DRAM~\cite{llmflash}. We study expert delivery under fixed task caps.
+\begin{figure*}[!b]
+\centering\includegraphics[width=\textwidth]{measured_figures/intro.pdf}
+\caption{Single-GPU motivation. (a) An expert selected by the unchanged router may require HDD-to-host-to-GPU delivery. Boxes are schematic. (b) Measured Mixtral-8x7B decode latency for three local policies on one A100, with the common eight-prompt input and one run per policy. The plot does not measure the compiler's profile gain.}
+\label{fig:intro}
+\end{figure*}
 
-Prior work uses CPU/GPU orchestration~\cite{fiddler}, memory-constrained planning~\cite{lightning}, and SSD-native delivery~\cite{ssdllama}. MoE-Infinity traces activations for cache replacement and prefetch~\cite{moeinfinity}. ProMoE predicts future expert use~\cite{promoe}. Learned replacement~\cite{flashmoe} and domain-guided residency~\cite{core} further exploit routes. We compare placement, retention, and scheduling under common physical caps.
+Figure~\ref{fig:intro} connects the weight path to a local runtime comparison. Streaming takes 13.04~s per output token and fixed-CPU retention takes 21.75~s. Joint retention takes 7.38~s under the same nominal slots. These figures motivate cache coordination; they do not isolate placement or transfer overlap. The readout is slow in absolute terms because HDD-backed demand remains in the critical path.
 
-Three coupled decisions govern expert delivery. \textbf{First, capacity has to be distributed across layers.} Uniform slots can leave some layers repeatedly reading from HDD. \textbf{Second, HBM eviction has to preserve later reuse.} A fixed CPU pool may discard useful experts, while independent tier caches can retain duplicate copies. \textbf{Third, residency has to track request changes.} An initial profile covers startup demand; online observations update that placement as the working set changes.
+The operational unit is a selected expert at a particular layer, not a whole model moved for each token. A token passes through successive MoE layers; each layer's gate selects a small set of its own expert IDs. The selected weights must be ready before the expert kernels run. If they are already in HBM, no weight transfer is needed. A host hit needs a host-to-device copy; a cold-tier miss also needs a storage read. The same expert may be selected again by later tokens, making retention useful even when the next layer selects different experts. Figure~\ref{fig:intro}(a) depicts this demand path. It also shows why the host tier matters when it cannot hold the entire expert set assigned to the task.
 
-Our design treats the route profile as an initial residency prior and actual requests as online corrections. \mecc{} assigns these roles across HBM, CPU pinned memory, and HDD. The compiler assigns expert rankings and layer capacities. The runtime promotes requested experts and demotes HBM victims into the host working set. Transfer overlap requires independent work and enforced readiness before computation. Section~\ref{sec:overview} presents the framework; Section~\ref{sec:implementation} defines physical accounting and metrics.
+Multi-GPU expert parallelism can partition experts across resident HBM and move token activations between GPUs~\cite{deepspeedmoe,tutel,flashmoedist}. That is a different capacity point. Single-GPU systems instead choose which weights remain in HBM or host memory and what happens on a miss. Prior work addresses CPU execution, prefetching, cache replacement, and disk delivery~\cite{fiddler,moeinfinity,lightning,ssdllama,flashmoe,offloading}. The design question here is how an independent route profile and the observed route should share those decisions under a task-specific capacity.
 
-We measure the current runtime under uniform initialization and compare its cache behavior with single-GPU local controls. The profile compiler and multi-GPU resident alternative are not timed in this evaluation.
+This paper makes three contributions. First, it states a compiler interface for ranked per-layer placement under explicit HBM and host allowances. Second, it specifies joint promotion and demotion across the two fast tiers while retaining the original router and FP16 experts. Third, it measures the current single-A100 runtime against matched local controls and separates observed retention gains from placement and adaptation questions that require separate runs.
 
-\section{Deployment Model and Challenges}
+The system divides decisions by time scale. A route profile gives the compiler a prior over expert demand and determines an initial placement plan. At inference time, the unchanged gate identifies actual demand, and recency updates the identities retained in each tier. The plan fixes capacities within the run; it does not force the runtime to keep an expert that is no longer requested. This separation allows a profile to shorten the initial cold phase while a shared fast-tier cache preserves reuse as inputs change. The evaluation below directly tests the runtime component with uniform initialization. That makes the strongest supported conclusion narrower than the complete design: the measured advantage is from the local joint-retention implementation under the tested slots.
+
+The paper proceeds from the execution and deployment choices in Section~\ref{sec:background} to three capacity and reuse challenges, then presents the system architecture, method, and single-GPU measurements. This order separates the general design from the current implementation evidence.
+
+\clearpage
+\section{Background}
+\label{sec:background}
+\subsection{Sparse Execution and Deployment Choices}
+For layer $\ell$, a router selects $k_\ell$ of $N_\ell$ experts for each token. Only those experts execute, but any of the $N_\ell$ may be selected by a later token. Switch Transformer and GShard establish the sparse-routing model~\cite{switch,gshard}; Mixtral, DeepSeekMoE, and DeepSeek-V2/V3 show large language-model instances~\cite{mixtral,deepseekmoe,deepseekv2,deepseekv3}. The active parameter count does not by itself specify the required storage capacity.
+
+With enough aggregate GPU memory, expert parallelism places weights on several GPUs and routes token activations to them. DeepSpeed-MoE, Tutel, and MegaBlocks develop execution and scheduling mechanisms for distributed MoE workloads~\cite{deepspeedmoe,tutel,megablocks}. Distributed FlashMoE fuses dispatch, compute, and combine into a persistent kernel~\cite{flashmoedist}; HarMoEny balances token work across GPUs~\cite{harmoeny}. These are relevant deployment alternatives, but their published multi-GPU operator numbers are not single-A100 baselines. Mixtral 8x22B provides a second example of how expert capacity can grow beyond a single card~\cite{mixtral22}.
+
+For one GPU, HBM must also hold dense layers, activations, and KV cache. PagedAttention and SGLang address other parts of the serving-memory and execution problem~\cite{pagedattention,sglang}. CPU memory can retain additional experts; a backing store retains the rest. A miss moves weights from the selected source before the expert kernel executes. FlexGen, DeepSpeed Inference, ZeRO-Infinity, and LLM in a Flash establish related heterogeneous-memory techniques~\cite{flexgen,dsinference,zeroinfinity,llmflash}. PowerInfer exploits activation skew for CPU/GPU inference~\cite{powerinfer}. Their placement and scheduling goals motivate explicit accounting of both resident and temporary copies.
+
+\subsection{Related Expert-Serving Systems}
+SwapMoE exposes a tunable memory budget; Fiddler compares CPU expert execution with weight movement; MoE-Lightning pipelines CPU, GPU, and I/O work; and MoE-Infinity uses request-level activation traces~\cite{swapmoe,fiddler,lightning,moeinfinity}. Klotski pipelines expert-aware batches~\cite{klotski}. ExpertFlow predicts routes and schedules tokens, while ProMoE, Pre-gated MoE, and Fate prefetch experts from intermediate signals~\cite{expertflow,promoe,pregated,fate}. DAOP combines data-aware CPU/GPU execution with predictive pre-calculation~\cite{daop}. Those predictors change the information available before a gate. Our demand-only retention rule uses the unchanged gate output.
+
+HOBBIT uses mixed-precision expert loading, and Specter pairs quantization with speculative offloading~\cite{hobbit,specter}. SSD-LLaMA coordinates disk I/O, tiered residency, and execution placement~\cite{ssdllama}. The edge-device FlashMoE learns a recency/frequency replacement rule~\cite{flashmoe}; MoE-CORE combines domain initialization, layer-specific capacities, and prefetch~\cite{core}. ZipMoE adds lossless compression and cache-affinity scheduling~\cite{zipmoe}. These systems overlap individual MECC design axes. Our local RF adapter is not a reproduction of the published FlashMoE system.
+
+MoEpic splits experts into segments and chooses cache allocations; SliceMoE caches precision slices~\cite{moepic,slicemoe}. Mira couples predictive staging with quantized transfers~\cite{mira}. OD-MoE uses on-demand loading across edge nodes; Bevy interleaves concurrent requests during expert fetches~\cite{odmoe,bevy}. HeteGen studies heterogeneous CPU/GPU inference for dense LLMs~\cite{hetegen}. These systems change granularity, prediction, precision, or request scheduling; MECC's measured comparison is limited to the local policies defined in Section~\ref{sec:evaluation}.
+
+\section{Motivation and Insights}
 \label{sec:challenges}
-\subsection{Single-GPU Execution with Bounded Host Memory}
-Consider $L$ MoE layers. Layer $\ell$ contains $N_\ell$ experts and selects $k_\ell$ per token. Expert $e=(\ell,j)$ is an immutable weight object of size $s_e$. Dense weights, activations, KV cache, and temporary buffers also consume HBM. The task is assigned nominal expert slots in HBM and host memory; mirrors and staging consume additional physical memory.
+\subsection{Initial Coverage across Layers}
+The expert set is larger than the fast-tier slots assigned to a task. Equal slots per layer can waste capacity when layers receive different fractions of demand. The compiler can rank experts from an independent profile and allocate the next slot where it covers the most expected selections. This is an initial-state decision; it does not change router outputs. Routing locality differs across models and workloads~\cite{routingconsistency}. The current A100 main runs use uniform slots and natural expert order, so their speedup does not measure this insight's profile-guided contribution.
 
-When selected weights are absent from HBM and host memory, a request reads the backing store before host-to-device transfer. Cold reads can enter both prefill and decode. We distinguish demand-tier counts from physical block-device bytes and record the phase of each request.
+\subsection{Preserving Reuse after Eviction}
+An HBM victim need not become cold immediately. A later token may select the same expert. Separate HBM and CPU replacement rules can leave a duplicate resident or evict a useful host copy. In a matched local control, independent caches report 47.9\% cold-tier demand and 32.94~s/token; fixed CPU retention reports 31.5\% and 21.75~s/token; joint retention reports 12.5\% and 7.38~s/token. The insight is to treat HBM and host residency as one logical reuse stack: promotion makes room for the HBM victim in host memory. The comparison motivates the runtime rule under the tested quotas; physical bytes and phase-specific I/O remain separate accounting questions.
 
-\subsection{Initial Coverage and Retention}
-Uniform per-layer slots may spend capacity on rarely selected experts. A route profile can rank experts within each layer and guide initial placement, but its benefit must be measured against the same online replacement rule. The current main comparison uses uniform quotas and natural expert order; it does not establish a profile-placement gain.
-
-An HBM victim can still be useful to later tokens. Independent HBM and host caches may duplicate experts or fail to preserve a victim in the host working set. Joint promotion and demotion can improve coverage under the same nominal slot counts. The matched independent-cache result in Section~\ref{sec:mechanisms} tests this mechanism on one workload.
-
-\subsection{Workload Change}
-The requested experts can change with the input stream. A compiler profile provides an initial prior, while runtime recency reflects later requests. A separate experiment must use distinct task inputs and report both sides of the switch. No task-switch performance claim is made from the current main runs.
+\subsection{Correcting a Stale Initial State}
+A profile describes a prior workload, not every later request. When the selected expert distribution changes, static residency can keep experts that the new workload rarely uses. The compiler therefore fixes initial capacities and ranked IDs, while online recency changes the resident identities. This division gives the runtime a way to correct a stale prior without modifying the router. A task switch requires two distinct input sets and a measured before/after trace. The present single-A100 main run does not test a switch.
 
 \section{Overview}
 \label{sec:overview}
@@ -130,7 +151,7 @@ Figure~\ref{fig:delivery} pairs one HBM-resident expert with one HDD-backed expe
 
 The design requires unchanged weights, selected experts, kernels, and aggregation order. Under these conditions, changing residency preserves the forward computation. The implementation also needs correct synchronization. The validation protocol compares synchronous and asynchronous paths on identical inputs using weight hashes, route selections, logits, tokens, and perplexity; the same protocol isolates transfer scheduling from changes in numerical execution.
 
-\section{Implementation}
+\subsection{Implementation and Measurement Contract}
 \label{sec:implementation}
 Model adapters map layer/expert IDs to weight objects, and policies share an end-to-end loader. The harness maps each layer/expert ID to an immutable FP16 weight object. Policies share the same loader and router interface. Memory accounting includes physical mirrors and staging buffers.
 
@@ -148,6 +169,8 @@ Counters must separate initialization, warmup, prefill, decode, and quality eval
 \subsection{Testbed and Comparison}
 The model is Mixtral-8x7B-Instruct-v0.1 with FP16 expert weights on one A100 80~GB PCIe GPU. The backing store resides on a RAID logical block device reported as rotational (\texttt{ROTA=1}); the physical drives behind the controller have not been inventoried. We call the cold tier HDD as a deployment shorthand. No SSD/NVMe comparison is measured.
 
+The evaluation asks three questions: how much does joint retention change end-to-end latency; where are selected experts found; and how does the host-slot allowance affect both? The counters include warmup and perplexity as well as generation. We therefore report cold-tier demand share as a cache observation, not as a decode-only explanatory variable. TPOT measures the decode interval, whereas TTFT includes the first response.
+
 Each main policy has one completed end-to-end run on the same model revision with nominal expert allowances of 50~GB HBM and 40~GB host memory, four HBM and three host slots per layer, uniform initialization, and cold reads enabled. The input source is WikiText-2 test: eight prompts truncated to 64 input tokens, with 64 generated tokens each. Perplexity uses a 1024-token WikiText-2 sample. Values are single-run point estimates. The nominal host allowance is a planner parameter; mirrors, staging, and page cache are not demonstrated to fit within a physical 40~GB process cap.
 
 The compared policies are unoptimized streaming (\texttt{naive}), fixed-CPU retention (\texttt{swapmoe}), MECC, a local recency/frequency adapter, a CPU-compute adapter, and MECC with an alternative I/O path (\texttt{ours\_io}). The RF and I/O adapters are local implementations, not reproductions of published FlashMoE or SSD-LLaMA. These six runs use one A100 each. There is no measured multi-GPU reference.
@@ -159,13 +182,13 @@ The compared policies are unoptimized streaming (\texttt{naive}), fixed-CPU rete
 \end{figure*}
 
 \subsection{Single-GPU Latency}
-Figure~\ref{fig:performance} reports TPOT of 7.38~s for MECC, 13.04~s for streaming, and 21.75~s for fixed-CPU retention. The corresponding TPOT ratios are 1.77$\times$ and 2.95$\times$. The local RF adapter is slightly faster at 7.19~s; MECC I/O takes 7.78~s and the CPU-compute adapter takes 8.26~s. The cold-tier demand shares are 12.5\% for MECC, 20.1\% for streaming, 31.5\% for fixed CPU, and 11.1\% for RF. These counts span several phases, so they describe cache behavior rather than a phase-matched explanation of TPOT alone.
+Figure~\ref{fig:performance} reports TPOT of 7.38~s for MECC, 13.04~s for streaming, and 21.75~s for fixed-CPU retention. The corresponding TPOT ratios are 1.77$\times$ and 2.95$\times$. The local RF adapter is slightly faster at 7.19~s; MECC I/O takes 7.78~s and the CPU-compute adapter takes 8.26~s. The cold-tier demand shares are 12.5\% for MECC, 20.1\% for streaming, 31.5\% for fixed CPU, and 11.1\% for RF. These counts span several phases, so they describe cache behavior rather than a phase-matched explanation of TPOT alone. The RF adapter is a useful counterexample to a universal MECC speedup claim: it has lower TTFT, lower cold-tier share, and slightly lower TPOT on this workload. Its recency/frequency rule differs from the published predictor of the same name.
 
 The first-token times are 139.1~s for MECC, 156.9~s for streaming, 174.2~s for fixed CPU, 101.8~s for RF, and 398.4~s for CPU compute. MECC, streaming, fixed CPU, RF, and MECC I/O report perplexity 3.427 on the same 1024-token sample; CPU compute reports 3.432. This quality comparison is specific to that sample. A separate short-window route/logit/token comparison supports the implementation check but is not an independent full-resident reference.
 
 \subsection{Retention Control}
 \label{sec:mechanisms}
-The independent-cache run matches the main runs' model, nominal slots, input scale, and uniform initialization. Figure~\ref{fig:retention_result} compares independent caching, fixed CPU, and joint MECC retention. Independent caching takes 32.94~s/token and reports 47.9\% cold-tier demand; the fixed-CPU policy takes 21.75~s and reports 31.5\%; MECC takes 7.38~s and reports 12.5\%. This comparison supports the joint-retention mechanism under these local policies. Physical host footprints and exposed I/O time still need matched accounting before the entire latency gap can be assigned to replacement alone.
+The independent-cache run matches the main runs' model, nominal slots, input scale, and uniform initialization. Figure~\ref{fig:retention_result} compares independent caching, fixed CPU, and joint MECC retention. Independent caching takes 32.94~s/token and reports 47.9\% cold-tier demand; the fixed-CPU policy takes 21.75~s and reports 31.5\%; MECC takes 7.38~s and reports 12.5\%. The ordering is consistent in both latency and demand sources. Independent caching reaches HBM for 51.9\% of selected experts, fixed CPU reaches HBM for 62.6\%, and MECC reaches HBM for 77.5\%. The CPU shares are 0.3\%, 5.8\%, and 10.0\%, respectively. This comparison supports the joint-retention mechanism under these local policies. Physical host footprints and exposed I/O time still need matched accounting before the entire latency gap can be assigned to replacement alone.
 
 \begin{figure*}[tb]
 \centering\includegraphics[width=\textwidth]{measured_figures/retention.pdf}
@@ -174,7 +197,7 @@ The independent-cache run matches the main runs' model, nominal slots, input sca
 \end{figure*}
 
 \subsection{Host-Slot Sensitivity}
-The 30 and 60~GB nominal CPU settings use the same four-prompt, 16-token WikiText-2 protocol within each setting. They are a distinct experiment from the eight-prompt main comparison. At 30~GB, MECC takes 14.46~s/token and reports 32.2\% cold-tier demand; at 60~GB, it takes 0.76~s/token and reports no cold-tier demand. The 60~GB plan has four HBM and four host slots per layer, enough for all eight experts. The RF adapter takes 13.06~s/token at 30~GB and 0.74~s/token at 60~GB, faster than MECC in both settings. Figure~\ref{fig:budget} shows all five local policies at these two settings.
+The 30 and 60~GB nominal CPU settings use the same four-prompt, 16-token WikiText-2 protocol within each setting. They are a distinct experiment from the eight-prompt main comparison. At 30~GB, MECC takes 14.46~s/token and reports 32.2\% cold-tier demand; at 60~GB, it takes 0.76~s/token and reports no cold-tier demand. The 60~GB plan has four HBM and four host slots per layer, enough for all eight experts. The RF adapter takes 13.06~s/token at 30~GB and 0.74~s/token at 60~GB, faster than MECC in both settings. Figure~\ref{fig:budget} shows all five local policies at these two settings. The sharp 60~GB drop is a capacity transition: the nominal HBM and host slots together cover all eight experts per layer, so the cold tier is no longer exercised by demand. It should not be interpreted as an HDD optimization gain at that budget.
 
 \begin{figure*}[tb]
 \centering\includegraphics[width=\textwidth]{measured_figures/budget.pdf}
@@ -182,31 +205,27 @@ The 30 and 60~GB nominal CPU settings use the same four-prompt, 16-token WikiTex
 \label{fig:budget}
 \end{figure*}
 
+\subsection{Interpreting the Local Controls}
+The three controls answer different questions. Streaming tests repeated delivery without a persistent expert cache. Fixed CPU retention tests the effect of host residency without the same joint promotion and victim demotion rule. Independent caching tests two separately managed resident sets at the same nominal slot count. Only the last control directly tests the coordination mechanism. The relative ordering across these controls should therefore be read as a sequence of local design comparisons, not as three implementations of the same external system. The main bars also include two alternative paths: CPU compute avoids some GPU weight movement but pays for host execution, while the RF adapter changes admission and replacement. Its slightly lower TPOT shows that a tuned replacement rule can matter even after the two fast tiers are coordinated.
+
+The access-source bars provide a second observation for the latency comparison. Relative to fixed CPU retention, MECC serves a larger fraction of selected experts from both HBM and CPU, with fewer requests reaching the cold tier. This direction agrees with the intended reuse mechanism. It does not establish how many physical HDD bytes each policy read during decode. A demand counter increments when a selected expert is absent from the fast tiers; page-cache hits, coalesced reads, and reads issued in another phase can change the relation between that counter and device traffic. For the same reason, the demand shares in Fig.~\ref{fig:retention_result}(b) should not be multiplied by a single per-expert disk time to predict Fig.~\ref{fig:retention_result}(a). A byte and phase audit is needed for that calculation.
+
+\subsection{Capacity and Quality Readout}
+The host-slot comparison exposes the threshold between partly cold and fully resident expert sets. At four HBM plus two CPU slots per layer, at least two of the eight experts in a layer are outside the fast tiers at any instant. A routed request for one of these experts must use the cold path unless another mechanism has staged it. At four plus four slots, every expert in the layer can be retained in HBM or host memory. The zero cold-tier demand at the 60~GB setting is therefore consistent with the slot geometry. It does not imply that all experts fit into HBM, nor that the same speed would hold with a smaller host allowance. This threshold also explains why a large physical server memory does not remove the research problem when an individual serving task receives a smaller allocation.
+
+The 30/60~GB runs use four prompts and 16 output tokens, versus eight prompts and 64 tokens in the main comparison. Their absolute TPOT values should not be merged into one curve. Within each budget, all plotted policies share input and quota. The RF adapter remains competitive: at 60~GB, it takes 0.74~s/token versus MECC's 0.76~s/token.
+
+The perplexity check gives a limited quality readout. MECC, streaming, fixed CPU, RF, and MECC I/O report 3.427 on the same 1024-token WikiText-2 sample. Their common FP16 weights and unchanged router are intended to preserve computation. Equal perplexity on one sample is weaker than matching logits and tokens against an independent full-resident implementation. The CPU-compute adapter reports 3.432, so each path needs its own validation.
+
 \subsection{Scope of the Measurements}
 These results are single-run observations on a RAID logical device reporting rotational media. The main comparison uses uniform initialization and does not measure the compiler's profile-guided gain. A true WikiText-2 to GSM8K task-switch sequence has now been implemented, but no completed task-switch result appears in the committed result set. The 20~GB budget runs mix prompt sources and cannot be joined to the 30/60~GB curve. Physical drive identity, physical host-cap equivalence, and multi-GPU resident performance remain separate measurements.
-
-\section{Related Work}
-\label{sec:related}
-\textbf{Sparse execution and serving.} Switch and GShard decouple active computation from total parameters~\cite{switch,gshard}; DeepSeekMoE uses fine-grained and shared experts~\cite{deepseekmoe}. DeepSpeed-MoE optimizes distributed inference~\cite{deepspeedmoe}; Tutel adapts parallelism/pipelining~\cite{tutel}; MegaBlocks targets sparse training kernels~\cite{megablocks}. PagedAttention and SGLang optimize KV allocation and prefix reuse~\cite{pagedattention,sglang}, distinct from expert residency.
-
-\textbf{Heterogeneous memory.} ZeRO-Infinity uses GPU/CPU/NVMe for training~\cite{zeroinfinity}; DeepSpeed Inference supports heterogeneous serving~\cite{dsinference}. FlexGen plans tensor placement and throughput-oriented schedules~\cite{flexgen}. LLM in a flash combines reuse windows with flash-friendly layouts~\cite{llmflash}. PowerInfer splits hot/cold neuron computation across GPU/CPU~\cite{powerinfer}.
-
-\textbf{Offloading.} Fast MoE offloading and SwapMoE target memory-constrained serving~\cite{offloading,swapmoe}. Fiddler uses popularity-based GPU placement and CPU expert computation~\cite{fiddler}. MoE-Lightning searches batching, execution, and weight/KV placement under CPU/GPU constraints, excluding disk variables~\cite{lightning}. Klotski combines expert-aware multi-batch execution with constraint-sensitive planning and correlation-aware prefetching~\cite{klotski}.
-
-\textbf{Expert prediction.} Pre-gated MoE changes the gating design~\cite{pregated}; ProMoE predicts expert use from intermediate results~\cite{promoe}; MoE-Infinity uses activation traces for replacement/prefetch~\cite{moeinfinity}. MECC's demand-only control excludes prediction; its overlap control uses IDs available from the unchanged router.
-
-\textbf{SSD-based serving.} SSD-LLaMA combines expert-pack I/O, lossless transport, frequency/recency-based VRAM admission, and RAM LRU~\cite{ssdllama}. Transient experts may bypass retention. FlashMoE learns a replacement predictor from recency/frequency signals and Belady-derived labels~\cite{flashmoe}. Plain RF/LRU omits these mechanisms.
-
-\textbf{Coordinated residency.} MoE-CORE combines layer hit-rate curves, domain initialization, and routing history/scores~\cite{core}; optional substitution is separate from exact execution. ZipMoE combines lossless compression, compression-aware caching, and cache-affinity scheduling~\cite{zipmoe}. These overlaps require matched controls, not novelty claims based on module names.
-
-The scope is HDD-backed single-GPU serving. Local adapters do not establish superiority over these systems.
 
 \section{Conclusion}
 On one A100 with uniform initial placement, MECC's joint-retention runtime reduces decode latency relative to local streaming, fixed-CPU, and independent-cache controls. The local RF adapter is slightly faster on the main workload. Profile-guided placement, task changes, physical budget equivalence, and multi-GPU tradeoffs require separate evidence before they enter the performance claim.
 
 \clearpage
 \nobalance
-\IEEEtriggeratref{15}
+\IEEEtriggeratref{22}
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 \end{document}

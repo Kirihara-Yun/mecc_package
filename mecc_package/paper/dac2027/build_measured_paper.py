@@ -5,6 +5,7 @@ contains only numerical outcomes backed by committed A100 result.json files.
 """
 from pathlib import Path
 import re
+from measured_narrative import revise
 
 HERE = Path(__file__).resolve().parent
 SRC = HERE / "mecc_dac2027_clean.tex"
@@ -96,6 +97,7 @@ On one A100 with uniform initial placement, MECC's joint-retention runtime reduc
     # marked by its filename and data-audit artifact, without inventing measurements.
     assert "3.00--3.26" not in s and "Mixtral-8x22B" not in s
     assert "ideal_figures/" not in s and "Hypothetical" not in s
+    s = revise(s)
     OUT.write_text(s, encoding="utf-8")
     print("Wrote", OUT)
 
