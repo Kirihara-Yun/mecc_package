@@ -35,7 +35,9 @@ def style(ax,ylabel=None):
  ax.spines['bottom'].set_color(INK);ax.spines['left'].set_color(INK)
 
 def patterned_bars(ax,x,values,colors,hatches,width=.59,**kwargs):
- bars=ax.bar(x,values,color=colors,edgecolor=INK,linewidth=.75,width=width,**kwargs)
+ horizontal=kwargs.pop('orientation',None)=='horizontal'
+ bars=(ax.barh(x,values,color=colors,edgecolor=INK,linewidth=.75,height=width,**kwargs)
+       if horizontal else ax.bar(x,values,color=colors,edgecolor=INK,linewidth=.75,width=width,**kwargs))
  for patch,h in zip(bars,hatches):patch.set_hatch(h)
  return bars
 
@@ -47,31 +49,48 @@ def save(fig,name):
 
 def charts():
  mdata=D['motivation']
- fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.13,right=.97,bottom=.23,top=.90)
- values=[D['ttft_seconds']['Resident 8-GPU reference'][0],D['ttft_seconds']['Unoptimized streaming'][0],D['ttft_seconds']['MECC'][0]]
- bars=patterned_bars(ax,range(3),values,[GREY,ORANGE,BLUE],['///','\\\\','xxx'])
- ax.bar_label(bars,fmt='%g',padding=4,fontsize=13)
- ax.set_xticks(range(3),['8 卡显存部署','未优化单卡','单卡 MECC'])
- ax.set_ylim(0,150);style(ax,'首 token 延迟（秒）')
+ fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.21,right=.97,bottom=.19,top=.78)
+ workload=['8×7B 问答','8×7B 代码','8×22B 问答','8×22B 代码']
+ yy=np.arange(4)
+ for name,label,c,marker,offset in [
+  ('Resident 8-GPU reference','8 卡全显存',GREY,'o',-.18),
+  ('Unoptimized streaming','未优化单卡',ORANGE,'s',0),
+  ('MECC','单卡 MECC',BLUE,'D',.18)]:
+  vals=D['ttft_seconds'][name]
+  ax.scatter(vals,yy+offset,s=47,marker=marker,color=c,edgecolor=INK,linewidth=.6,label=label,zorder=4)
+  if name!='Resident 8-GPU reference':
+   for x,y in zip(vals,yy+offset):ax.annotate(f'{x:g}',(x,y),xytext=(4,0),textcoords='offset points',va='center',fontsize=9)
+ ax.set_xscale('log');ax.set_xlim(3,400);ax.set_xticks([5,10,30,100,300],['5','10','30','100','300'])
+ ax.set_yticks(yy,workload);ax.invert_yaxis();ax.set_xlabel('首 token 延迟（秒，对数刻度）')
+ ax.grid(axis='x',color='#DEE2E5',lw=.55);ax.set_axisbelow(True)
+ ax.spines[['top','right']].set_visible(False);ax.spines[['left','bottom']].set_color(INK)
+ ax.legend(ncol=3,loc='lower center',bbox_to_anchor=(.5,1.02),fontsize=9,frameon=False,
+           columnspacing=.8,handletextpad=.2)
  save(fig,'mot_cold_start')
 
- fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.13,right=.97,bottom=.23,top=.90)
- values=[0,mdata['retention_ssd_percent'][0]]
- bars=patterned_bars(ax,range(2),values,[GREY,BLUE],['///','xxx'],width=.56)
- ax.bar_label(bars,fmt='%g%%',padding=4,fontsize=13)
- ax.set_xticks(range(2),['8 卡显存部署','单卡固定 CPU 缓存'])
- ax.set_ylim(0,40);style(ax,'需从 SSD 读取（%）')
+ fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.34,right=.95,bottom=.19,top=.91)
+ values=[0]+mdata['retention_ssd_percent']
+ labels=['8 卡全显存','单卡固定 CPU','单卡独立更新','单卡联合更新']
+ bars=patterned_bars(ax,np.arange(4),values,[GREY,ORANGE,MID,BLUE],
+                      ['///','\\\\','---','xxx'],width=.61,orientation='horizontal')
+ ax.bar_label(bars,labels=[f'{v:g}%' for v in values],padding=5,fontsize=10)
+ ax.set_yticks(range(4),labels);ax.invert_yaxis();ax.set_xlim(0,42)
+ ax.set_xlabel('HDD 冷层读取比例（%）')
+ ax.grid(axis='x',color='#DEE2E5',lw=.55);ax.set_axisbelow(True)
+ ax.spines[['top','right']].set_visible(False);ax.spines[['left','bottom']].set_color(INK)
  save(fig,'mot_retention')
 
- fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.14,right=.97,bottom=.23,top=.87)
+ fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.14,right=.97,bottom=.22,top=.82)
  xx=np.arange(1,17)
- ax.plot(xx,np.zeros_like(xx),label='8 卡显存部署',color=GREY,marker='o',ms=2.7,lw=1.5)
- for key,label,color,marker in [('fixed_windows','单卡固定缓存',BLUE,'s')]:
-  ax.plot(xx,mdata[key],label=label,color=color,marker=marker,ms=3.4,lw=1.45)
+ ax.plot(xx,np.zeros_like(xx),label='8 卡全显存',color=GREY,marker='o',ms=2.4,lw=1.2)
+ for key,label,color,marker,ls in [('fixed_windows','单卡固定缓存',ORANGE,'s','--'),
+                                  ('online_windows','单卡在线更新',MID,'^',':'),
+                                  ('mecc_windows','单卡 MECC',BLUE,'D','-')]:
+  ax.plot(xx,mdata[key],label=label,color=color,marker=marker,markevery=[0,7,8,15],ms=3.7,lw=1.6,ls=ls)
  ax.axvline(8.5,color='#AEB8C1',lw=.85,ls=':')
  ax.set_xlim(1,16);ax.set_ylim(-3,58);ax.set_xticks([1,4,8,9,12,16])
- ax.set_xlabel('请求窗口');ax.legend(loc='upper left',ncol=1,fontsize=10,frameon=False)
- style(ax,'需从 SSD 读取（%）');save(fig,'mot_drift')
+ ax.set_xlabel('请求窗口');ax.legend(loc='lower center',bbox_to_anchor=(.5,1.02),ncol=2,fontsize=9,frameon=False)
+ style(ax,'HDD 冷层读取比例（%）');save(fig,'mot_drift')
 
  fig,aa=plt.subplots(1,2,figsize=(11.7,3.35),gridspec_kw={'width_ratios':[1.7,1]})
  fig.subplots_adjust(left=.065,right=.98,bottom=.23,top=.73,wspace=.36)

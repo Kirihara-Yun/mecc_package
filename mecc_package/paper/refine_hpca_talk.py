@@ -162,13 +162,13 @@ def mot_common(s,n,title,lead,l,r,img,readout,question):
 
 def mot1(s):
  mot_common(s,4,'Motivation I: 首次访问带来的读取延迟',
-     '多卡部署可将全部专家分布在各 GPU 显存中，激活后直接计算。单卡显存容量有限，首次请求\n可能激活 SSD 上的专家。左图比较首 token 延迟，右图说明专家权重的读取路径。',
-     '(a) 首 token 延迟','(b) 两种部署的专家读取路径','mot_cold_start',
+     '当多卡总显存足以容纳模型时，专家可分散驻留在各卡显存，路由后传输 token 并执行。单卡的\n显存和任务内存预算有限，首次请求可能激活 HDD 上的专家。左图比较四组任务的首 token 延迟。',
+     '(a) 四组任务的首 token 延迟','(b) 两种部署的专家读取路径','mot_cold_start',
      '首次访问 SSD 上的专家增加首 token 延迟。',
      '问题①：推理开始前，哪些专家应优先进入显存和 CPU 内存？')
- t(s,6.94,2.88,5.2,.30,'多卡：全部专家已分布在 GPU',15,True,NAVY)
+ t(s,6.94,2.88,5.2,.30,'多卡全显存：专家分散驻留在 GPU',15,True,NAVY)
  for j in range(8):exp(s,6.96+j*.63,3.28,f'E{j+1}',BLUE if j==7 else '#DCE4EC',.51)
- t(s,7.04,3.77,4.92,.26,'选中 E8 → GPU 显存命中 → 执行',14,False,DARK,PP_ALIGN.CENTER)
+ t(s,7.04,3.77,4.92,.26,'选中 E8 → 跨卡传 token → 所在 GPU 执行',14,False,DARK,PP_ALIGN.CENTER)
  rule(s,6.96,4.18,5.27)
  t(s,6.94,4.32,5.2,.30,'单卡：E8 仍在 SSD',15,True,NAVY)
  for j,(name,col) in enumerate([('SSD\nE8',GREY),('CPU\n缓冲',MID),('GPU\n执行',BLUE)]):
@@ -179,11 +179,11 @@ def mot1(s):
 def mot2(s):
  FLAT_SLIDES.add(id(s))
  mot_common(s,5,'Motivation II: 重复访问导致多次 SSD 读取',
-     '多卡部署中，全部专家均在显存，再次访问同一专家无需读取 SSD。单卡的显存和 CPU 内存\n容量有限：E6 从 SSD 载入后可能被替换；再次访问 E6 时仍需读取 SSD。',
-     '(a) SSD 读取比例','(b) 重复访问 E6 的读取路径','mot_retention',
+     '在多卡全显存配置中，再次访问同一专家无需读取 HDD。单卡的显存与 CPU 内存容量有限：\nE6 从 HDD 载入后可能被替换，再次访问仍需读取。左图比较不同缓存更新方式的读取比例。',
+     '(a) HDD 冷层读取比例','(b) 重复访问 E6 的读取路径','mot_retention',
      '专家被缓存替换后，重复访问仍需读取 SSD。',
      '问题②：如何利用显存与 CPU 内存减少重复读取？')
- t(s,6.94,2.90,5.19,.30,'多卡：全部专家分布于 GPU 显存',15,True,NAVY)
+ t(s,6.94,2.90,5.19,.30,'多卡全显存：专家分散驻留',15,True,NAVY)
  for j in range(8):exp(s,7.02+j*.60,3.32,f'E{j+1}',BLUE if j==5 else '#9FBBD7',.50)
  t(s,7.00,3.83,5.12,.29,'E6 → 其他专家 → E6：两次均命中显存',14,False,DARK,PP_ALIGN.CENTER)
  rule(s,6.98,4.20,5.22)
@@ -200,13 +200,13 @@ def mot2(s):
 def mot3(s):
  FLAT_SLIDES.add(id(s))
  mot_common(s,6,'Motivation III: 任务变化引起专家访问变化',
-     '多卡部署将全部专家保存在显存，任务变化只影响激活的专家。单卡依据先前任务安排缓存；若后续\n任务频繁访问另一组专家，而缓存未及时更新，SSD 读取比例将持续升高。',
-     '(a) 任务变化后的 SSD 读取比例','(b) 新任务常用专家的存储位置','mot_drift',
-     '第 9 组请求切换任务后，固定缓存仍保留旧任务的常用专家。',
+     '多卡全显存配置在任务变化后仍可直接访问各卡专家。单卡依据先前任务安排缓存；若新任务\n频繁访问另一组专家，而缓存未及时更新，HDD 读取比例会持续升高。左图显示切换前后变化。',
+     '(a) 任务切换前后的 HDD 读取比例','(b) 新任务常用专家的存储位置','mot_drift',
+     '任务切换后，固定缓存仍保留旧任务的常用专家。',
      '问题③：任务变化后，如何更新显存与 CPU 内存中的专家？')
- t(s,6.94,2.90,5.22,.31,'多卡：新任务常用专家仍在显存',15,True,NAVY)
+ t(s,6.94,2.90,5.22,.31,'多卡全显存：新任务专家仍在显存',15,True,NAVY)
  for j in range(8):exp(s,7.02+j*.60,3.33,f'E{j+1}',BLUE if j>=5 else '#9FBBD7',.50)
- t(s,7.02,3.82,5.07,.28,'任务 A → 任务 B：E6–E8 直接从显存读取',14,False,DARK,PP_ALIGN.CENTER)
+ t(s,7.02,3.82,5.07,.28,'任务 A → 任务 B：路由到 E6–E8 所在 GPU',14,False,DARK,PP_ALIGN.CENTER)
  rule(s,6.98,4.20,5.22)
  t(s,6.94,4.35,5.22,.31,'单卡：缓存仍保留旧任务的常用专家',15,True,NAVY)
  t(s,7.02,4.86,.52,.25,'显存',12,True,NAVY)
@@ -299,7 +299,7 @@ def main():
    '任务可用的 CPU 内存越大，可缓存的专家越多。生成的 token 越多，初始加载开销对平均延迟的\n影响越小。两张图分别改变 CPU 内存预算和生成长度。',
    'resources','单卡推理性能受到 CPU 内存预算和生成长度共同影响。')
  result(prs.slides.add_slide(prs.slide_layouts[6]),16,'Deployment Trade-off: 单卡与多卡部署',
-   '多卡部署将全部专家分布在 GPU 显存中，因此单 token 延迟更低；MECC 使用一张 GPU 运行\n完整模型。右图以 GPU 数量乘以延迟，比较两种部署的 GPU 资源开销。',
+   '在总显存足以容纳模型的多卡配置中，专家分散驻留于 GPU，因此单 token 延迟更低；MECC 使用\n一张 GPU 运行完整模型。右图以 GPU 数量乘以延迟，比较两种部署的 GPU 资源开销。',
    'allocation','单卡方案适用于 GPU 数量受限、可以接受较长推理延迟的任务。')
  conclusion(prs.slides.add_slide(prs.slide_layouts[6]))
  for slide in prs.slides:
