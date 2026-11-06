@@ -4,6 +4,8 @@
 
 **2026-11-06 组会实测版**：[可编辑 PPT](./current/MECC_A100_measured.pptx) / [渲染 PDF](./current/MECC_A100_measured.pdf)。11 页；数值图只读取已提交的 A100 `result.json`，每点一次完整运行。主对比展示全部六种本地策略；预算图只比较同输入来源的 30/60 GB 两档。原 17 页理想示例版保留在下表，供设计对照。
 
+**专家一日讲义**：[可检索 Markdown](./current/MECC_单卡MoE专家一日讲义.md) / [排版 PDF](./current/MECC_单卡MoE专家一日讲义.pdf) / [浏览器版](./current/MECC_单卡MoE专家一日讲义.html) / [首页预览](./current/MECC_expert_guide_first_page_check.png)。以 17 页 `MECC_HPCA_current.pptx` 为讲述顺序，补充相关工作原论文、MECC 代码路径和 A100 实测证据索引。
+
 | 用途 | 文件 |
 |---|---|
 | 可编辑 PPT（17 页） | [MECC_HPCA_current.pptx](./current/MECC_HPCA_current.pptx) |
