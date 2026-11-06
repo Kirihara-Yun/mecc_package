@@ -4,9 +4,9 @@
 
 ## 直接阅读
 
-- **当前黄标研究草稿**：[论文 PDF](./MECC_DAC_research_draft.pdf) / [LaTeX](./MECC_DAC_research_draft.tex) / [整篇预览](./editing/research_review/MECC_research_contact_sheet.png)。仍为 IEEE 9 pt、六页正文加一页引用。贡献分项换行，第 2 页顶部采用实验／机制上下对照图，图注间距收紧。13 张图覆盖现有实测、三模型机制目标、多模型 QA／Code、消融／启动、单卡／多卡和容量扫描；另有数值／物理资源检查表。所有未实测目标在图内、图注和相应正文用黄色明确标注。
+- **当前黄标研究草稿**：[论文 PDF](./MECC_DAC_research_draft.pdf) / [LaTeX](./MECC_DAC_research_draft.tex) / [整篇预览](./editing/research_review/MECC_research_contact_sheet.png)。IEEE 9 pt、六页正文加一页引用。Introduction 保留四段结构，贡献分项换行；背景、三项动机和 Overview 按“初始放置—跨层级复用—在线更新”展开。保留 Overview 之前的图形设计，Method 重绘容量分配、缓存状态和传输时序三图。两张表均已删除，共 15 张图；新增来源／暴露时间分解、画像规模／输入长度／批量敏感性、跨任务画像矩阵。已逐页渲染，核对全部 12 个正文栏底部和图文位置。未实测数值用黄色及简短的 Illustrative 标识区分，正文清除 to measure 等编辑指令。
 - 对这版的判断与处理见 [体系结构会议标准自审](./editing/ARCHITECTURE_REVIEW_20261106.md)。黄色占位如何逐项替换见 [实验图替换清单](./editing/RESEARCH_DRAFT_EXPERIMENT_REGISTER.md)。此稿用于补齐证据，不能据理想图宣称新增实测收益。
-- 重建黄标稿：`python build_completion_figures.py` → `python build_research_draft.py` → `latexmk -pdf -interaction=nonstopmode -halt-on-error MECC_DAC_research_draft.tex` → `python check_research_draft.py`。目标字段及源哈希在 [SOURCE_MANIFEST.json](./completion_figures/SOURCE_MANIFEST.json)，没有使用撤回的内存假设、虚构误差条或未设计的 MECC 多卡点。
+- 重建黄标稿：`python build_method_redesign.py` → `python build_completion_figures.py` → `python build_research_draft.py` → `latexmk -pdf -interaction=nonstopmode -halt-on-error MECC_DAC_research_draft.tex` → `python check_research_draft.py`。正文主线见 [conference_story.py](./conference_story.py)；目标字段及两个源文件的哈希在 [SOURCE_MANIFEST.json](./completion_figures/SOURCE_MANIFEST.json)。新增图的数组集中保存在 [narrative_targets.json](./narrative_targets.json)，未写回实测目录。
 
 - **A100 实测阅读版**：[新版论文 PDF](./MECC_DAC_visual_revision.pdf) / [LaTeX 源文件](./mecc_dac2027_measured.tex)；配套 [组会 PPT](../current/MECC_A100_measured.pptx) / [PDF](../current/MECC_A100_measured.pdf)。实验图由 [build_measured_a100.py](./build_measured_a100.py) 从已提交的单次 A100 原始 JSON 生成，来源及哈希见 [DATA_AUDIT.json](./measured_figures/DATA_AUDIT.json)。主对比使用统一初态，反映当前运行期缓存机制；逐层画像、任务切换和多卡性能尚无可纳入的同口径实测。此前理想结果版保留在下项。
 

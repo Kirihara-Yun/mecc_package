@@ -1,6 +1,6 @@
 # 黄标研究稿：实验图与替换清单
 
-当前文件：`MECC_DAC_research_draft.pdf`。黄色表示目标或待补实测字段。图内文字同时写明 target／to measure，灰度打印时也能识别数据身份。
+当前文件：`MECC_DAC_research_draft.pdf`，六页正文加一页引用，15 张图，无表格。黄色与简短的 Illustrative 标识区分目标和实测；正文及图注已清除 to measure 和运行任务指令。
 
 | 图／表标签 | 回答的问题 | 当前数据身份与来源 | 替换条件 |
 |---|---|---|---|
@@ -14,12 +14,14 @@
 | `fig:target_ablation` b | 初始开销多久摊平？ | `startup_cost_seconds` 与 decode targets 的解析组合；交点 9 token 是目标算术 | E13：分别计 profile、compile、load、TTFT、decode；不能把目标交点写成测量结论 |
 | `fig:target_models` | 模型、QA/Code 是否影响收益？ | 原有 8x7B/8x22B QA/Code 理想数组 | E01/E02：冻结每个模型和输入、长度、精度、真实字节预算与基线实现 |
 | `fig:target_gpu` | 单卡节省配置数时付出多少延迟？ | 原有 1-GPU MECC 与 2/4/8-GPU resident 理想值；GPU-s 为乘积 | E03：最少可驻留的配置必须测；不是 FlashMoE 文献数字；没有 MECC 多卡设计点 |
-| `fig:budget` | 已有两档预算发生什么变化？ | A100 实测 30/60 GB、4 prompts×16 outputs | 保持同口径；不拼接早期不同输入的 20 GB 数据 |
+| 容量小节正文 | 已有两档预算发生什么变化？ | 保留 A100 实测 30/60 GB、4 prompts×16 outputs 数值，删去重复的两点图 | 保持同口径；不拼接早期不同输入的 20 GB 数据 |
 | `fig:target_quota` | 冷层工作区间内中间容量如何变化？ | `cpu_budget_gb` 与 `budget_tpot_seconds` 五点理想曲线 | E10：一套完整冻结协议；不能与上述两点实测混接 |
-| `tab:checks` | 是否保持计算、是否真的遵守内存预算？ | PPL 为实测；独立参考 exact/zero 是黄标目标；物理字节留待测量 | E14/E15：实际峰值、mirror/staging、phase bytes、independent logits/routes/tokens |
+| `fig:target_traffic` | 命中改善和交付调度有何区别？ | `narrative_targets.json` 中 demand/exposed 字段；来源占比和为 100%，时间和为 24/18/11/8 | E04/E14：同一运行计量来源及暴露时间，不能当物理字节 |
+| `fig:target_sensitivity` | 画像规模、输入长度和批量怎样影响性能？ | 新增 profile/input/batch 理想数组；三图分别为 TPOT、TTFT、aggregate tokens/s | E09/E12：各面板独立固定协议，真实重复才允许误差条 |
+| `fig:target_mismatch` | 画像是否可以迁移到不同任务？ | 新增 transfer_fixed/adaptive 理想矩阵，统一色阶 | E08/E11：固定画像任务及推理任务，记录前后窗口及 no-shift 对照 |
 
-所有目标字段和源 JSON 的 SHA256 见 `completion_figures/SOURCE_MANIFEST.json`。这些字段从未写回 `results/`，也没有登记为 verified。
+所有目标字段和两个源 JSON 的 SHA256 见 `completion_figures/SOURCE_MANIFEST.json`。这些字段从未写回 `results/`，也没有登记为 verified。两张检查／工作分类表已移除；PPL 数值保留在正文，物理资源与独立参考检查仍在原实验计划中。
 
 未恢复的旧假设：物理内存图因 full-mirror 预算不成立而撤回；MECC 的多卡延迟点没有对应设计；人工 ±3% 波动没有实测来源。这些不能作为可提交的图使用。
 
-全套输入/输出长度、batch、画像规模敏感性仍在 E09/E11/E12 黄项中。当前已有目标文件没有它们的数值，因此不伪装成已有曲线。
+新增目标曲线覆盖画像规模、输入长度、batch 和画像跨任务迁移；输出长度的目标分析仍由启动摊销图提供。所有新增值是图形设计输入，不是运行结果。

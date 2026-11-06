@@ -27,7 +27,9 @@ def main():
         refs=[i+1 for i,t in enumerate(texts) if re.search(r'Figure\s+'+number+r'\b',t)]
         assert refs and refs[0]==int(page),(key,page,refs)
         figures[key]={'number':int(number),'page':int(page),'first_reference_page':refs[0]}
-    assert len(figures)==13
+    assert len(figures)==15
+    assert not re.search(r'\\begin\{table\*?\}',source)
+    assert not re.search(r'\bto measure\b', '\n'.join(texts), re.I)
     assert figures['fig:insights']['page']==2
     assert 'Motivation and Insights' in texts[1]
     assert texts[1].index('Layer group')<texts[1].index('Background')
@@ -42,18 +44,31 @@ def main():
         if name.startswith('_'):continue
         plot=pymupdf.open(HERE/'completion_figures'/f'{name}.pdf')
         text=' '.join(page.get_text() for page in plot).upper()
-        assert 'IDEAL TARGET' in text,name
+        assert 'ILLUSTRATIVE TARGET' in text,name
         target_checks[name]={'explicit_target_label':True,'source':manifest[name]}
     caption=pdf[0].search_for('Fig. 1.')[0]
     axis=pdf[0].search_for('Demand share (%)')[0]
     caption_gap=round(caption.y0-axis.y1,2)
     assert 0<caption_gap<10,caption_gap
-    report={'pages':7,'body_pages':6,'references':refs,'figures':figures,
+    column_bottoms=[]
+    for page_num,page in enumerate(pdf[:6],1):
+        bottoms={}
+        for name,xlo,xhi in [('left',0,306),('right',306,612)]:
+            blocks=[b for b in page.get_text('blocks') if b[0]>=xlo and b[2]<=xhi+3]
+            bottom=round(max(b[3] for b in blocks),2)
+            assert 680<=bottom<=723,(page_num,name,bottom)
+            bottoms[name]=bottom
+        column_bottoms.append({'page':page_num,**bottoms})
+    assert len(target_checks)==9
+    assert manifest['_narrative_targets_sha256']==hashlib.sha256((HERE/'narrative_targets.json').read_bytes()).hexdigest()
+    report={'pages':7,'body_pages':6,'references':refs,'figures':figures,'tables':0,
         'contributions':'three separate lines/items','abstract_words':len(abstract.split()),
         'intro_caption_gap_pt':caption_gap,'motivation_position':'top of page 2',
         'target_panels':target_checks,'pending_text_blocks':source.count(r'\pending{'),
         'tex_issues':issues,'data_status':'Measured values retained; all unmeasured plots explicitly yellow-tagged.',
         'source_targets_sha256':manifest['_source_sha256'],
+        'narrative_targets_sha256':manifest['_narrative_targets_sha256'],
+        'column_bottoms_pt':column_bottoms,
         'pdf_sha256':hashlib.sha256((HERE/f'{STEM}.pdf').read_bytes()).hexdigest()}
     (HERE/'research_draft_validation.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     out=HERE/'editing/research_review';out.mkdir(exist_ok=True,parents=True)
@@ -64,6 +79,6 @@ def main():
         x=(i%4)*316+5;y=(i//4)*416+17
         sheet.paste(im,(x,y));draw.text((x,y-14),f'Page {i+1}',fill='#203244')
     sheet.save(out/'MECC_research_contact_sheet.png')
-    print(f'PASS: 6+1 pages, 44 refs, 13/13 figures with first explanations, caption gap {caption_gap}pt, {len(target_checks)} target-plot files labelled.')
+    print(f'PASS: 6+1 pages, 44 refs, 15/15 figures with first explanations, zero tables, all body columns filled, caption gap {caption_gap}pt, {len(target_checks)} target-plot files labelled.')
 
 if __name__=='__main__':main()

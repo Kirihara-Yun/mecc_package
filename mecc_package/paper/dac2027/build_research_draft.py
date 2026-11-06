@@ -4,29 +4,9 @@ This copy never changes measured run data or registers a target as verified.
 """
 from pathlib import Path
 import re
+from conference_story import INTRO, BACKGROUND as STORY_BACKGROUND, OVERVIEW, METHOD, revise_evaluation
 
 HERE=Path(__file__).resolve().parent
-
-BACKGROUND=r'''\section{Background}
-\label{sec:background}
-An MoE layer routes each token to a small subset of its experts. Sparse execution reduces arithmetic, but every expert remains a possible future selection~\cite{shazeer,switch,gshard}. Mixtral and the DeepSeek family instantiate this separation between active computation and total weights~\cite{mixtral,deepseekmoe,deepseekv2,deepseekv3,mixtral22}. Experts with the same index in different layers are different weight objects. A route profile must therefore retain both layer and expert identity.
-
-Expert parallelism partitions weights over resident GPU memories and dispatches token activations to their owners~\cite{deepspeedmoe,tutel,megablocks,flashmoedist,harmoeny}. On one GPU, the task also needs space for dense layers, activations, and the KV cache. KV management and request execution are complementary to expert residency~\cite{pagedattention,sglang}. A host-resident expert needs an H2D copy; an expert absent from both fast tiers additionally needs a backing-store read. Heterogeneous inference systems expose related placement and scheduling choices~\cite{flexgen,dsinference,zeroinfinity,llmflash,powerinfer}.
-
-We use immutable FP16 experts and three logical tiers: HBM, CPU pinned memory, and HDD. The task's allowance may be smaller than the server's physical RAM. Unique resident weights, host mirrors, staging buffers, and other allocations must be distinguished. The original gate determines demand, and a delivered expert can remain resident for later tokens. MECC separates the initial residency decision from the online transitions that respond to those later selections.
-
-\section{Motivation and Insights}
-\label{sec:challenges}
-\subsection{Spend Capacity Where It Covers Demand}
-Equal slots per layer assume comparable cache pressure. A profile can reveal different ranked demand distributions even when each layer has the same expert count. Figure~\ref{fig:insights}(a,d) connects this question to a ranked capacity cut: the compiler allocates the next slot by its marginal covered demand. \pending{E05: replace panel (a)'s ideal numbers with a same-runtime, same-byte placement sweep.} The experiment must include empirical-profile and uniform controls; the current measured main runs use uniform initialization. Local routing consistency can also vary across models~\cite{routingconsistency}.
-
-\subsection{An HBM Victim Can Still Be Useful}
-Figure~\ref{fig:insights}(b,e) shows why two resident sets should preserve cross-tier reuse. With the same nominal slots and initialization, the measured independent-cache control reports 47.9\% HDD demand, fixed CPU 31.5\%, and MECC 12.5\%. These counters span all instrumented phases. The insight is to promote a host hit while retaining the displaced HBM expert in CPU, rather than treating the eviction as the end of its useful lifetime. The source-tier and physical-byte measurements answer different questions and must be reported separately.
-
-\subsection{Use the Profile as an Initial State}
-A profile represents past inputs. If the routed set changes, fixed residency can preserve experts that are no longer useful. Figure~\ref{fig:insights}(c,f) pairs an expected miss transient with the corresponding residency update. Compilation fixes capacities and ranked IDs; online recency changes identities within those capacities. \pending{E07/E08: measure initial misses and the WikiText-2/GSM8K switch transient using distinct, hashed input sets.} The experiment must retain the no-switch control and compare profile-plus-online with both fixed residency and online-only initialization.
-
-'''
 
 EVALUATION=r'''\section{Evaluation}
 \label{sec:evaluation}
@@ -150,7 +130,6 @@ MECC connects a profile-derived initial state with online cross-tier retention a
 def main():
     base=(HERE/'mecc_dac2027_measured.tex').read_text(encoding='utf-8')
     intro_start=base.index(r'\section{Introduction}')
-    intro_end=base.index(r'\clearpage',intro_start)
     prefix=base[:intro_start]
     # hyperref must see float/caption packages after they have been loaded.
     hyper_setup=re.search(r'\\hypersetup[^\n]*',prefix).group(0)
@@ -165,7 +144,7 @@ def main():
 \setlength{\intextsep}{6pt plus 1pt minus 1pt}
 \setlength{\textfloatsep}{7pt plus 1pt minus 1pt}
 \setlength{\floatsep}{6pt plus 1pt minus 1pt}''')
-    intro=base[intro_start:intro_end]
+    intro=INTRO
     p=intro.index('This paper makes three contributions.')
     contribution=intro[p:]
     parts=re.split(r'\\textbf\{\((\d)\) ([^}]+)\}',contribution)
@@ -182,26 +161,15 @@ def main():
 \includegraphics[width=\textwidth]{completion_figures/motivation_evidence.pdf}\par
 \vspace{2pt}
 \includegraphics[width=\textwidth]{measured_figures/insights_lower.pdf}
-\captionof{figure}{Motivation evidence and matching insights. \pending{Panels (a,c) are ideal targets to replace}; (b) is measured A100 demand across all phases. (d--f) are schematic mechanisms, adapted from the talk. Profiles guide initial coverage, joint retention preserves victims, and online updates follow changed routing.}
+\captionof{figure}{Motivation evidence and matching insights. \pending{Panels (a,c) are illustrative targets}; (b) is measured A100 demand across all phases. (d--f) show the corresponding mechanisms: layer-specific capacity cuts, joint victim retention, and online membership updates.}
 \label{fig:insights}
 \vspace{5pt}
 \end{minipage}
 }]
 '''
     a=base.index(r'\twocolumn[{');b=base.index(r'\section{Method}',a)
-    overview=base[a:b]
-    method=base[b:base.index(r'\section{Evaluation}',b)]
-    # Preserve the stated model and exchange argument, remove its standalone
-    # theorem styling: it is supporting context, not a claimed novel theorem.
-    method=re.sub(r'\\begin\{proposition\}(.*?)\\end\{proposition\}\s*\\noindent\\emph\{Proof sketch\.\}(.*?)(?=\n\n)',
-        lambda m:'For equal-size experts with fixed probabilities, exchanging a more probable expert in a slower tier with a less probable expert in a faster tier cannot increase static expected cost. This establishes ranked placement under independent capacities and ordered tier costs. The implementation below uses marginal coverage, rather than claiming to solve the general latency objective.',method,flags=re.S)
-    a=method.index(r'\subsection{Implementation and Measurement Contract}')
-    method=method[:a]+r'''\subsection{Implementation and Accounting}
-Policies share the FP16 loader and unchanged router. Logical tier occupancy is not physical memory. Host mirrors, staging, and temporary copies are charged separately from unique residents. Full CPU mirroring requires host bytes at least as large as the mirrored HBM experts. \pending{E14: replace nominal slot equivalence with measured physical-byte accounting.}
-
-The harness records initialization, warmup, prefill, decode, and PPL separately. TPOT and TTFT use their own timing windows. Demand-source counts and physical HDD/H2D/D2H bytes must share phase boundaries. \pending{E15: complete independent-resident reference checks before a general lossless claim.}
-
-'''
+    original_overview=base[a:b]
+    overview=original_overview[:original_overview.index('}]')+2]+'\n\n'+OVERVIEW
     ending=r'''\clearpage
 \nobalance
 \IEEEtriggeratref{24}
@@ -209,12 +177,24 @@ The harness records initialization, warmup, prefill, decode, and PPL separately.
 \bibliography{references}
 \end{document}
 '''
-    paper=prefix+intro+mot_header+BACKGROUND+overview+method+EVALUATION+RELATED+ending
-    # Number the top-of-page mechanism float before the measured column plot.
-    a=paper.index(r'\begin{figure*}[!t]',paper.index(r'\section{Evaluation}'))
-    b=paper.index(r'\end{figure*}',a)+len(r'\end{figure*}')
-    component=paper[a:b];paper=paper[:a]+paper[b:]
-    paper=paper.replace(r'\subsection{Measured Runtime and Quality}',component+'\n\n'+r'\subsection{Measured Runtime and Quality}',1)
+    related=re.sub(r'\\begin\{table\}\[H\].*?\\end\{table\}', '', RELATED, flags=re.S)
+    related=re.sub(r'Granularity changes.*?(?=\n\n)', '', related, flags=re.S)
+    related=re.sub(r'Cross-request scheduling.*?(?=\n\n)', '', related, flags=re.S)
+    related=related.replace('MECC\'s demand path instead consumes the original gate output and coordinates initial placement with online residency.',
+        '''MECC's demand path instead consumes the original gate output and coordinates initial placement with online residency. The distinction concerns when information becomes available. A trace supplies a distribution before execution; a gate supplies the current demand during execution. MECC uses the former to initialize capacities and identities, and the latter to update membership. This lets the replacement mechanism remain responsive when the runtime stream differs from the calibration input.''')
+    related=related.replace('MECC studies the interaction between an independent placement prior and online whole-expert retention across the two fast tiers under HDD-backed demand.',
+        '''MECC studies the interaction between an independent placement prior and online whole-expert retention across the two fast tiers under HDD-backed demand. This fixes the cached object as an unchanged FP16 expert. Segmenting an object or storing another precision can reduce the bytes required by one miss; retaining the whole object changes whether that miss occurs. The decisions can be complementary, but their performance effects arise from different mechanisms. We therefore keep representation and routing fixed when attributing the local retention benefit.''')
+    related=related.replace('The full-system, mechanism, and resource experiments above distinguish these comparisons.',
+        '''The full-system, mechanism, and resource experiments above distinguish these comparisons. Cross-request schedulers can run another request while one waits for weights. The current-gate delivery path instead overlaps ready expert work from the ongoing request. Both expose concurrency, but the available work and readiness dependencies differ. Separating these execution scopes also separates their throughput and response-time effects.''')
+    related=related[:related.index(r'\section{Conclusion}')]+r'''\section{Conclusion}
+MECC connects profile-guided placement, online cross-tier retention, and expert delivery for HDD-backed single-GPU MoE inference. Per-layer compilation improves the initial use of bounded capacity. Joint retention preserves reuse after GPU eviction, and readiness-aware delivery overlaps available work with weight movement. The A100 implementation characterizes these decisions through runtime latency, source-tier demand, and numerical comparisons.
+
+'''
+    paper=prefix+intro+mot_header+STORY_BACKGROUND+overview+METHOD+revise_evaluation(EVALUATION)+related+ending
+    # Balance only the final body page, after all delayed wide floats have
+    # entered the output queue. Earlier balancing can strand a half page.
+    paper=paper.replace('\\balance\n','')
+    paper=paper.replace(r'\section{Related Work}',r'\balance'+'\n'+r'\section{Related Work}')
     # End the graphics paragraph explicitly and suppress interline glue before
     # its caption. This closes the large visual gap without negative margins.
     paper=re.sub(r'(\\includegraphics[^\n]*)(\n)(\\caption(?:of\{figure\})?\{)',

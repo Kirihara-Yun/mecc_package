@@ -33,12 +33,12 @@
       "page": 4,
       "first_reference_page": 4
     },
-    "fig:target_mechanisms": {
-      "number": 7,
-      "page": 5,
-      "first_reference_page": 5
-    },
     "fig:performance": {
+      "number": 7,
+      "page": 4,
+      "first_reference_page": 4
+    },
+    "fig:target_mechanisms": {
       "number": 8,
       "page": 5,
       "first_reference_page": 5
@@ -48,27 +48,38 @@
       "page": 5,
       "first_reference_page": 5
     },
-    "fig:target_models": {
+    "fig:target_traffic": {
       "number": 10,
       "page": 5,
       "first_reference_page": 5
     },
-    "fig:target_gpu": {
+    "fig:target_models": {
       "number": 11,
       "page": 5,
       "first_reference_page": 5
     },
-    "fig:budget": {
+    "fig:target_gpu": {
       "number": 12,
+      "page": 5,
+      "first_reference_page": 5
+    },
+    "fig:target_sensitivity": {
+      "number": 13,
       "page": 6,
       "first_reference_page": 6
     },
     "fig:target_quota": {
-      "number": 13,
+      "number": 14,
+      "page": 6,
+      "first_reference_page": 6
+    },
+    "fig:target_mismatch": {
+      "number": 15,
       "page": 6,
       "first_reference_page": 6
     }
   },
+  "tables": 0,
   "contributions": "three separate lines/items",
   "abstract_words": 98,
   "intro_caption_gap_pt": 4.28,
@@ -137,11 +148,79 @@
         ],
         "scope": "Authored dense-quota sweep; not merged with the measured four-prompt protocol."
       }
+    },
+    "traffic_exposure": {
+      "explicit_target_label": true,
+      "source": {
+        "source": "narrative_targets.json",
+        "target_fields": [
+          "demand_*",
+          "exposed_*"
+        ],
+        "checks": "Demand sums to 100%; exposed components sum to 24/18/11/8 s/token. Not physical byte measurements."
+      }
+    },
+    "workload_sensitivity": {
+      "explicit_target_label": true,
+      "source": {
+        "source": "narrative_targets.json",
+        "target_fields": [
+          "profile_*",
+          "input_*",
+          "batch_*"
+        ],
+        "scope": "Independent illustrative protocols per panel; aggregate throughput in panel c."
+      }
+    },
+    "profile_mismatch": {
+      "explicit_target_label": true,
+      "source": {
+        "source": "narrative_targets.json",
+        "target_fields": [
+          "transfer_tasks",
+          "transfer_fixed",
+          "transfer_adaptive"
+        ],
+        "scope": "Authored transfer matrix; identical color limits. Not real benchmark results."
+      }
     }
   },
-  "pending_text_blocks": 37,
+  "pending_text_blocks": 25,
   "tex_issues": [],
   "data_status": "Measured values retained; all unmeasured plots explicitly yellow-tagged.",
   "source_targets_sha256": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
-  "pdf_sha256": "3b39ad9c3cc1ec1ab48dca27d40ef5df4855910f4315789f213e4dbd266c69e4"
+  "narrative_targets_sha256": "e96cb5a7d0a2f54d570754449c55c1f8b87f22facbff3d8cbe8a0ddec22d4836",
+  "column_bottoms_pt": [
+    {
+      "page": 1,
+      "left": 717.7,
+      "right": 699.2
+    },
+    {
+      "page": 2,
+      "left": 717.04,
+      "right": 719.58
+    },
+    {
+      "page": 3,
+      "left": 704.78,
+      "right": 715.58
+    },
+    {
+      "page": 4,
+      "left": 719.84,
+      "right": 691.05
+    },
+    {
+      "page": 5,
+      "left": 714.81,
+      "right": 718.43
+    },
+    {
+      "page": 6,
+      "left": 690.16,
+      "right": 690.73
+    }
+  ],
+  "pdf_sha256": "4b7cac043c29d1e80461235a8c2a6cd992d7655f17c1ea6771abeb863ff327ad"
 }
