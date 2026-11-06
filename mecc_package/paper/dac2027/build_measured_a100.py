@@ -231,10 +231,8 @@ def budget_figure(data: dict):
 
 def main():
     data = load()
-    intro_figure(data)
-    main_figure(data)
-    retention_figure(data)
-    budget_figure(data)
+    from build_compact_results import render_results
+    render_results(data)
     audit = {"scope": "one completed A100 run per plotted point; no ideal targets",
              "medium": "RAID logical block device reports ROTA=1; physical disks not inventoried",
              "main": {p: {k: r[k] for k in ("run_id", "sha256", "config")} for p, r in data["main"].items()},

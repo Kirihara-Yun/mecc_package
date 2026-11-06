@@ -4,9 +4,13 @@
 
 ## 直接阅读
 
-- **A100 实测阅读版**：[论文 PDF](./mecc_dac2027_measured.pdf) / [LaTeX 源文件](./mecc_dac2027_measured.tex)；配套 [组会 PPT](../current/MECC_A100_measured.pptx) / [PDF](../current/MECC_A100_measured.pdf)。图表由 [build_measured_a100.py](./build_measured_a100.py) 从已提交的单次 A100 原始 JSON 生成，来源及哈希见 [DATA_AUDIT.json](./measured_figures/DATA_AUDIT.json)。主对比使用统一初态，反映当前运行期缓存机制；逐层画像、任务切换和多卡性能尚无可纳入的同口径实测。此前理想结果版保留在下项。
+- **A100 实测阅读版**：[新版论文 PDF](./MECC_DAC_visual_revision.pdf) / [LaTeX 源文件](./mecc_dac2027_measured.tex)；配套 [组会 PPT](../current/MECC_A100_measured.pptx) / [PDF](../current/MECC_A100_measured.pdf)。实验图由 [build_measured_a100.py](./build_measured_a100.py) 从已提交的单次 A100 原始 JSON 生成，来源及哈希见 [DATA_AUDIT.json](./measured_figures/DATA_AUDIT.json)。主对比使用统一初态，反映当前运行期缓存机制；逐层画像、任务切换和多卡性能尚无可纳入的同口径实测。此前理想结果版保留在下项。
 
-实测阅读版按 PRICE 与 DAC 最佳论文的叙事节奏重排：第 1 页为摘要、引言和引言图；第 2–6 页依次展开 Background、Motivation and Insights、Overview、Method、Evaluation；第 7 页仅为参考文献。正文使用 IEEE 9 pt 双栏版式，44 篇正文引用在第 7 页排完。引言图和三张实验图均由已提交的 A100 JSON 生成。LaTeX 的章节与论述调整集中在 [measured_narrative.py](./measured_narrative.py)，可通过 `python build_measured_paper.py` 重新生成 `.tex`。
+实测阅读版按 PRICE 与 DAC 最佳论文的叙事节奏重排：第 1 页为摘要、引言和单栏引言图；第 2 页为 Background/Related Work 与三项 Motivation/Insight；第 3 页接英文机制图与正式 MECC 框架图；第 3–5 页展开配有新图的 Method；第 5–6 页为实验；第 7 页仅为 44 篇参考文献。正文使用 IEEE 9 pt 双栏版式。机制图是示意，实验图来自已提交的 A100 JSON。章节与论述调整见 [measured_narrative.py](./measured_narrative.py)，图文位置及相关工作扩充见 [visual_revision.py](./visual_revision.py)。
+
+新版图形由 [build_manuscript_visuals.py](./build_manuscript_visuals.py) 绘制。三项 Insight 保留 PPT 的热度分区、联合缓存栈曲线和路由/驻留矩阵设计，改用英文与 Times New Roman；Method 新绘逐层放置、CPU-hit 状态变化和读盘/拷贝/执行时序图。Overview 使用项目正式 `figures/fig01_overview.pdf`。实验图的论文尺寸由 [build_compact_results.py](./build_compact_results.py) 控制。
+
+重建新版：`python build_manuscript_visuals.py` → `python build_measured_a100.py` → `python build_measured_paper.py` → `latexmk -pdf -jobname=MECC_DAC_visual_revision -interaction=nonstopmode -halt-on-error mecc_dac2027_measured.tex`。
 
 论文图借鉴 PPT 的颜色、纹理和并列比较方式，重新以英文和双栏尺寸绘制；没有把中文幻灯片截图嵌入论文。实测主图包含 TPOT、TTFT 与冷层需求比例，缓存消融图同时展示延迟和 HBM／CPU／HDD 访问来源。PPT 第二页另标明相关工作与同机单卡对照的区别。
 

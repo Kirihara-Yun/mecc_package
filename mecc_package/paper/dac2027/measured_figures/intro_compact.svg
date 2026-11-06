@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="252pt" height="84.96pt" viewBox="0 0 252 84.96" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-06T17:41:00.521737</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 84.96
+L 252 84.96
+L 252 0
+L 0 0
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="line2d_1">
+    <path d="M 11.736 66.888
+L 62.658 66.888
+" clip-path="url(#pbcdcc36544)" style="fill: none; stroke: #abb5bd; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 71.352 66.888
+L 152.082 66.888
+" clip-path="url(#pbcdcc36544)" style="fill: none; stroke: #abb5bd; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 160.776 66.888
+L 241.506 66.888
+" clip-path="url(#pbcdcc36544)" style="fill: none; stroke: #abb5bd; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'Times New Roman', serif; text-anchor: middle; fill: #203244" x="126" y="8.64266" transform="rotate(-0 126 8.64266)">One MoE layer: two selected experts</text>
+   </g>
+   <g id="patch_2">
+    <path d="M 11.736 60.3792
+L 32.85 60.3792
+L 32.85 36.7848
+L 11.736 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #eaf0f4; stroke: #abb5bd; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_2">
+    <!-- $e_1$ -->
+    <g style="fill: #203244" transform="translate(18.933 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #203244">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #203244">1</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_3">
+    <path d="M 41.544 60.3792
+L 62.658 60.3792
+L 62.658 36.7848
+L 41.544 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #326c9b; stroke: #326c9b; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_3">
+    <!-- $e_2$ -->
+    <g style="fill: #ffffff" transform="translate(48.741 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #ffffff">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #ffffff">2</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_4">
+    <path d="M 71.352 60.3792
+L 92.466 60.3792
+L 92.466 36.7848
+L 71.352 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #eaf0f4; stroke: #abb5bd; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_4">
+    <!-- $e_3$ -->
+    <g style="fill: #203244" transform="translate(78.549 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #203244">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #203244">3</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_5">
+    <path d="M 101.16 60.3792
+L 122.274 60.3792
+L 122.274 36.7848
+L 101.16 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #eaf0f4; stroke: #abb5bd; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_5">
+    <!-- $e_4$ -->
+    <g style="fill: #203244" transform="translate(108.357 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #203244">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #203244">4</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_6">
+    <path d="M 130.968 60.3792
+L 152.082 60.3792
+L 152.082 36.7848
+L 130.968 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #eaf0f4; stroke: #abb5bd; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_6">
+    <!-- $e_5$ -->
+    <g style="fill: #203244" transform="translate(138.165 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #203244">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #203244">5</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_7">
+    <path d="M 160.776 60.3792
+L 181.89 60.3792
+L 181.89 36.7848
+L 160.776 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #326c9b; stroke: #326c9b; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_7">
+    <!-- $e_6$ -->
+    <g style="fill: #ffffff" transform="translate(167.973 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #ffffff">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #ffffff">6</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_8">
+    <path d="M 190.584 60.3792
+L 211.698 60.3792
+L 211.698 36.7848
+L 190.584 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #eaf0f4; stroke: #abb5bd; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_8">
+    <!-- $e_7$ -->
+    <g style="fill: #203244" transform="translate(197.781 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #203244">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #203244">7</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_9">
+    <path d="M 220.392 60.3792
+L 241.506 60.3792
+L 241.506 36.7848
+L 220.392 36.7848
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #eaf0f4; stroke: #abb5bd; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_9">
+    <!-- $e_8$ -->
+    <g style="fill: #203244" transform="translate(227.589 50.492156)">
+     <text>
+      <tspan x="0" y="-0.46875" style="font-style: italic; font-size: 8px; font-family: 'STIXGeneral'; fill: #203244">e</tspan>
+      <tspan x="3.551956" y="0.73125" style="font-size: 5.6px; font-family: 'STIXGeneral'; fill: #203244">8</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 8px; font-family: 'Times New Roman', serif; text-anchor: middle; fill: #203244" x="37.197" y="76.934156" transform="rotate(-0 37.197 76.934156)">HBM</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 8px; font-family: 'Times New Roman', serif; text-anchor: middle; fill: #203244" x="111.717" y="76.934156" transform="rotate(-0 111.717 76.934156)">CPU</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 8px; font-family: 'Times New Roman', serif; text-anchor: middle; fill: #203244" x="201.141" y="76.934156" transform="rotate(-0 201.141 76.934156)">HDD</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 7.6px; font-family: 'Times New Roman', serif; text-anchor: middle; fill: #c78d51" x="96.192" y="23.958508" transform="rotate(-0 96.192 23.958508)">HDD read + host-to-device copy</text>
+   </g>
+   <g id="patch_10">
+    <path d="M 169.022292 33.274847
+Q 96.191415 -12.280013 24.118842 32.801261
+" clip-path="url(#pbcdcc36544)" style="fill: none; stroke: #c78d51; stroke-width: 0.8; stroke-linecap: round"/>
+    <path d="M 26.789945 32.545905
+L 24.118842 32.801261
+L 25.517218 30.511165
+z
+" clip-path="url(#pbcdcc36544)" style="fill: #c78d51; stroke: #c78d51; stroke-width: 0.8; stroke-linecap: round"/>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pbcdcc36544">
+   <rect x="1.8" y="1.8" width="248.4" height="81.36"/>
+  </clipPath>
+ </defs>
+</svg>

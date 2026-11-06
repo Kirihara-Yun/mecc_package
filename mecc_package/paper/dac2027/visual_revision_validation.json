@@ -1,0 +1,22 @@
+{
+  "pages": 7,
+  "body_pages": 6,
+  "reference_pages": 1,
+  "references": 44,
+  "figure_pages": {
+    "fig:intro": 1,
+    "fig:insights": 3,
+    "fig:overview": 3,
+    "fig:compile": 3,
+    "fig:retention": 4,
+    "fig:delivery": 5,
+    "fig:performance": 6,
+    "fig:retention_result": 6,
+    "fig:budget": 6
+  },
+  "tex_issues": [],
+  "manual_review": "Rendered all pages; inspected introduction, mechanisms, method and result layouts.",
+  "fonts": "IEEE 9pt body; Times New Roman figure labels",
+  "mechanism_source": "../build_insight_visuals.py: placement, retention, adaptation; English paper-size redraws",
+  "experimental_values": "unchanged committed A100 result.json; DATA_AUDIT.json"
+}
