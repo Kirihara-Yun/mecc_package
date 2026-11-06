@@ -6,7 +6,7 @@
 
 - **A100 实测阅读版**：[新版论文 PDF](./MECC_DAC_visual_revision.pdf) / [LaTeX 源文件](./mecc_dac2027_measured.tex)；配套 [组会 PPT](../current/MECC_A100_measured.pptx) / [PDF](../current/MECC_A100_measured.pdf)。实验图由 [build_measured_a100.py](./build_measured_a100.py) 从已提交的单次 A100 原始 JSON 生成，来源及哈希见 [DATA_AUDIT.json](./measured_figures/DATA_AUDIT.json)。主对比使用统一初态，反映当前运行期缓存机制；逐层画像、任务切换和多卡性能尚无可纳入的同口径实测。此前理想结果版保留在下项。
 
-实测阅读版按 PRICE 与 DAC 最佳论文的叙事节奏重排：第 1 页为摘要、引言和单栏引言图；第 2 页为 Background/Related Work 与三项 Motivation/Insight；第 3 页接英文机制图与正式 MECC 框架图；第 3–5 页展开配有新图的 Method；第 5–6 页为实验；第 7 页仅为 44 篇参考文献。正文使用 IEEE 9 pt 双栏版式。机制图是示意，实验图来自已提交的 A100 JSON。章节与论述调整见 [measured_narrative.py](./measured_narrative.py)，图文位置及相关工作扩充见 [visual_revision.py](./visual_revision.py)。
+实测阅读版共六页正文加一页参考文献：第 1 页为摘要、四段引言和实测图；第 2 页为 Background、三项 Motivation/Insight 及同页英文机制图；第 3 页为正式框架图、Overview 和编译方法；第 4 页为运行期缓存及权重交付；第 5 页为主结果与缓存对照；第 6 页为容量扫描、Related Work 与总结；第 7 页仅为 44 篇参考文献。正文使用 IEEE 9 pt 双栏版式。机制图是示意，实验图来自已提交的 A100 JSON。章节与论述调整见 [measured_narrative.py](./measured_narrative.py)，图文位置及相关工作扩充见 [visual_revision.py](./visual_revision.py)。
 
 摘要现为 98 词，参考 [Token-Picker 摘要](https://arxiv.org/abs/2407.15131) 的“问题—缺口—机制—结果”组织。Introduction 严格为四段：研究问题；相关工作及实测暴露的问题；MECC 的设计与解决方式；以（1）（2）（3）列出的贡献。第二段对应的 [引言实验图](./measured_figures/intro_evidence.pdf) 使用已提交的同机 A100 结果，并区分 decode latency 与包含各阶段的 HDD-demand share。
 
@@ -14,7 +14,9 @@
 
 重建新版：`python build_manuscript_visuals.py` → `python build_measured_a100.py` → `python build_measured_paper.py` → `latexmk -pdf -jobname=MECC_DAC_visual_revision -interaction=nonstopmode -halt-on-error mecc_dac2027_measured.tex`。
 
-论文图借鉴 PPT 的颜色、纹理和并列比较方式，重新以英文和双栏尺寸绘制；没有把中文幻灯片截图嵌入论文。实测主图包含 TPOT、TTFT 与冷层需求比例，缓存消融图同时展示延迟和 HBM／CPU／HDD 访问来源。PPT 第二页另标明相关工作与同机单卡对照的区别。
+编译后运行 `python check_measured_layout.py`：核对六加一页、四段引言、44 篇引用，以及全部 9 张图与首次解释是否同页。当前 Motivation 的正文与图均在第 2 页；相关工作长比较移至第 6 页。检查结果见 [visual_revision_validation.json](./visual_revision_validation.json)，整篇版面见 [七页预览](./editing/layout_review/MECC_layout_contact_sheet.png)。
+
+论文图借鉴 PPT 的颜色、纹理和并列比较方式，以英文和论文尺寸绘制。实测主图采用单栏 TPOT／TTFT 对比，缓存对照图展示延迟及 HBM／CPU／HDD 访问来源，容量扫描图随对应实验小节排布。PPT 第二页另标明相关工作与同机单卡对照的区别。
 
 - **内部审阅版论文**：[无过程标记 PDF](./mecc_dac2027_clean.pdf) / [LaTeX 源文件](./mecc_dac2027_clean.tex)。沿用理想数字和 IEEE 9 pt 排版，共 6 页正文 + 1 页参考文献；数据身份与投稿要求保存在 [独立说明](./clean_review/SOURCE_NOTE.json)。配套 PPT 是基于现有 `MECC_HPCA_review_revision.pptx` 修改的 [17 页版本](../current/MECC_HPCA_current.pptx) / [PDF](../current/MECC_HPCA_current.pdf)。
 - 当前论文与 PPT 将 MECC 的冷存储统一称为 HDD。A100 测试机提供的是 `ROTA=1` 的 RAID 逻辑设备，控制器后的物理盘清单尚未取得；目前没有 SSD/NVMe 对照测量。被引工作的 `SSD-LLaMA` 名称及其 SSD 设计描述不改动。此次只调整介质口径和配图标注，理想示例数值未重算。

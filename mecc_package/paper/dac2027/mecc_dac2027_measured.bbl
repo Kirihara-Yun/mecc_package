@@ -207,6 +207,11 @@ Y.~Yang, Y.~Zhao, P.~Yang, S.~Wang, and Z.-H. Zhou, ``{ZipMoE}: Efficient
   Machine Learning}, ser. Proceedings of Machine Learning Research, vol. 306,
   2026, pp. 147\,261--147\,284.
 
+\bibitem{routingconsistency}
+J.~Liang, S.~Wang, M.~Tian \emph{et~al.}, ``Not all models suit expert
+  offloading: On local routing consistency of mixture-of-expert models,''
+  \emph{arXiv preprint arXiv:2505.16056v4}, 2026.
+
 \bibitem{moepic}
 J.~Yan, J.~Liu, H.~Xu, and L.~Huang, ``Accelerating mixture-of-expert inference
   with adaptive expert split mechanism,'' \emph{arXiv preprint
@@ -236,10 +241,5 @@ H.~Yu, I.~Gim, K.~Lee, and L.~Zhong, ``Accelerating offloading-based {MoE}
 X.~Zhao, B.~Jia, H.~Zhou, Z.~Liu, S.~Cheng, and Y.~You, ``{HeteGen}:
   Heterogeneous parallel inference for large language models on
   resource-constrained devices,'' \emph{arXiv preprint arXiv:2403.01164}, 2024.
-
-\bibitem{routingconsistency}
-J.~Liang, S.~Wang, M.~Tian \emph{et~al.}, ``Not all models suit expert
-  offloading: On local routing consistency of mixture-of-expert models,''
-  \emph{arXiv preprint arXiv:2505.16056v4}, 2026.
 
 \end{thebibliography}

@@ -12,6 +12,7 @@ def apply(s):
     s=s.replace(r'\usepackage{balance}',r'''\usepackage{balance}
 \usepackage{capt-of}
 \usepackage{float}
+\usepackage{needspace}
 \setcounter{dbltopnumber}{3}
 \renewcommand{\dbltopfraction}{0.85}
 \renewcommand{\textfraction}{0.10}''')
@@ -37,6 +38,8 @@ The storage regime also affects the comparison. A host-resident expert set mainl
                 'Figure~\\ref{fig:insights}(b) illustrates reuse across the tier boundary. An HBM victim need not become cold immediately.')
     s=s.replace('A profile describes a prior workload, not every later request.',
                 'Figure~\\ref{fig:insights}(c) shows the timing of adaptation. A profile describes a prior workload, not every later request.')
+    s=s.replace(' A task switch requires two distinct input sets and a measured before/after trace. The present single-A100 main run does not test a switch.',
+                '')
     s=figure(s,'fig:overview',r'''\begin{figure*}[!t]
 \centering\includegraphics[width=\textwidth]{figures/fig01_overview.pdf}
 \caption{MECC framework, shared with the project presentation. The placement compiler emits per-layer capacities and ranked IDs. Online execution resolves unchanged router selections against HBM, CPU pinned memory, and HDD, then delivers weights before their GPU consumers. Dashed arrows carry control or plan metadata; solid arrows move weights.}
@@ -65,67 +68,74 @@ Figure~\ref{fig:compile} shows the compiler's input and emitted state.''')
                 'Figure~\\ref{fig:delivery} pairs HBM-resident $e_1$ with HDD-backed $e_3$ from the same gate.')
     s=s.replace('The resident $e_0$ can execute while $e_2$ is read and copied.',
                 'The resident $e_1$ can execute while $e_3$ is read and copied.')
-    # Two result figures now occupy one column each. Their native fonts are
-    # set for this size by build_compact_results.py.
-    for label in ['fig:retention_result','fig:budget']:
-        stem='retention' if label=='fig:retention_result' else 'budget'
-        pattern=r'\\begin\{figure\*\}\[tb\]\s*\\centering\\includegraphics\[width=\\textwidth\]\{measured_figures/'+stem+r'\.pdf\}.*?\\label\{'+re.escape(label)+r'\}.*?\\end\{figure\*\}'
-        match=re.search(pattern,s,re.S);assert match,label
-        block=match.group(0).replace(r'\begin{figure*}[tb]',r'\begin{figure}[!t]').replace(r'\end{figure*}',r'\end{figure}').replace(r'width=\textwidth',r'width=\columnwidth')
-        s=s[:match.start()]+block+s[match.end():]
     s=s.replace(r'\IEEEtriggeratref{22}',r'\IEEEtriggeratref{24}')
     s=s.replace('Three design insights, adapted from the MECC talk diagrams.',
                 'Profile-guided placement and online correction.')
-    s=s.replace('MECC framework, shared with the project presentation.',
-                'MECC framework.')
-    # Reserve one top-of-page block for the insight strip and framework.
-    # This keeps each caption attached and gives Overview its actual diagram.
-    blocks={}
-    for label in ['fig:insights','fig:overview']:
-        pattern=r'\\begin\{figure\*\}[^\n]*\n(?:(?!\\begin\{figure).)*?\\label\{'+re.escape(label)+r'\}.*?\\end\{figure\*\}'
-        m=re.search(pattern,s,re.S);assert m,label
-        block=m.group(0)
-        block=re.sub(r'\\begin\{figure\*\}[^\n]*\n','',block)
-        blocks[label]=block.replace(r'\end{figure*}','').replace(r'\caption{',r'\captionof{figure}{')
-        s=s[:m.start()]+s[m.end():]
-    s=s.replace(r'\section{Overview}',r'''\twocolumn[{
+    s=s.replace('MECC framework, shared with the project presentation.','MECC framework.')
+    # Declare the wide Motivation graphic before the first column is emitted.
+    pattern=r'\\begin\{figure\*\}[^\n]*\n(?:(?!\\begin\{figure).)*?\\label\{fig:insights\}.*?\\end\{figure\*\}'
+    m=re.search(pattern,s,re.S);assert m,'motivation figure'
+    insight=m.group(0);s=s[:m.start()]+s[m.end():]
+    s=s.replace(r'\label{sec:background}',r'\label{sec:background}'+'\n'+insight,1)
+    # Keep only the framework in the Overview page header.
+    pattern=r'\\begin\{figure\*\}[^\n]*\n(?:(?!\\begin\{figure).)*?\\label\{fig:overview\}.*?\\end\{figure\*\}'
+    m=re.search(pattern,s,re.S);assert m,'overview figure'
+    block=re.sub(r'\\begin\{figure\*\}[^\n]*\n','',m.group(0))
+    block=block.replace(r'\end{figure*}','').replace(r'\caption{',r'\captionof{figure}{')
+    s=s[:m.start()]+s[m.end():]
+    header=r'''\twocolumn[{
 \begin{minipage}{\textwidth}
-'''+blocks['fig:insights']+r'''
 \section{Overview}
 \label{sec:overview}
-'''+blocks['fig:overview']+r'''
+'''+block+r'''
 \vspace{8pt}
 \end{minipage}
 }]
-''',1)
-    # Remove the inherited label after the page block.
-    s=s.replace('}]\n\n\\label{sec:overview}', '}]\n',1)
+'''
+    s=s.replace(r'\section{Overview}',header,1)
+    s=s.replace('}]\n\n\\label{sec:overview}','}]\n',1)
     for label in ['fig:compile','fig:retention','fig:delivery']:
         pattern=r'\\begin\{figure\}\[!t\]\n(?:(?!\\begin\{figure).)*?\\label\{'+re.escape(label)+r'\}.*?\\end\{figure\}'
         m=re.search(pattern,s,re.S);assert m,label
         block=m.group(0).replace(r'\begin{figure}[!t]',r'\begin{figure}[H]')
         s=s[:m.start()]+block+s[m.end():]
-    pattern=r'\\begin\{figure\*\}\[tb\]\n(?:(?!\\begin\{figure).)*?\\label\{fig:performance\}.*?\\end\{figure\*\}'
-    m=re.search(pattern,s,re.S);assert m,'performance placement'
-    main=m.group(0).replace(r'\begin{figure*}[tb]',r'\begin{figure*}[!t]')
-    s=s[:m.start()]+s[m.end():]
-    s=s.replace(r'\section{Evaluation}',main+'\n\n'+r'\section{Evaluation}',1)
-    panels={}
-    for label in ['fig:retention_result','fig:budget']:
-        pattern=r'\\begin\{figure\}\[!t\]\n(?:(?!\\begin\{figure).)*?\\label\{'+re.escape(label)+r'\}.*?\\end\{figure\}'
+    # Use native column-sized plots at their explanatory subsections. Avoid
+    # a wide result-float queue that postpones the controls to a later page.
+    for label,heading,reserve in [
+        ('fig:performance',r'\subsection{Single-GPU Latency}','2.7in'),
+        ('fig:retention_result',r'\subsection{Retention Control}','2.6in'),
+        ('fig:budget',r'\subsection{Host-Slot Sensitivity}','1.7in')]:
+        pattern=r'\\begin\{figure\*?\}[^\n]*\n(?:(?!\\begin\{figure).)*?\\label\{'+re.escape(label)+r'\}.*?\\end\{figure\*?\}'
         m=re.search(pattern,s,re.S);assert m,label
-        inner=m.group(0).replace(r'\begin{figure}[!t]','').replace(r'\end{figure}','')
-        panels[label]=inner.replace(r'width=\columnwidth',r'width=\linewidth')
-        s=s[:m.start()]+('RESULT_PAIR' if label=='fig:retention_result' else '')+s[m.end():]
-    paired=r'''\begin{figure*}[!t]
-\begin{minipage}[t]{0.48\textwidth}
-'''+panels['fig:retention_result']+r'''
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-'''+panels['fig:budget']+r'''
-\end{minipage}
-\end{figure*}'''
-    s=s.replace('RESULT_PAIR',paired)
+        block=m.group(0)
+        block=re.sub(r'\\begin\{figure\*?\}[^\n]*',lambda _:r'\begin{figure}[H]',block)
+        block=block.replace(r'\end{figure*}',r'\end{figure}').replace(r'width=\textwidth',r'width=\columnwidth')
+        if label=='fig:performance':
+            block=block.replace('(c) Reported cold-tier demand share across all instrumented phases, including warmup and perplexity; it is not a decode-only share. ','')
+        s=s[:m.start()]+s[m.end():]
+        anchor=heading
+        if label=='fig:retention_result':anchor+='\n'+r'\label{sec:mechanisms}'
+        assert anchor in s
+        preface=''
+        if label=='fig:budget':
+            preface=r'''
+The 30 and 60~GB host allowances use the same four-prompt, 16-output-token input, with four HBM slots per layer. The matched plans differ in CPU slots. Cold slots denote experts outside both fast tiers; the following counts are per layer.
+\begin{center}\small
+\begin{tabular}{rrrr}
+\toprule
+CPU (GB) & HBM slots & CPU slots & Cold slots\\
+\midrule
+30 & 4 & 2 & 2\\
+60 & 4 & 4 & 0\\
+\bottomrule
+\end{tabular}
+\end{center}
+These plans straddle the complete-coverage threshold. Four HBM and two CPU slots retain at most six distinct experts per layer, leaving two outside the fast tiers. Four slots in each fast tier can retain all eight experts. This is a transition in logical coverage; it does not imply that all weights fit in HBM. Both runs use a shorter output window than the main comparison, so their absolute latencies are compared only within the matched budget protocol.
+
+'''
+        s=s.replace(anchor,r'\Needspace{'+reserve+'}\n'+anchor+'\n'+preface+block,1)
+    s=s.replace('The 30 and 60~GB nominal CPU settings use the same four-prompt, 16-token WikiText-2 protocol within each setting. They are a distinct experiment from the eight-prompt main comparison. ',
+                'These settings use a shorter protocol than the eight-prompt main comparison. ')
     s=s.replace("The RF adapter is a useful counterexample to a universal MECC speedup claim: it has lower TTFT, lower cold-tier share, and slightly lower TPOT on this workload. Its recency/frequency rule differs from the published predictor of the same name.",
                 "The RF adapter has the lowest TTFT and TPOT in this local comparison.")
     s=s.replace('Model adapters map layer/expert IDs to weight objects, and policies share an end-to-end loader. The harness maps each layer/expert ID to an immutable FP16 weight object. Policies share the same loader and router interface.',
@@ -136,8 +146,42 @@ Figure~\ref{fig:compile} shows the compiler's input and emitted state.''')
     a=s.index(r'\subsection{Interpreting the Local Controls}')
     b=s.index(r'\subsection{Scope of the Measurements}',a)
     s=s[:a]+r'''\balance
-\subsection{Reading the Capacity Transition}
-The 60~GB plan has four HBM and four CPU slots per layer, covering all eight experts. MECC's zero cold-tier demand is consistent with this slot geometry. It does not mean that the model fits in HBM. At the smaller quota, the cache must decide which experts remain outside the fast tiers, and the replacement rule changes the observed reuse. The main and budget protocols use different prompt/output lengths, so only points within the matched budget protocol belong on the same curve.
-
 '''+s[b:]
+    # Keep the two immediately relevant offloading paragraphs in Background.
+    # Move the broader comparison to the final body page, which also leaves
+    # room for the Motivation text and graphic to share a page.
+    a=s.index(r'\subsection{Related Expert-Serving Systems}')
+    b=s.index(r'\section{Motivation and Insights}',a)
+    paragraphs=[p for p in re.split(r'\n\s*\n',s[a:b]) if p.strip()]
+    front='\n\n'.join(paragraphs[:2])+'\n\n'
+    related=r'\section{Related Work}'+'\n'+'\n\n'.join(paragraphs[2:])+r'''
+
+The granularity of the cached object determines which decisions can be compared directly. MoEpic retains expert segments, while SliceMoE retains precision slices~\cite{moepic,slicemoe}. HOBBIT and Specter use precision as part of the offloading decision~\cite{hobbit,specter}. MECC's current object is a complete FP16 expert, and its primary decision is the resident tier. Comparing these approaches therefore requires reporting both the stored representation and the quality protocol. A smaller transferred representation changes the traffic per miss, whereas a different retention rule changes which requests miss.
+
+Request scheduling provides another source of overlap. Klotski constructs an expert-aware pipeline across batches; Bevy lets ready requests advance while other requests wait for expert fetches~\cite{klotski,bevy}. These systems create independent work across requests. MECC's delivery contract instead defines dependencies within the expert set revealed by the current gate. The amount of overlap available in a batch-one stream depends on ready computation and must be measured separately from the reduction in cold-tier demand.
+
+'''
+    comparison=r'''\begin{table}[H]
+\centering\small
+\caption{Control granularity and primary decisions in representative MoE-serving systems.}
+\label{tab:related_units}
+\begin{tabular}{@{}p{0.20\linewidth}p{0.22\linewidth}p{0.47\linewidth}@{}}
+\toprule
+System & Unit & Primary decision\\
+\midrule
+Fiddler~\cite{fiddler} & Expert & CPU/GPU execution\\
+ProMoE~\cite{promoe} & Expert & Proactive caching\\
+MoEpic~\cite{moepic} & Segment & Split ratio and allocation\\
+HOBBIT~\cite{hobbit} & Expert precision & Precision-aware loading\\
+Bevy~\cite{bevy} & Request & Runahead and batching\\
+MECC & FP16 expert & Initial placement and joint retention\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+'''
+    related=related.replace('The granularity of the cached object',comparison+'The granularity of the cached object',1)
+    s=s[:a]+front+s[b:]
+    s=s.replace(r'\section{Background and Related Work}',r'\section{Background}')
+    s=s.replace(r'\section{Conclusion}',related+r'\section{Conclusion}',1)
     return s

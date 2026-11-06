@@ -41,11 +41,11 @@ def render_results(data):
         a.invert_yaxis();a.set_xlim(0,limit);a.set_xticks([0,20,40] if key=='tpot_ms' else [0,25,50])
         a.set_xlabel(xlabel,labelpad=2);a.set_title(title,loc='left',fontweight='bold',pad=4);style(a)
     save(fig,'intro_evidence')
-    fig,axs=plt.subplots(1,3,figsize=(7.1,1.85))
-    fig.subplots_adjust(left=.115,right=.98,bottom=.24,top=.86,wspace=.28)
+    fig,axs=plt.subplots(1,2,figsize=(3.45,1.82))
+    fig.subplots_adjust(left=.21,right=.96,bottom=.24,top=.86,wspace=.28)
     for i,(a,key,title,xlabel,limit) in enumerate(zip(axs,
-        ['tpot_ms','ttft_ms','ssd'],['(a) Decode latency','(b) First token','(c) Cold-tier demand'],
-        ['TPOT (s/token)','TTFT (s)','Demand share (%)'],[25,450,37])):
+        ['tpot_ms','ttft_ms'],['(a) Decode latency','(b) First token'],
+        ['TPOT (s/token)','TTFT (s)'],[25,450])):
         vals=[main[p]['metrics']['hit_pct']['ssd'] if key=='ssd' else main[p]['metrics'][key]/1000 for p in ORDER]
         bars=a.barh(range(6),vals,height=.62,color=COLORS,ec=INK,lw=.4,zorder=3)
         for b,h in zip(bars,HATCH):b.set_hatch(h)

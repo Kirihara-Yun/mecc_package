@@ -3,23 +3,86 @@
   "body_pages": 6,
   "reference_pages": 1,
   "references": 44,
+  "introduction_paragraphs": 4,
+  "abstract_words": 98,
   "figure_pages": {
     "fig:intro": 1,
-    "fig:insights": 3,
+    "fig:insights": 2,
     "fig:overview": 3,
     "fig:compile": 3,
     "fig:retention": 4,
-    "fig:delivery": 5,
-    "fig:performance": 6,
-    "fig:retention_result": 6,
+    "fig:delivery": 4,
+    "fig:performance": 5,
+    "fig:retention_result": 5,
     "fig:budget": 6
   },
+  "figure_reference_checks": {
+    "fig:intro": {
+      "figure_page": 1,
+      "first_reference_page": 1
+    },
+    "fig:insights": {
+      "figure_page": 2,
+      "first_reference_page": 2
+    },
+    "fig:overview": {
+      "figure_page": 3,
+      "first_reference_page": 3
+    },
+    "fig:compile": {
+      "figure_page": 3,
+      "first_reference_page": 3
+    },
+    "fig:retention": {
+      "figure_page": 4,
+      "first_reference_page": 4
+    },
+    "fig:delivery": {
+      "figure_page": 4,
+      "first_reference_page": 4
+    },
+    "fig:performance": {
+      "figure_page": 5,
+      "first_reference_page": 5
+    },
+    "fig:retention_result": {
+      "figure_page": 5,
+      "first_reference_page": 5
+    },
+    "fig:budget": {
+      "figure_page": 6,
+      "first_reference_page": 6
+    }
+  },
   "tex_issues": [],
-  "manual_review": "Rendered all pages; inspected introduction, mechanisms, method and result layouts.",
+  "column_bottom_gaps_pt": {
+    "1": [
+      46.3,
+      73.3
+    ],
+    "2": [
+      2.1,
+      2.1
+    ],
+    "3": [
+      26.4,
+      13.2
+    ],
+    "4": [
+      0.2,
+      6.3
+    ],
+    "5": [
+      10.3,
+      38.2
+    ],
+    "6": [
+      62.3,
+      64.7
+    ]
+  },
+  "manual_review": "All seven pages rendered; Motivation, methods, results and comparison table inspected.",
   "fonts": "IEEE 9pt body; Times New Roman figure labels",
-  "mechanism_source": "../build_insight_visuals.py: placement, retention, adaptation; English paper-size redraws",
-  "experimental_values": "unchanged committed A100 result.json; DATA_AUDIT.json",
-  "introduction_paragraphs": 4,
-  "abstract_words": 98,
-  "introduction_figure": "intro_evidence.pdf: matched local A100 retention controls"
+  "experimental_values": "Unchanged committed A100 results; DATA_AUDIT.json",
+  "mechanism_source": "English paper-size adaptations of ../build_insight_visuals.py"
 }
