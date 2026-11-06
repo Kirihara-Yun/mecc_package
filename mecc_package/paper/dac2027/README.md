@@ -8,6 +8,8 @@
 
 实测阅读版按 PRICE 与 DAC 最佳论文的叙事节奏重排：第 1 页为摘要、引言和单栏引言图；第 2 页为 Background/Related Work 与三项 Motivation/Insight；第 3 页接英文机制图与正式 MECC 框架图；第 3–5 页展开配有新图的 Method；第 5–6 页为实验；第 7 页仅为 44 篇参考文献。正文使用 IEEE 9 pt 双栏版式。机制图是示意，实验图来自已提交的 A100 JSON。章节与论述调整见 [measured_narrative.py](./measured_narrative.py)，图文位置及相关工作扩充见 [visual_revision.py](./visual_revision.py)。
 
+摘要现为 98 词，参考 [Token-Picker 摘要](https://arxiv.org/abs/2407.15131) 的“问题—缺口—机制—结果”组织。Introduction 严格为四段：研究问题；相关工作及实测暴露的问题；MECC 的设计与解决方式；以（1）（2）（3）列出的贡献。第二段对应的 [引言实验图](./measured_figures/intro_evidence.pdf) 使用已提交的同机 A100 结果，并区分 decode latency 与包含各阶段的 HDD-demand share。
+
 新版图形由 [build_manuscript_visuals.py](./build_manuscript_visuals.py) 绘制。三项 Insight 保留 PPT 的热度分区、联合缓存栈曲线和路由/驻留矩阵设计，改用英文与 Times New Roman；Method 新绘逐层放置、CPU-hit 状态变化和读盘/拷贝/执行时序图。Overview 使用项目正式 `figures/fig01_overview.pdf`。实验图的论文尺寸由 [build_compact_results.py](./build_compact_results.py) 控制。
 
 重建新版：`python build_manuscript_visuals.py` → `python build_measured_a100.py` → `python build_measured_paper.py` → `latexmk -pdf -jobname=MECC_DAC_visual_revision -interaction=nonstopmode -halt-on-error mecc_dac2027_measured.tex`。

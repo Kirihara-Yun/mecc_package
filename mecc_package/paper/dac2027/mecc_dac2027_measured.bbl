@@ -55,15 +55,19 @@ C.~Hwang, W.~Cui, Y.~Xiong \emph{et~al.}, ``Tutel: Adaptive mixture-of-experts
 O.~J. Aimuyo, B.~Oh, and R.~Singh, ``{FlashMoE}: Fast distributed {MoE} in a
   single kernel,'' \emph{arXiv preprint arXiv:2506.04667v3}, 2025.
 
-\bibitem{fiddler}
-K.~Kamahori, T.~Tang, Y.~Gu, K.~Zhu, and B.~Kasikci, ``Fiddler: {CPU-GPU}
-  orchestration for fast inference of mixture-of-experts models,'' in
-  \emph{International Conference on Learning Representations}, 2025.
+\bibitem{offloading}
+A.~Eliseev and D.~Mazur, ``Fast inference of mixture-of-experts language models
+  with offloading,'' \emph{arXiv preprint arXiv:2312.17238}, 2023.
 
 \bibitem{moeinfinity}
 L.~Xue, Y.~Fu, Z.~Lu, L.~Mai, and M.~Marina, ``{MoE-Infinity}: Efficient {MoE}
   inference on personal machines with sparsity-aware expert cache,''
   \emph{arXiv preprint arXiv:2401.14361v3}, 2025.
+
+\bibitem{fiddler}
+K.~Kamahori, T.~Tang, Y.~Gu, K.~Zhu, and B.~Kasikci, ``Fiddler: {CPU-GPU}
+  orchestration for fast inference of mixture-of-experts models,'' in
+  \emph{International Conference on Learning Representations}, 2025.
 
 \bibitem{lightning}
 S.~Cao, S.~Liu, T.~Griggs, P.~Schafhalter, X.~Liu, Y.~Sheng, J.~E. Gonzalez,
@@ -71,6 +75,11 @@ S.~Cao, S.~Liu, T.~Griggs, P.~Schafhalter, X.~Liu, Y.~Sheng, J.~E. Gonzalez,
   on memory-constrained {GPUs},'' in \emph{Proceedings of the 30th ACM
   International Conference on Architectural Support for Programming Languages
   and Operating Systems}, 2025.
+
+\bibitem{promoe}
+X.~Song, Z.~Zhong, R.~Chen, and H.~Chen, ``{ProMoE}: Fast {MoE}-based {LLM}
+  serving using proactive caching,'' \emph{arXiv preprint arXiv:2410.22134},
+  2024.
 
 \bibitem{ssdllama}
 F.~Liang, Y.~Shen, J.~Hu, J.~Xu, H.~Gao, M.~Xu, and Z.~Meng, ``{SSD-LLaMA}:
@@ -81,10 +90,6 @@ F.~Liang, Y.~Shen, J.~Hu, J.~Xu, H.~Gao, M.~Xu, and Z.~Meng, ``{SSD-LLaMA}:
 B.~Kim, J.~Lee, D.~Han, H.-J. Yoo, and S.~Kim, ``{FlashMoE}: Reducing {SSD I/O}
   bottlenecks via {ML}-based cache replacement for mixture-of-experts inference
   on edge devices,'' \emph{arXiv preprint arXiv:2601.17063v2}, 2026.
-
-\bibitem{offloading}
-A.~Eliseev and D.~Mazur, ``Fast inference of mixture-of-experts language models
-  with offloading,'' \emph{arXiv preprint arXiv:2312.17238}, 2023.
 
 \bibitem{gshard}
 D.~Lepikhin, H.~Lee, Y.~Xu \emph{et~al.}, ``{GShard}: Scaling giant models with
@@ -164,11 +169,6 @@ Z.~Fang, Y.~Huang, Z.~Hong, Y.~Lyu, W.~Chen, Y.~Yu, F.~Yu, and Z.~Zheng,
 X.~He, S.~Zhang, K.~Tang \emph{et~al.}, ``{ExpertFlow}: Efficient
   mixture-of-experts inference via predictive expert caching and token
   scheduling,'' \emph{arXiv preprint arXiv:2410.17954v2}, 2026.
-
-\bibitem{promoe}
-X.~Song, Z.~Zhong, R.~Chen, and H.~Chen, ``{ProMoE}: Fast {MoE}-based {LLM}
-  serving using proactive caching,'' \emph{arXiv preprint arXiv:2410.22134},
-  2024.
 
 \bibitem{pregated}
 R.~Hwang, J.~Wei, S.~Cao, C.~Hwang, X.~Tang, T.~Cao, and M.~Yang, ``Pre-gated

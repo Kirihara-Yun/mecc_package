@@ -15,15 +15,6 @@ def apply(s):
 \setcounter{dbltopnumber}{3}
 \renewcommand{\dbltopfraction}{0.85}
 \renewcommand{\textfraction}{0.10}''')
-    s=figure(s,'fig:intro',r'''\begin{figure}[!b]
-\centering\includegraphics[width=\columnwidth]{measured_figures/intro_compact.pdf}
-\caption{Sparse execution still needs the full expert address space. In this layer, the router selects $e_2$ and $e_6$. The HDD-resident $e_6$ must be read through host memory before GPU execution. Shaded experts are selected; tier labels indicate current residency. Schematic.}
-\label{fig:intro}
-\end{figure}''')
-    s=s.replace('Figure~\\ref{fig:intro} connects the weight path to a local runtime comparison. ',
-                'Figure~\\ref{fig:intro} illustrates the resulting weight path. In a local runtime comparison, ')
-    s=s.replace('Figure~\\ref{fig:intro}(a) depicts this demand path.',
-                'Figure~\\ref{fig:intro} depicts this demand path.')
     s=s.replace(r'\section{Background}',r'\section{Background and Related Work}')
     s=s.replace(r'\subsection{Related Expert-Serving Systems}',
                 r'\subsection{Related Expert-Serving Systems}')

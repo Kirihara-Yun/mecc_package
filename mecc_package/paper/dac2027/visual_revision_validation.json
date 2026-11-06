@@ -18,5 +18,8 @@
   "manual_review": "Rendered all pages; inspected introduction, mechanisms, method and result layouts.",
   "fonts": "IEEE 9pt body; Times New Roman figure labels",
   "mechanism_source": "../build_insight_visuals.py: placement, retention, adaptation; English paper-size redraws",
-  "experimental_values": "unchanged committed A100 result.json; DATA_AUDIT.json"
+  "experimental_values": "unchanged committed A100 result.json; DATA_AUDIT.json",
+  "introduction_paragraphs": 4,
+  "abstract_words": 98,
+  "introduction_figure": "intro_evidence.pdf: matched local A100 retention controls"
 }

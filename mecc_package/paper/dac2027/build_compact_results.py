@@ -28,6 +28,19 @@ def save(fig,stem):
 
 def render_results(data):
     setup();main=data['main']
+    controls=[main['naive'],main['swapmoe'],data['independent'],main['ours']]
+    fig,axs=plt.subplots(1,2,figsize=(3.45,1.48))
+    fig.subplots_adjust(left=.19,right=.96,bottom=.25,top=.81,wspace=.31)
+    for a,key,title,xlabel,limit in zip(axs,['tpot_ms','ssd'],
+        ['(a) Decode latency','(b) HDD demand'],['TPOT (s/token)','Demand share (%)'],[43,63]):
+        vals=[r['metrics']['hit_pct']['ssd'] if key=='ssd' else r['metrics'][key]/1000 for r in controls]
+        bars=a.barh(range(4),vals,height=.58,color=[GRAY,ORANGE,GRAY,BLUE],ec=INK,lw=.4,zorder=3)
+        for b,h in zip(bars,['///','\\\\','...','xxx']):b.set_hatch(h)
+        a.bar_label(bars,labels=[f'{v:.1f}' for v in vals],padding=2,fontsize=6.5)
+        a.set_yticks(range(4),['Streaming','Fixed CPU','Separate','MECC'] if a is axs[0] else ['']*4)
+        a.invert_yaxis();a.set_xlim(0,limit);a.set_xticks([0,20,40] if key=='tpot_ms' else [0,25,50])
+        a.set_xlabel(xlabel,labelpad=2);a.set_title(title,loc='left',fontweight='bold',pad=4);style(a)
+    save(fig,'intro_evidence')
     fig,axs=plt.subplots(1,3,figsize=(7.1,1.85))
     fig.subplots_adjust(left=.115,right=.98,bottom=.24,top=.86,wspace=.28)
     for i,(a,key,title,xlabel,limit) in enumerate(zip(axs,
