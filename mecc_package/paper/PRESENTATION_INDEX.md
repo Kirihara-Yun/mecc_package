@@ -6,6 +6,8 @@
 
 **专家一日讲义**：[可检索 Markdown](./current/MECC_单卡MoE专家一日讲义.md) / [排版 PDF](./current/MECC_单卡MoE专家一日讲义.pdf) / [浏览器版](./current/MECC_单卡MoE专家一日讲义.html) / [首页预览](./current/MECC_expert_guide_first_page_check.png)。以 17 页 `MECC_HPCA_current.pptx` 为讲述顺序，补充相关工作原论文、MECC 代码路径和 A100 实测证据索引。
 
+**相关工作详解**：[可检索 Markdown](./current/MECC_相关工作实验与洞察详解.md) / [排版 PDF](./current/MECC_相关工作实验与洞察详解.pdf) / [浏览器版](./current/MECC_相关工作实验与洞察详解.html) / [首页预览](./current/MECC_related_work_first_page_check.png)。逐篇列出七项工作的动机、Insight、模型、硬件、benchmark、baseline、指标和代表结果，并解释它们与 MECC 的机制关系。
+
 | 用途 | 文件 |
 |---|---|
 | 可编辑 PPT（17 页） | [MECC_HPCA_current.pptx](./current/MECC_HPCA_current.pptx) |

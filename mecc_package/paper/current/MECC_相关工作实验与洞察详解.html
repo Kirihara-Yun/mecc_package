@@ -1,0 +1,469 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>MECC_相关工作实验与洞察详解</title><style>@page{size:A4;margin:18mm 16mm 16mm}body{font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:11pt;line-height:1.55;color:#222;max-width:900px;margin:auto}h1{font-size:23pt;color:#153957}h2{font-size:17pt;color:#153957;border-bottom:1px solid #aebdc9;padding-bottom:4px;break-after:avoid}h3{font-size:13pt;color:#153957;break-after:avoid}p,li{orphans:3;widows:3}table{border-collapse:collapse;width:100%;font-size:9pt;margin:8px 0;break-inside:auto}tr{break-inside:avoid}th,td{border:1px solid #b5c3ce;padding:5px;vertical-align:top}th{background:#eaf0f4}blockquote{border-left:4px solid #54768c;padding:3px 10px;background:#f3f6f8;margin:9px 0}pre{background:#f3f5f7;padding:10px;white-space:pre-wrap;font-size:9pt}a{color:#1d5b8b;text-decoration:none}code{font-family:Consolas,"Microsoft YaHei",monospace}</style><body><h1 id="moe">单卡 MoE 部署：七项相关工作的动机、洞察与实验证据</h1>
+<p><strong>MECC 专家导览配套材料｜2026-11-06</strong></p>
+<p>配套阅读：<a href="./MECC_单卡MoE专家一日讲义.md">MECC 工作主页与一日讲义</a> · <a href="./MECC_HPCA_current.pptx">17 页组会 PPT</a></p>
+<p>这份材料回答七个问题：<strong>每篇论文看到了什么现象？由此提出什么 Insight？怎样落成系统？具体用什么模型、卡、benchmark 和 baseline？实验结果到底是哪一个指标？</strong> 各论文的数字均属于其原始实验配置；本文按论文分别解读，便于与 MECC 的单 A100、HDD 部署场景建立机制联系。</p>
+<h2 id="_1">一眼看清实验地图</h2>
+<table>
+<thead>
+<tr>
+<th>工作</th>
+<th>设备</th>
+<th>模型</th>
+<th>Benchmark / 输入</th>
+<th>Baseline</th>
+<th>原文主要指标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://arxiv.org/html/2308.15030v4">SwapMoE</a></td>
+<td>Jetson Nano、Jetson AGX Orin</td>
+<td>SwitchT-16/32/64、GPTSAN</td>
+<td>SAMSum 摘要；Wikipedia-Japanese 语言建模</td>
+<td>原模型、Pruning、On-demand</td>
+<td>内存、推理延迟、Rouge-2、PPL</td>
+</tr>
+<tr>
+<td><a href="https://proceedings.iclr.cc/paper_files/paper/2025/file/8cd1ce03ea58b3d7dfd809e4d42f08ea-Paper-Conference.pdf">Fiddler</a></td>
+<td>Quadro RTX 6000 24 GiB；RTX 6000 Ada 约 48 GiB</td>
+<td>Mixtral-8×7B，fp16</td>
+<td>ShareGPT；附录扩展 ShareGPT/LMSYS</td>
+<td>DeepSpeed-MII、Mixtral-Offloading、llama.cpp</td>
+<td>tok/s、TTFT、beam search 速度</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/html/2401.14361v3">MoE-Infinity</a></td>
+<td>单张 RTX A5000</td>
+<td>Switch、NLLB、DeepSeek-V2-Lite、Mixtral、Arctic</td>
+<td>BIGBench、FLAN、MMLU；长文本用 LongBench</td>
+<td>DeepSpeed-Inference、Ollama/llama.cpp、Mixtral-Offloading、BrainStorm*</td>
+<td>TPOT、长上下文延迟</td>
+</tr>
+<tr>
+<td><a href="https://pschafhalter.com/papers/2025-asplos-moe-lightning.pdf">MoE-Lightning</a></td>
+<td>1×T4、1×L4、2—4×T4</td>
+<td>Mixtral-8×7B、Mixtral-8×22B、DBRX</td>
+<td>MTBench；HELM 合成推理和摘要</td>
+<td>FlexGen、FlexGen(c)、DeepSpeed Zero-Inference</td>
+<td>批处理总吞吐</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2609.18110">SSD-LLaMA</a></td>
+<td>1×RTX 5090 32 GB</td>
+<td>DeepSeek-V4-Flash、Kimi-K2.7-Code、GLM-5.2，量化</td>
+<td>MMLU、Alpaca</td>
+<td>llama.cpp、KTransformers、Colibri</td>
+<td>prefill/decode 速率、TTFT/TPOT</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2601.17063">FlashMoE</a></td>
+<td>1×RTX 5070 Ti 16 GB</td>
+<td>OLMoE-1B-7B、Qwen3-30B-A3B</td>
+<td>TriviaQA 训练/测试划分</td>
+<td>LRU/LFU/LIFO/ARC/LeCaR；Fiddler、DAOP、llama.cpp、HF</td>
+<td>缓存命中、tok/s、加载/prefill</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2610.01950">MoE-CORE</a></td>
+<td>Ascend 950PR，84 GB NPU 限额</td>
+<td>DeepSeek-V4-Flash-W4A8、GLM-5.2-W4A8C8</td>
+<td>GSM8K、AIME 2026、HumanEval、MMLU、LongBench v2</td>
+<td>Load-on-Demand、vLLM Prefetch</td>
+<td>TTFT、TPOT、端到端延迟、TPS</td>
+</tr>
+</tbody>
+</table>
+<p>表中 <code>BrainStorm*</code> 表示论文作者为评估自行扩展的机制版本。下面每节把“论文的 Insight”与“我们从中学到的系统问题”分开写，便于在组会讨论时准确定位贡献。</p>
+<p><strong>代表结果速览：</strong></p>
+<table>
+<thead>
+<tr>
+<th>工作与场景</th>
+<th>与谁比</th>
+<th>原论文报告的结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SwapMoE / SwitchT-16 摘要</td>
+<td>原模型</td>
+<td>峰值内存 4.08→1.64 GiB；延迟 0.82→0.45 s；Rouge-2 0.20→0.21</td>
+</tr>
+<tr>
+<td>Fiddler / ShareGPT 普通单请求</td>
+<td>最快的 llama.cpp 对照</td>
+<td>平均生成速度 1.26×；beam search 对 llama.cpp 为 11.57×</td>
+</tr>
+<tr>
+<td>MoE-Infinity / Mixtral</td>
+<td>所测卸载系统</td>
+<td>约 836 ms/token；论文描述约 1.4× 改善</td>
+</tr>
+<tr>
+<td>MoE-Lightning / 单卡批处理</td>
+<td>FlexGen</td>
+<td>padding 版最高吞吐 3.5×；完整系统在所测配置中最高 10.3×</td>
+</tr>
+<tr>
+<td>SSD-LLaMA / 三种量化 MoE</td>
+<td>llama.cpp、KTransformers、Colibri 的适用对照</td>
+<td>prefill 1.52—4.19×；decode 2.10—15.58×</td>
+</tr>
+<tr>
+<td>FlashMoE / OLMoE</td>
+<td>LRU 缓存策略</td>
+<td>命中率约 +21%；生成速度约 +22%</td>
+</tr>
+<tr>
+<td>MoE-CORE / DeepSeek GSM8K</td>
+<td>Load on Demand</td>
+<td>TPOT 66.5→38.0 ms/token；请求端到端 37.84→21.10 s</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-swapmoe">1. SwapMoE：让内存预算成为显式的设计输入</h2>
+<h3 id="motivation">Motivation</h3>
+<p>MoE 的专家数量随模型规模增长，但边缘设备的可用内存很小。全部专家留在内存会放不下；每次按需读取会增加推理延迟；永久删去专家又会损失质量。SwapMoE 把问题表述为一个<strong>预算内的内存—速度—质量权衡</strong>。<a href="https://arxiv.org/html/2308.15030v4">论文 §2</a></p>
+<h3 id="insight">Insight 与方法机制</h3>
+<p><strong>Insight：服务系统不必在每个时刻保留所有真实专家，可以维护一组重要的“虚拟专家”，并随输入变化更新它们与真实专家的对应关系。</strong> 系统先做细粒度专家画像，估计访问和质量影响；内存规划器决定不同层应保留多少虚拟专家以及更新频率；运行时根据输入调整映射。原论文采用遗传搜索寻找满足内存与延迟约束的配置。这样的设计把“哪些专家值得占据设备内存”从固定模型结构中解耦出来。<a href="https://arxiv.org/html/2308.15030v4">论文 §3</a></p>
+<h3 id="_2">原论文实验配置</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>设备</td>
+<td>Jetson Nano、Jetson AGX Orin；batch=1，扫描不同内存和延迟预算</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>Switch Transformer：每层 16/32/64 专家；GPTSAN</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>SAMSum 对话摘要，报告 Rouge-2；Wikipedia-Japanese 语言建模，报告 PPL</td>
+</tr>
+<tr>
+<td>Baseline</td>
+<td>原始 MoE；<code>Pruning</code>（按权重幅值保留部分专家且不交换）；<code>On demand</code>（缺失时再加载所需专家）</td>
+</tr>
+<tr>
+<td>核心观测</td>
+<td>内存、推理延迟、摘要质量或语言建模质量的三维关系</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代表结果。</strong> 原文 SwitchT-16 的预算表给出：原模型峰值内存 <strong>4.08 GiB</strong>、延迟 <strong>0.82 s</strong>、Rouge-2 <strong>0.20</strong>；设置 2.0 GiB 预算后的虚拟专家方案使用 <strong>1.64 GiB</strong>、延迟 <strong>0.45 s</strong>、Rouge-2 <strong>0.21</strong>。另一组 SwitchT 摘要结果在显著降内存的同时出现小幅质量变化，展示了原论文追求的预算权衡。<a href="https://arxiv.org/html/2308.15030v4">论文 §4.1—4.3、表 1</a></p>
+<p><strong>对 MECC 的启发。</strong> 预算应从任务真实可用资源出发，并允许逐层分配。MECC 的核心执行路径保留路由器选中的原专家，因此它关心的是完整权重的驻留与搬运，而不是 SwapMoE 的虚拟专家映射质量权衡。</p>
+<h2 id="2-fiddler">2. Fiddler：一次专家未命中，也许应搬激活而非搬权重</h2>
+<h3 id="motivation_1">Motivation</h3>
+<p>GPU 显存容不下完整 Mixtral 时，CPU 中的专家权重搬到 GPU 会经过 PCIe；对某些请求，把较小的激活发给 CPU 执行可能更快。但 CPU 计算能力和批处理效率与 GPU 差别很大，固定一种执行方式无法覆盖短请求、长 prefill、beam search。<a href="https://proceedings.iclr.cc/paper_files/paper/2025/file/8cd1ce03ea58b3d7dfd809e4d42f08ea-Paper-Conference.pdf">论文引言与 §3</a></p>
+<h3 id="insight_1">Insight 与方法机制</h3>
+<p><strong>Insight：专家执行位置应由“搬权重到 GPU 的总时间”与“在 CPU 上算并同步的总时间”共同决定。</strong> Fiddler 根据工作负载和设备特征确定执行计划，并利用专家使用频率放置常用权重。长 prefill 往往使 GPU 计算更划算，batch 很小或生成方式不同则可能让 CPU 路径有优势。它的研究轴是<strong>计算位置选择</strong>，与缓存替换相关但不相同。<a href="https://proceedings.iclr.cc/paper_files/paper/2025/file/8cd1ce03ea58b3d7dfd809e4d42f08ea-Paper-Conference.pdf">论文 §3</a></p>
+<h3 id="_3">原论文实验配置</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>环境 1</td>
+<td>Quadro RTX 6000，24 GiB；Xeon Gold 6126，48 核；PCIe Gen3 ×16</td>
+</tr>
+<tr>
+<td>环境 2</td>
+<td>RTX 6000 Ada，约 48 GiB；Xeon Platinum 8480+，112 核；PCIe Gen4 ×16</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>原始 fp16 Mixtral-8×7B；两环境最多分别让 56/256 与 125/256 个专家进入 GPU</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>ShareGPT 对话。普通单请求：输入 32/64/128/256、输出 64/128/256/512 token；长 prefill：输入 512/1024/2048/4096；beam search：输入 32、输出 64、beam width 4/8/12/16。附录另测 LMSYS-Chat-1M</td>
+</tr>
+<tr>
+<td>Baseline</td>
+<td>DeepSpeed-MII v0.2.3（启用 ZeRO-Infinity 和 pinned 内存）、Mixtral-Offloading（扩展为 fp16）、llama.cpp b2956</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>单请求与 beam search 用生成 tok/s；长 prefill 用 TTFT</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代表结果。</strong> 普通单请求在 15 组长度配置与两种设备上的平均速度，相对最佳基线 llama.cpp 为 <strong>1.26×</strong>；长 prefill 的平均 TTFT 相对 DeepSpeed-MII 改善 <strong>1.07×</strong>、相对 Mixtral-Offloading 改善 <strong>1.65×</strong>；beam search 相对 llama.cpp 的生成速度为 <strong>11.57×</strong>。三个加速比对应三种不同工作负载，不能合并为一个“Fiddler 总加速”。<a href="https://proceedings.iclr.cc/paper_files/paper/2025/file/8cd1ce03ea58b3d7dfd809e4d42f08ea-Paper-Conference.pdf">论文 §4、图 4—6</a></p>
+<p><strong>对 MECC 的启发。</strong> 专家交付不等于专家计算：HDD→CPU→GPU 的路径和 CPU 计算路径需要分别核算。MECC 现有 <code>fiddler</code> 实验行是 CPU 计算机制对照，便于观察不同执行位置对 TTFT 与 TPOT 的影响。</p>
+<h2 id="3-moe-infinity">3. MoE-Infinity：看一条请求内部的激活模式</h2>
+<h3 id="motivation_2">Motivation</h3>
+<p>个人机器上的 batch=1 推理与大规模在线服务不同：同一请求生成多个 token 时，专家激活常呈现稀疏的重复模式。只按最近使用时间替换，或只按全局频率预取，可能让下一层马上需要的专家被挤出缓存。<a href="https://arxiv.org/html/2401.14361v3">论文 §4.1—4.2</a></p>
+<h3 id="insight_2">Insight 与方法机制</h3>
+<p><strong>Insight：一条请求的逐层专家激活轨迹，比全局热度更能提示接下来需要保留或预取什么。</strong> MoE-Infinity 构建 request-level Expert Activation Matrix（EAM），从历史轨迹中挑选与当前请求相似的模式；再结合层的位置为缓存对象赋予优先级，并据此替换、预取。它在论文示例中解释了为什么传统 LRU 可能过早逐出下一层所需专家。<a href="https://arxiv.org/html/2401.14361v3">论文 §4.5—4.7</a></p>
+<h3 id="_4">原论文实验配置</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU / 互连</td>
+<td>单张 NVIDIA RTX A5000；PCIe 4.0，文中给出 32 GB/s 接口带宽</td>
+</tr>
+<tr>
+<td>CPU 主存</td>
+<td>按模型分别配置：Switch 64 GB、NLLB 256 GB、DeepSeek 32 GB、Mixtral 128 GB、Arctic 1 TB；模型参数可完整放入主存</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>Switch-128×0.2B、NLLB-128×0.4B、DeepSeek-V2-Lite、Mixtral-8×7B、Arctic-128×4B</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>BIGBench 166 项、FLAN 66 项、MMLU 58 项，共 290 项任务；长上下文试验使用 LongBench</td>
+</tr>
+<tr>
+<td>Baseline</td>
+<td>DeepSpeed-Inference/FastGen、Ollama/llama.cpp、Mixtral-Offloading、作者扩展的 BrainStorm*；部分图还给出 vLLM</td>
+</tr>
+<tr>
+<td>主协议</td>
+<td>prompt 512 token、decode 32 token；报告平均每输出 token 延迟。长上下文另扫 4096 到 131072 token</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代表结果。</strong> Mixtral 在其配置下达到约 <strong>836 ms/token</strong>，相对若干支持卸载的对照约 <strong>1.4×</strong>；Switch、NLLB、DeepSeek 的论文报告值分别约 <strong>155、531、155 ms/token</strong>。论文摘要的 <strong>3.1—16.7×</strong> 是跨模型、任务和所测系统的范围，不是 Mixtral 单一对照的加速。<a href="https://arxiv.org/html/2401.14361v3">论文 §5.1、图 7</a></p>
+<p><strong>对 MECC 的启发。</strong> 缓存可以使用比“专家总频次”更丰富的路由结构。MoE-Infinity 的主存配置能容纳完整模型；MECC 进一步研究任务主存不足、HDD 保留完整权重时的初始放置和在线驻留。</p>
+<h2 id="4-moe-lightning">4. MoE-Lightning：高吞吐推理是调度问题</h2>
+<h3 id="motivation_3">Motivation</h3>
+<p>离线批量生成时，模型权重交付、CPU 工作、GPU 工作如果串行发生，会浪费各设备的空闲时间。批大小、prompt 长度、输出长度又会改变瓶颈位置，固定调度难以持续接近高吞吐。<a href="https://pschafhalter.com/papers/2025-asplos-moe-lightning.pdf">论文 §3</a></p>
+<h3 id="insight_3">Insight 与方法机制</h3>
+<p><strong>Insight：通过 CPU/GPU/I/O 流水和性能模型一起选配置，可以让权重交付与计算彼此覆盖。</strong> MoE-Lightning 的 CGOPipe 组织流水，paged weights 管理权重；Hierarchical Roofline Model（HRM）比较不同层级的带宽、算力与工作负载，以选择批大小、设备分工和交付策略。多卡时它还使用节点内张量并行。<a href="https://pschafhalter.com/papers/2025-asplos-moe-lightning.pdf">论文 §4</a></p>
+<h3 id="_5">原论文实验配置</h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>模型与设备</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Mixtral-8×7B；1×T4 16 GB；24 核 Xeon、192 GB 主存</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Mixtral-8×7B；1×L4 24 GB；24 核 Xeon、192 GB 主存</td>
+</tr>
+<tr>
+<td>S6/S7</td>
+<td>Mixtral-8×22B；2×/4×T4；32 核 Xeon、416 GB 主存</td>
+</tr>
+<tr>
+<td>S8/S9</td>
+<td>DBRX；2×/4×T4；32 核 Xeon、416 GB 主存</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>MTBench：80 道多轮问题复制成批量负载，输出 32/64/128/256 token；HELM 合成推理和摘要</td>
+</tr>
+<tr>
+<td>Baseline</td>
+<td>FlexGen、启用 CPU attention 的 FlexGen(c)、DeepSpeed Zero-Inference v0.14.3；还比较自身 padding 变体</td>
+</tr>
+<tr>
+<td>指标</td>
+<td><code>生成 token 总数 ÷ (prefill + decode 总时间)</code>，即批处理吞吐</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代表结果。</strong> 原文在所测 MTBench/HELM 配置中报告最高 <strong>10.3×</strong> 吞吐改进。对于单 GPU 的 S1/S2，padding 版相对 FlexGen、FlexGen(c)、DeepSpeed 的最大改进分别为 <strong>3.5×、5×、6.7×</strong>；这是同一论文中更具体的一组系统对照。图 8 还比较了 2× 与 4×T4 的多卡规模。<a href="https://pschafhalter.com/papers/2025-asplos-moe-lightning.pdf">论文 §5.1—5.3</a></p>
+<p><strong>对 MECC 的启发。</strong> 缓存命中只解决权重“取几次”；流水决定取数时间“暴露多少”。面向单请求的 MECC 若将来扩展批处理，需要重新考虑动态工作集和流水调度，而不能把批吞吐与 TPOT 当成同一个指标。</p>
+<h2 id="5-ssd-llama">5. SSD-LLaMA：将磁盘变成可执行专家的来源</h2>
+<h3 id="motivation_4">Motivation</h3>
+<p>量化后的超大 MoE 仍可能超过消费级显存和主存。磁盘容量足够，但一次专家执行需要经过 I/O、主存保留和显存交付；单独优化某一段未必改善端到端速度。<a href="https://arxiv.org/abs/2609.18110">论文原文</a></p>
+<h3 id="insight_4">Insight 与方法机制</h3>
+<p><strong>Insight：磁盘 I/O 管线、三级驻留和 CPU/GPU 计算分工需要一起测量与协调。</strong> SSD-LLaMA 按专家组织高效读取，动态管理磁盘—主存—显存中的权重，并按实际端到端时间选择专家在哪个设备执行。其论文所述主配置执行每个路由器选中的专家。对于 DeepSeek 平台，论文的 CPU/GPU 分工扫描发现“全部选中专家在 GPU 上算”比测试过的 CPU 分工更快，因此把 CPU 留给 I/O、缓存和调度。<a href="https://arxiv.org/abs/2609.18110">论文 §4.3—5</a></p>
+<h3 id="_6">原论文实验配置</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>测试机</td>
+<td>RTX 5090 32 GB、Intel Ultra5 230F、16 GB 主存、4 TB NVMe；PCIe 5.0 ×16，batch=1</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>DeepSeek-V4-Flash：约 145.4 GiB，dense FP8＋专家 MXFP4；Kimi-K2.7-Code：约 543.6 GiB、Q4_0；GLM-5.2：约 401.0 GiB、Q4_0</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>MMLU 和 Alpaca 请求；分别测 prefill 与 decode</td>
+</tr>
+<tr>
+<td>Baseline</td>
+<td>llama.cpp、KTransformers、Colibri；Colibri 只支持论文中 GLM-5.2 的那组对照</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>prefill/decode token rate、TTFT、TPOT、读取带宽、每 token I/O 字节和显存缓存命中</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代表结果。</strong> 摘要给出三模型家族、两类负载下的总体范围：prefill 对所测基线 <strong>1.52—4.19×</strong>，decode <strong>2.10—15.58×</strong>。正文在其 RTX 5090＋32 GB 主存扩展配置上，报告 Kimi-K2.7-Code 达 <strong>1.03 token/s</strong>；默认 16 GB 主存配置用于主要比较。论文还给出“all-GPU 专家执行”与 CPU/GPU 分工的 DeepSeek 对照：相同读取工作量下，前者 TPOT 约 <strong>514 ms</strong>，把 1—6 个被选专家放到 CPU 后为 <strong>530—574 ms</strong>；加入 22 GiB 显存专家缓存后降至约 <strong>149 ms</strong>。<a href="https://arxiv.org/abs/2609.18110">论文 §4.3、§5</a></p>
+<p><strong>对 MECC 的启发。</strong> 这篇工作已经把完整专家交付、三级动态驻留和执行设备分工做成系统。MECC 的当前主线是任务可用主存较小、冷层为 HDD 时，逐层初始化和两级热缓存更新如何降低重复读取。两篇工作的机制有交集，适合逐项比较，而不是用系统名称直接判断胜负。</p>
+<h2 id="6-flashmoe-lru">6. FlashMoE：最近性加频率，比单独 LRU 更会挑淘汰对象</h2>
+<h3 id="motivation_5">Motivation</h3>
+<p>专家访问既有短期连续性，也有长期热度。LRU 只看最近一次，LFU 只看累计次数；在有限内存下，错误淘汰会反复触发磁盘读取。<a href="https://arxiv.org/abs/2601.17063">论文 §2—3</a></p>
+<h3 id="insight_5">Insight 与方法机制</h3>
+<p><strong>Insight：把最近性和频率作为特征，让轻量模型学习专家的未来重用距离，可直接优化缓存替换。</strong> 论文用 <code>1/recency</code> 和归一化 frequency 作为输入，以 Belady 最优替换产生训练标签，训练约 113 KB 的逐层 FFN。模型加载时只先装非专家权重，专家按需交付。训练路由轨迹来自 TriviaQA 的 512 条样本，每条最多 512 token。<a href="https://arxiv.org/abs/2601.17063">论文 §3、算法 1</a></p>
+<h3 id="_7">原论文实验配置</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>推理测试机</td>
+<td>RTX 5070 Ti 16 GB、Ryzen 5 9600X、64 GB 装机主存；实验锁定大部分内存，约留 1 GB 可用；PCIe 5.0 NVMe</td>
+</tr>
+<tr>
+<td>训练/采样</td>
+<td>TriviaQA 训练划分生成路由轨迹，测试题与训练题分开；论文给出单张 A100、batch=32 提取 OLMoE 路由轨迹的成本示例</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>OLMoE-1B-7B、Qwen3-30B-A3B</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>TriviaQA 问答的模型装载＋prefill、decode 速度、缓存命中</td>
+</tr>
+<tr>
+<td>缓存 baseline</td>
+<td>LIFO、LFU、LRU、ARC、LeCaR；扫描每层缓存专家数</td>
+</tr>
+<tr>
+<td>系统 baseline</td>
+<td>Fiddler、DAOP、llama.cpp、Hugging Face Transformers</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代表结果。</strong> 对 OLMoE，论文报告命中率相对 LRU 提高约 <strong>21%</strong>、相对 LFU 提高约 <strong>51%</strong>；相应 I/O 减少约 <strong>22%</strong> 和 <strong>35%</strong>。在相同系统条件下，学习式缓存相对 LRU 的生成速度改进约为 <strong>22%（OLMoE）</strong>、<strong>7%（Qwen3）</strong>。模型初始装载时间相对 llama.cpp 为 <strong>4×</strong>、相对 Fiddler/DAOP 为 <strong>6.8×</strong>；论文摘要的“最高 2.6×”来自跨系统推理比较，别把它理解成相对 LRU 的缓存策略加速。<a href="https://arxiv.org/abs/2601.17063">论文 §4、图 6—7</a></p>
+<p><strong>对 MECC 的启发。</strong> “联合动态缓存”与“如何选被淘汰专家”是不同层次的设计。MECC 可以保留 GPU/CPU 升降级结构，再探索最近性、频率或学习信号；仓库中的 <code>flashmoe_rf_adaptation</code> 是公开特征的等权机制对照。</p>
+<h2 id="7-moe-core">7. MoE-CORE：把逐层容量、画像和预取协同起来</h2>
+<h3 id="motivation_6">Motivation</h3>
+<p>不同层的专家权重大小、路由热度和访问时序不同。统一按层分配相同缓存槽位，会让一些层闲置、另一些层频繁搬运；prefill 与 decode 的访存形态也不同。<a href="https://arxiv.org/abs/2610.01950">论文 §1—2</a></p>
+<h3 id="insight_6">Insight 与方法机制</h3>
+<p><strong>Insight：prefill 适合整层交替装载，decode 适合逐层非均匀驻留并预测下一层需求。</strong> MoE-CORE 在 prefill 用两个交替缓冲重叠权重传输与计算；decode 结合任务领域画像生成初态、按层安排不同缓存容量、使用路由历史更新驻留，并跨层预取。主要对比运行路由器选中的原专家；论文另列可选的近似专家替换及多 token 预测实验。<a href="https://arxiv.org/abs/2610.01950">论文 §3</a></p>
+<h3 id="_8">原论文实验配置</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>设备</td>
+<td>Ascend 950PR；物理 NPU 内存 128 GB，实验对推理设置 84 GB 上限；主存上限 150 GB</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>DeepSeek-V4-Flash-W4A8、GLM-5.2-W4A8C8</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>GSM8K、AIME 2026、HumanEval、MMLU、LongBench v2；每模型每数据集 200 请求、batch=1</td>
+</tr>
+<tr>
+<td>Baseline</td>
+<td>Load on Demand（LoD，解码阶段静态逐层缓存且缺失同步加载）；vLLM Prefetch（逐层预取）</td>
+</tr>
+<tr>
+<td>输出协议</td>
+<td>LoD 和 MoE-CORE 上限 1024 token；vLLM Prefetch 上限 128 token</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>平均及 P90 TTFT/TPOT、端到端延迟、TPS；主要组件实验关闭近似替换</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代表结果。</strong> DeepSeek 的五类负载中，MoE-CORE 的平均 TPOT <strong>38.0—44.8 ms</strong>；相应 LoD 为 <strong>62.1—70.6 ms</strong>，即 <strong>1.39—1.75×</strong>。GSM8K 具体为 <strong>66.5→38.0 ms/token</strong>，端到端约 <strong>37.84→21.10 s</strong>。GLM 的平均 TPOT 为 <strong>206.6—220.5 ms</strong>，LoD 为 <strong>229.1—244.8 ms</strong>。论文还列出 vLLM Prefetch 的 TPOT，但其输出长度上限与另两项不同，适合阅读 TPOT，不适合直接用端到端请求时间求统一速度比。<a href="https://arxiv.org/abs/2610.01950">论文 §4、表 1</a></p>
+<p><strong>对 MECC 的启发。</strong> 逐层初始化、在线驻留和预取已是密切相关的设计轴。MECC 的重点是单 GPU、HDD 冷层、任务预算内的完整专家访问；讨论贡献时最有解释力的是相同权重、相同容量下逐项拆分初态、替换和数据交付的作用。</p>
+<hr />
+<h2 id="_9">如何把七篇论文放进一次组会讨论</h2>
+<p>可以用同一个问题逐篇问：“<strong>下一次路由选中一位目前不在 GPU 的专家，你让什么东西移动、让谁计算、又让哪个专家离开缓存？</strong>”</p>
+<table>
+<thead>
+<tr>
+<th>工作</th>
+<th>未命中时主要改变的决策</th>
+<th>一句话 Insight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SwapMoE</td>
+<td>有限内存里保留哪些虚拟专家</td>
+<td>映射与预算规划共同决定质量、占用和速度</td>
+</tr>
+<tr>
+<td>Fiddler</td>
+<td>CPU 计算还是传权重到 GPU</td>
+<td>决策应比较传输与计算的端到端成本</td>
+</tr>
+<tr>
+<td>MoE-Infinity</td>
+<td>该预取谁、该保留谁</td>
+<td>请求级激活模式能提示后续层的访问</td>
+</tr>
+<tr>
+<td>MoE-Lightning</td>
+<td>何时传输与计算</td>
+<td>流水减少设备等待，提高批吞吐</td>
+</tr>
+<tr>
+<td>SSD-LLaMA</td>
+<td>磁盘、主存、显存和执行设备如何配合</td>
+<td>完整专家交付要端到端协调</td>
+</tr>
+<tr>
+<td>FlashMoE</td>
+<td>谁被淘汰</td>
+<td>最近性与频率联合预测未来重用</td>
+</tr>
+<tr>
+<td>MoE-CORE</td>
+<td>每层留多少、何时预取</td>
+<td>不同层和不同阶段需要不同的资源安排</td>
+</tr>
+<tr>
+<td>MECC</td>
+<td>部署前放谁、运行时 GPU/CPU 如何联动</td>
+<td>初始热度与在线路由分别管理两个时间尺度</td>
+</tr>
+</tbody>
+</table>
+<p>这也给出了阅读实验图的顺序：先看<strong>模型与权重格式</strong>，再看<strong>GPU/CPU/磁盘预算</strong>，接着看<strong>benchmark 和输出长度</strong>，最后看论文到底报告的是 <strong>TTFT、TPOT、tok/s、总吞吐、命中率还是质量</strong>。只有这些条件相近，图中的高低才回答相近的问题。</p></body></html>
