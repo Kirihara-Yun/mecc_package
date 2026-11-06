@@ -8,10 +8,9 @@ from matplotlib.patches import Rectangle, FancyArrowPatch
 
 OUT = Path(__file__).resolve().parent / 'current' / 'method_figures'
 OUT.mkdir(parents=True, exist_ok=True)
-NAVY='#173D68'; INK='#172B3B'; BLUE='#2768A8'; CPU='#8FB5D4'
-SSD='#C9D1D8'; AMBER='#CF7828'; RULE='#CBD5DE'; PALE='#EAF2F8'; WHITE='#FFFFFF'
-plt.rcParams.update({'font.family':'sans-serif',
-    'font.sans-serif':['Microsoft YaHei','SimHei','Arial'],
+NAVY='#20344A'; INK='#29333B'; BLUE='#4279A8'; CPU='#84AFBD'
+SSD='#C7CACD'; AMBER='#D59A60'; RULE='#CBD5DE'; PALE='#EAF2F8'; WHITE='#FFFFFF'
+plt.rcParams.update({'font.family':['Times New Roman','SimSun'],
     'font.size':12,'pdf.fonttype':42,'svg.fonttype':'none'})
 
 def canvas():
@@ -23,9 +22,9 @@ def txt(ax,x,y,value,size=12,color=INK,weight='normal',ha='left'):
             ha=ha,va='center',zorder=10)
 def ln(ax,x0,y0,x1,y1,color=RULE,lw=.85,ls='-'):
     ax.plot([x0,x1],[y0,y1],color=color,lw=lw,ls=ls,zorder=2)
-def rect(ax,x,y,w,h,fill,edge='none',lw=0):
+def rect(ax,x,y,w,h,fill,edge='none',lw=0,hatch=None):
     ax.add_patch(Rectangle((x,y),w,h,facecolor=fill,edgecolor=edge,
-                           linewidth=lw,zorder=3))
+                           linewidth=lw,zorder=3,hatch=hatch))
 def arr(ax,a,b,color=BLUE,lw=1.35,scale=11,connection=None):
     ax.add_patch(FancyArrowPatch(a,b,arrowstyle='-|>',mutation_scale=scale,
                  linewidth=lw,color=color,connectionstyle=connection,zorder=5))
@@ -62,7 +61,7 @@ def placement():
         txt(ax,5.93,y+.10,layer,11.6,NAVY,'bold')
         for j,expert in enumerate(ranked):
             x=6.87+j*.555;fill=BLUE if j<kh else CPU if j<kc else SSD
-            rect(ax,x,y-.17,.48,.48,fill)
+            rect(ax,x,y-.17,.48,.48,fill,INK,.5)
             txt(ax,x+.24,y+.07,expert,10.2,WHITE if j<kh else INK,'bold','center')
         for a,b,c in [(0,kh,BLUE),(kh,kc,CPU),(kc,8,SSD)]:
             if b>a:ln(ax,6.87+a*.555,y-.27,6.87+(b-1)*.555+.48,y-.27,c,2.8)

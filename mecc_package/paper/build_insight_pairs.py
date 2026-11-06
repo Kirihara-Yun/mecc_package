@@ -21,16 +21,15 @@ OUT.mkdir(parents=True, exist_ok=True)
 DATA = json.loads((HERE / 'dac2027' / 'ideal_assumptions.json').read_text(encoding='utf-8'))['insight_ablation_targets']
 
 NAVY = '#172B3B'
-BLUE = '#2768A8'
-MID = '#7EA7CF'
-GREY = '#ABB5BE'
+BLUE = '#4279A8'
+MID = '#84AFBD'
+GREY = '#A8ADB3'
 LIGHT = '#E7EDF2'
-AMBER = '#D98632'
+AMBER = '#D59A60'
 WHITE = '#FFFFFF'
 
 plt.rcParams.update({
-    'font.family': 'sans-serif',
-    'font.sans-serif': ['Microsoft YaHei', 'Arial'],
+    'font.family': ['Times New Roman', 'SimSun'],
     'svg.fonttype': 'none',
     'pdf.fonttype': 42,
     'hatch.linewidth': 1.0,
@@ -168,7 +167,7 @@ def ablation_chart(name, series, models):
     centers = np.arange(len(models))
     width = .22
     patterns = ['///', '\\\\', 'xxx']
-    fills = ['#A5C5DC', '#EBC392', '#8BC8B6']
+    fills = ['#9CC1DC', '#E7BD91', '#88B8A3']
     display = {
         'Equal layer budgets': '平均分配',
         'Global hotness': '全局排序',

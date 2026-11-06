@@ -20,16 +20,24 @@ TABLE_SOURCE=HERE/'MECC_conference_talk.pptx'
 OUT=HERE/'MECC_HPCA_clean_ideal.pptx'
 ASSETS=HERE/'hpca_clean_ideal_assets';ASSETS.mkdir(exist_ok=True)
 D=json.loads((PAPER/'ideal_assumptions.json').read_text(encoding='utf-8'))
-BLUE='#2768A8';DARK='#173D68';MID='#7EA7CF';GREY='#919AA3';LIGHT='#D5DCE3'
-plt.rcParams.update({'font.family':'sans-serif','font.sans-serif':['Microsoft YaHei','Arial'],
+BLUE='#4279A8';DARK='#20344A';MID='#84AFBD';GREY='#A8ADB3';LIGHT='#D5DCE3'
+ORANGE='#D59A60';GREEN='#76A68B';INK='#29333B'
+plt.rcParams.update({'font.family':['Times New Roman','SimSun'],
  'font.size':13,'axes.titlesize':15,'axes.labelsize':13,'xtick.labelsize':12,
  'ytick.labelsize':12,'axes.spines.top':False,'axes.spines.right':False,
- 'axes.unicode_minus':False,'savefig.facecolor':'white','figure.facecolor':'white'})
+ 'axes.unicode_minus':False,'savefig.facecolor':'white','figure.facecolor':'white',
+ 'hatch.linewidth':.8,'pdf.fonttype':42})
 
 def style(ax,ylabel=None):
- ax.grid(axis='y',color='#DFE4EA',lw=.65);ax.set_axisbelow(True)
+ ax.grid(axis='y',color='#DEE2E5',lw=.55);ax.set_axisbelow(True)
  if ylabel:ax.set_ylabel(ylabel)
- ax.tick_params(length=3,color='#888888')
+ ax.tick_params(length=3,color=INK)
+ ax.spines['bottom'].set_color(INK);ax.spines['left'].set_color(INK)
+
+def patterned_bars(ax,x,values,colors,hatches,width=.59,**kwargs):
+ bars=ax.bar(x,values,color=colors,edgecolor=INK,linewidth=.75,width=width,**kwargs)
+ for patch,h in zip(bars,hatches):patch.set_hatch(h)
+ return bars
 
 def save(fig,name):
  figure_text(fig)
@@ -41,7 +49,7 @@ def charts():
  mdata=D['motivation']
  fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.13,right=.97,bottom=.23,top=.90)
  values=[D['ttft_seconds']['Resident 8-GPU reference'][0],D['ttft_seconds']['Unoptimized streaming'][0],D['ttft_seconds']['MECC'][0]]
- bars=ax.bar(range(3),values,color=[GREY,'#B8C1CA',BLUE],width=.59)
+ bars=patterned_bars(ax,range(3),values,[GREY,ORANGE,BLUE],['///','\\\\','xxx'])
  ax.bar_label(bars,fmt='%g',padding=4,fontsize=13)
  ax.set_xticks(range(3),['8 卡显存部署','未优化单卡','单卡 MECC'])
  ax.set_ylim(0,150);style(ax,'首 token 延迟（秒）')
@@ -49,7 +57,7 @@ def charts():
 
  fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.13,right=.97,bottom=.23,top=.90)
  values=[0,mdata['retention_ssd_percent'][0]]
- bars=ax.bar(range(2),values,color=[MID,BLUE],width=.56)
+ bars=patterned_bars(ax,range(2),values,[GREY,BLUE],['///','xxx'],width=.56)
  ax.bar_label(bars,fmt='%g%%',padding=4,fontsize=13)
  ax.set_xticks(range(2),['8 卡显存部署','单卡固定 CPU 缓存'])
  ax.set_ylim(0,40);style(ax,'需从 SSD 读取（%）')
@@ -57,7 +65,7 @@ def charts():
 
  fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.14,right=.97,bottom=.23,top=.87)
  xx=np.arange(1,17)
- ax.plot(xx,np.zeros_like(xx),label='8 卡显存部署',color=MID,marker='o',ms=2.7,lw=1.5)
+ ax.plot(xx,np.zeros_like(xx),label='8 卡显存部署',color=GREY,marker='o',ms=2.7,lw=1.5)
  for key,label,color,marker in [('fixed_windows','单卡固定缓存',BLUE,'s')]:
   ax.plot(xx,mdata[key],label=label,color=color,marker=marker,ms=3.4,lw=1.45)
  ax.axvline(8.5,color='#AEB8C1',lw=.85,ls=':')
@@ -68,17 +76,18 @@ def charts():
  fig,aa=plt.subplots(1,2,figsize=(11.7,3.35),gridspec_kw={'width_ratios':[1.7,1]})
  fig.subplots_adjust(left=.065,right=.98,bottom=.23,top=.73,wspace=.36)
  x=np.arange(4);labs=['8×7B\n问答','8×7B\n代码','8×22B\n问答','8×22B\n代码']
- for j,(name,c) in enumerate([('Unoptimized streaming',GREY),('SSD-native adapter',MID),('MECC',BLUE)]):
-  aa[0].bar(x+(j-1)*.23,D['tpot_seconds'][name],.215,color=c,label={'Unoptimized streaming':'未优化单卡','SSD-native adapter':'SSD 缓存基线','MECC':'MECC'}[name])
+ for j,(name,c,h) in enumerate([('Unoptimized streaming',GREY,'///'),('SSD-native adapter',ORANGE,'\\\\'),('MECC',BLUE,'xxx')]):
+  aa[0].bar(x+(j-1)*.23,D['tpot_seconds'][name],.215,color=c,edgecolor=INK,linewidth=.65,hatch=h,label={'Unoptimized streaming':'未优化单卡','SSD-native adapter':'SSD 缓存基线','MECC':'MECC'}[name])
  aa[0].set_xticks(x,labs);aa[0].set_ylim(0,72)
  handles,labels=aa[0].get_legend_handles_labels()
  fig.legend(handles,labels,ncol=3,fontsize=10,loc='upper left',bbox_to_anchor=(.06,.99),frameon=False)
  aa[0].set_title('(a) 单卡解码延迟');style(aa[0],'TPOT（秒/token）')
  ratio=np.array(D['tpot_seconds']['SSD-native adapter'])/np.array(D['tpot_seconds']['MECC'])
- mat=ratio.reshape(2,2);aa[1].imshow(mat,cmap='Blues',vmin=1,vmax=1.55)
- for i in range(2):
-  for j in range(2):aa[1].text(j,i,f'{mat[i,j]:.2f}×',ha='center',va='center',fontsize=17,color='white' if mat[i,j]>1.3 else '#173D68',weight='bold')
- aa[1].set_xticks([0,1],['问答','代码']);aa[1].set_yticks([0,1],['Mixtral-8×7B','Mixtral-8×22B']);aa[1].tick_params(length=0)
+ labels=['8×7B 问答','8×7B 代码','8×22B 问答','8×22B 代码']
+ b=aa[1].barh(np.arange(4),ratio,color=BLUE,edgecolor=INK,linewidth=.7,hatch='///',height=.54)
+ aa[1].set_yticks(np.arange(4),labels);aa[1].invert_yaxis();aa[1].set_xlim(0,1.8)
+ aa[1].bar_label(b,labels=[f'{v:.2f}×' for v in ratio],padding=4,fontsize=11)
+ style(aa[1],'加速比')
  aa[1].set_title('(b) 相对 SSD 缓存基线的加速比')
  save(fig,'main')
 
@@ -86,7 +95,7 @@ def charts():
  names=['未优化\n单卡','+ 初始\n放置','+ 两级\n缓存','+ 传输\n重叠']
  for a,vals,ylabel,lim,title in zip(aa,[D['ablation_tpot_seconds'],D['ablation_ssd_percent']],
       ['TPOT（秒/token）','SSD 读取比例（%）'],[31,55],['(a) 解码延迟','(b) SSD 读取比例']):
-  b=a.bar(range(4),vals,color=[GREY,MID,'#4E88BC',BLUE],width=.64)
+  b=patterned_bars(a,range(4),vals,[GREY,ORANGE,GREEN,BLUE],['///','\\\\','---','xxx'],width=.64)
   a.bar_label(b,fmt='%g',padding=4,fontsize=12);a.set_xticks(range(4),names)
   a.set_ylim(0,lim);a.set_title(title);style(a,ylabel)
  save(fig,'ablation')
@@ -107,7 +116,7 @@ def charts():
  labs=['MECC\n1 卡','显存部署\n2 卡','显存部署\n4 卡','显存部署\n8 卡']
  g=np.array([1,2,4,8]);lat=np.array([8,2.8,1.65,1]);cost=g*lat
  for a,v,label,title in [(aa[0],lat,'TPOT（秒/token）','(a) 延迟'),(aa[1],cost,'GPU 秒/token','(b) 名义 GPU 时间')]:
-  b=a.bar(range(4),v,color=[BLUE]+[GREY]*3,width=.62);a.bar_label(b,fmt='%g',padding=3,fontsize=12)
+  b=patterned_bars(a,range(4),v,[BLUE]+[GREY]*3,['xxx']+['///']*3,width=.62);a.bar_label(b,fmt='%g',padding=3,fontsize=12)
   a.set_xticks(range(4),labs);a.set_ylim(0,10.2);a.set_title(title);style(a,label)
  save(fig,'allocation')
 
@@ -130,7 +139,7 @@ def box(sl,x,y,w,h,c):
 def text(sl,x,y,w,h,s,size=18,bold=False,color='#111111',align=PP_ALIGN.LEFT):
  sh=sl.shapes.add_textbox(Inches(x),Inches(y),Inches(w),Inches(h));tf=sh.text_frame;tf.clear();tf.word_wrap=True
  tf.margin_left=Pt(0);tf.margin_right=Pt(0);tf.margin_top=Pt(0);tf.margin_bottom=Pt(0)
- p=tf.paragraphs[0];p.text=s;p.alignment=align;p.font.name='Microsoft YaHei';p.font.size=Pt(size);p.font.bold=bold;p.font.color.rgb=RGBColor.from_string(color[1:]);return sh
+ p=tf.paragraphs[0];p.text=s;p.alignment=align;p.font.name='SimSun' if any('\u4e00' <= ch <= '\u9fff' for ch in s) else 'Times New Roman';p.font.size=Pt(size);p.font.bold=bold;p.font.color.rgb=RGBColor.from_string(color[1:]);return sh
 
 def frame(sl,n,title,body):
  clear(sl)

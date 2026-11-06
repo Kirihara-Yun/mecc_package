@@ -9,6 +9,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.dml.color import RGBColor
 from pptx.oxml.ns import qn
+from pptx.oxml.xmlchemy import OxmlElement
 import build_hpca_clean_talk as old
 import build_insight_pairs as pairs
 import build_method_figures as method_figures
@@ -304,10 +305,19 @@ def main():
  for slide in prs.slides:
   slide.notes_slide.notes_text_frame.text=''
   for shape in slide.shapes:
-   if shape.has_text_frame:
-    for paragraph in shape.text_frame.paragraphs:
+   frames=[]
+   if shape.has_text_frame:frames.append(shape.text_frame)
+   if shape.has_table:frames.extend(cell.text_frame for row in shape.table.rows for cell in row.cells)
+   for frame in frames:
+    for paragraph in frame.paragraphs:
      for run in paragraph.runs:
       run.text=display_text(run.text)
+      run.font.name='Times New Roman'
+      rpr=run._r.get_or_add_rPr()
+      ea=rpr.find(qn('a:ea'))
+      if ea is None:
+       ea=OxmlElement('a:ea');rpr.append(ea)
+      ea.set('typeface','SimSun')
  prs.core_properties.title='MECC: Single-GPU MoE Inference';prs.core_properties.subject='Internal ideal-results research talk'
  prs.core_properties.author='';prs.core_properties.last_modified_by=''
  OUT.parent.mkdir(exist_ok=True)
