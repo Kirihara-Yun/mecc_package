@@ -24,7 +24,8 @@ E2E = ROOT / "mecc_package" / "e2e"
 CONFIG_KEYS = {"smoke", "model", "state_path", "store_root", "hbm_budget",
                "cpu_budget", "alpha", "prompt_len", "max_new_tokens",
                "n_prompts", "policies", "platform", "skip_ppl", "uniform",
-               "trace_memory", "resource_trace", "ppl_tokens", "job", "fixtures"}
+               "trace_memory", "resource_trace", "ppl_tokens", "job", "fixtures",
+               "profile", "init_plan", "update_rule", "task_seq"}
 CONFIG_DEFAULTS = {
     "job": "e2e",
     "fixtures": None,
@@ -45,6 +46,10 @@ CONFIG_DEFAULTS = {
     "uniform": False,
     "trace_memory": False,
     "resource_trace": False,
+    "profile": None,
+    "init_plan": None,
+    "update_rule": None,
+    "task_seq": None,
 }
 
 
@@ -160,6 +165,14 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
         command.append("--skip_ppl")
     if args.uniform:
         command.append("--uniform")
+    if getattr(args, "profile", None):
+        command += ["--profile", str(Path(args.profile).resolve())]
+    if getattr(args, "init_plan", None):
+        command += ["--init-plan", args.init_plan]
+    if getattr(args, "update_rule", None):
+        command += ["--update-rule", args.update_rule]
+    if getattr(args, "task_seq", None):
+        command += ["--task-seq", args.task_seq]
     if getattr(args, "trace_memory", False):
         command.append("--trace_memory")
     return command
@@ -451,6 +464,15 @@ def parser() -> argparse.ArgumentParser:
                      help="print per-token CUDA and cache memory counters for diagnosis")
     run.add_argument("--resource-trace", action="store_true", default=None,
                      help="sample cgroup/process memory while a correctness job runs")
+    run.add_argument("--profile", default=None,
+                     help="per-layer routing profile JSON (per_layer_counts)")
+    run.add_argument("--init-plan", default=None, choices=["per_layer", "global", "avg"],
+                     help="Insight I: initial placement")
+    run.add_argument("--update-rule", default=None,
+                     choices=["joint", "independent", "fixed_cpu"],
+                     help="Insight II: cache update rule (overrides --policies)")
+    run.add_argument("--task-seq", default=None, choices=["none", "a_b", "b_a", "a_a"],
+                     help="Motivation III: task switch sequence")
     resume_cmd = sub.add_parser("resume-from-store", help="rerun a prior command with its store")
     resume_cmd.add_argument("from_run")
     resume_cmd.add_argument("run_id")

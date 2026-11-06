@@ -86,6 +86,9 @@ class ExpertWeights:
 # ════════════════════════════════════════════════════════════════════
 
 class SSDExpertStore:
+    """第三级冷存储。注意：类名沿用历史 "SSD" 命名，但实测介质是 **HDD**
+    （`/data` 挂载 /dev/sdb，ROTA=1 旋转盘，MegaRAID 9364-8i），见 PROVENANCE X14。
+    语义 = HDD 冷读，不是 NVMe SSD。"""
     def __init__(self, root: str, hidden: int, ffn: int,
                  dtype: torch.dtype = torch.float16, io_workers: int = 8):
         self.root = root

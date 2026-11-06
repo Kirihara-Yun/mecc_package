@@ -30,7 +30,8 @@ QUEUE="20 swapmoe
 60 flashmoe_rf_adaptation"
 
 TOTAL=0
-MAX_WALL_SECONDS=7200
+# fiddler 在 cpu30 实测 2h34m（>2h），cpu60 的 fiddler 会更慢；观察上限放宽到 4h 避免误杀。
+MAX_WALL_SECONDS=14400
 
 while read -r cpu policy; do
   [ -z "$cpu" ] && continue
@@ -52,8 +53,18 @@ while read -r cpu policy; do
     log "RESUME_MONITOR $run_id phase=$phase"
   else
     log "START $run_id cpu=$cpu policy=$policy"
-    if ! $LAUNCHER run "$run_id" --config "$CONFIG" --state-path "$STATE" --gpu 0 \
-      --policies "$policy" --n-prompts 4 --cpu-budget "$cpu" >> "$LOGFILE" 2>&1; then
+    launch_ok=0
+    for attempt in 1 2 3 4 5; do
+      if $LAUNCHER run "$run_id" --config "$CONFIG" --state-path "$STATE" --gpu 0 \
+        --policies "$policy" --n-prompts 4 --cpu-budget "$cpu" >> "$LOGFILE" 2>&1; then
+        launch_ok=1
+        break
+      fi
+      # 前一 unit 可能尚未完全 deactivate，launcher 会以「active MECC job」拒绝；等待后重试。
+      log "LAUNCH_RETRY $run_id attempt=$attempt"
+      sleep 30
+    done
+    if [ "$launch_ok" -ne 1 ]; then
       log "STOP_LAUNCH_FAILED $run_id"
       exit 1
     fi

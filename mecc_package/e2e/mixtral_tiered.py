@@ -199,14 +199,17 @@ def build_tiered_model(model_name: str,
 
     # ── 逐层替换 block_sparse_moe 为三级缓存版 (支持 per-layer 自适应分配) ──
     caches: List[LayerExpertCache] = []
-    has_per_layer = per_layer_k_h is not None and len(per_layer_k_h) == num_layers
+    # per-layer 自适应分配要求 k_h/k_c 两个列表同时有效且等长；
+    # 任一缺失都整体回退到全局 k_h/k_c, 避免「k_h 逐层、k_c 全局」的静默混用。
+    has_per_layer = (per_layer_k_h is not None and len(per_layer_k_h) == num_layers
+                     and per_layer_k_c is not None and len(per_layer_k_c) == num_layers)
     for L in range(num_layers):
         layer = model.model.layers[L]
         moe = layer.block_sparse_moe
         gate = moe.gate                                  # 已在 GPU (trunk 阶段加载)
         ranked = [(L, e) for e in placement.get(L, list(range(num_experts)))]
         l_kh = per_layer_k_h[L] if has_per_layer else k_h
-        l_kc = per_layer_k_c[L] if has_per_layer and per_layer_k_c else k_c
+        l_kc = per_layer_k_c[L] if has_per_layer else k_c
         cache = LayerExpertCache(L, store, ranked, l_kh, l_kc, device,
                                  policy=policy, cold_ssd=cold_ssd)
         layer.block_sparse_moe = TieredSparseMoe(config, L, gate, cache)
@@ -215,7 +218,7 @@ def build_tiered_model(model_name: str,
         torch.cuda.synchronize(device)
     if has_per_layer:
         kh_dist = f"K_H∈[{min(per_layer_k_h)}..{max(per_layer_k_h)}]"
-        kc_dist = f"K_C∈[{min(per_layer_k_c)}..{max(per_layer_k_c)}]" if per_layer_k_c else ""
+        kc_dist = f"K_C∈[{min(per_layer_k_c)}..{max(per_layer_k_c)}]"
         print(f"  [build] {policy}: per-layer adaptive {kh_dist} {kc_dist}, total HBM={sum(per_layer_k_h)} slots")
     else:
         print(f"  [build] {policy}: per-layer K_H={k_h} (GPU) + K_C={k_c} (CPU), rest SSD")

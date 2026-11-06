@@ -45,6 +45,14 @@ from offline_inputs import load_manifest, select_prompts, select_ppl_text
 
 POLICIES = ["ours", "swapmoe", "fiddler", "naive", "flashmoe_rf_adaptation"]
 
+# Insight II: 缓存更新规则 → 具体策略名（冻结初始放置等其他变量时切换）。
+# joint=联合更新(ours) / independent=独立更新 / fixed_cpu=固定 CPU(swapmoe 的 static_cpu 语义)
+UPDATE_RULE_TO_POLICY = {
+    "joint": "ours",
+    "independent": "independent",
+    "fixed_cpu": "swapmoe",
+}
+
 
 def get_device():
     if torch.cuda.is_available():
@@ -193,22 +201,50 @@ BUILTIN_PROMPTS = [
 
 def load_prompts(n_prompts: int, max_len: int = 64,
                  use_wikitext: bool = True, manifest=None) -> (List[str], str):
-    """返回 (prompts, ppl_text)。优先从离线 manifest 读；否则探测 WikiText-2。"""
+    """返回 (prompts, ppl_text)。优先从离线 manifest 读；否则加载 WikiText-2 test split。
+
+    铁律：WikiText-2 下载/读取失败时**抛异常退出，绝不静默回退**到内置 prompt——
+    否则同一批实验会出现「77-token 回退 vs 真实 WikiText-2」的 PPL 输入口径分裂（见 PROVENANCE X13）。
+    """
     if manifest is not None:
         # 离线清单：QA 评估 prompt + 固定 PPL 文本；失败即抛异常，不静默回退。
         return select_prompts(manifest, "qa", n_prompts), select_ppl_text(manifest)
     if not use_wikitext:
+        # 显式 --skip_ppl：PPL 不参与，prompts 用内置即可（不影响质量口径）。
         return BUILTIN_PROMPTS[:n_prompts], " ".join(BUILTIN_PROMPTS)
-    try:
-        from datasets import load_dataset
-        ds = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
-        lines = [t.strip() for t in ds["text"] if len(t.strip()) > 80]
-        prompts = lines[:n_prompts] if lines else BUILTIN_PROMPTS[:n_prompts]
-        ppl_text = "\n\n".join(lines[:64]) if lines else " ".join(BUILTIN_PROMPTS)
-        return prompts, ppl_text
-    except Exception as e:  # noqa: BLE001
-        print(f"  [data] WikiText-2 unavailable ({e}); using builtin prompts.")
-        return BUILTIN_PROMPTS[:n_prompts], " ".join(BUILTIN_PROMPTS)
+    from datasets import load_dataset
+    ds = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
+    lines = [t.strip() for t in ds["text"] if len(t.strip()) > 80]
+    if not lines:
+        raise RuntimeError("WikiText-2 test split is empty after filtering; refusing to fall back to builtin prompts")
+    return lines[:n_prompts], "\n\n".join(lines[:64])
+
+
+def organize_task_sequence(prompts: List[str], task_seq: str
+                           ) -> Tuple[List[str], List[int]]:
+    """Motivation III: 把 prompts 分成任务 A/B 两半，按切换序列组织。
+
+    返回 (ordered_prompts, window_sizes):
+      - a_b: A→B（前半=A，后半=B）
+      - b_a: B→A
+      - a_a: A→A（对照，无切换，两个相同窗口）
+      - none: 单窗口（原顺序）
+    """
+    n = len(prompts)
+    if task_seq == "none" or n < 2:
+        return list(prompts), [n]
+    half = max(1, n // 2)
+    A = list(prompts[:half])
+    B = list(prompts[half:half * 2])
+    if not B:                      # 后半为空（如 n=1 已在上方拦截，此处防御）
+        B = list(A)
+    if task_seq == "a_b":
+        return A + B, [len(A), len(B)]
+    if task_seq == "b_a":
+        return B + A, [len(B), len(A)]
+    if task_seq == "a_a":
+        return A + A, [len(A), len(A)]
+    return list(prompts), [n]
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -276,7 +312,7 @@ def resolve_state_path(model_name: str, state_path: Optional[str]) -> str:
 
 
 def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, use_cache,
-               smoke_cfg=None, model_type="mixtral"):
+               smoke_cfg=None, model_type="mixtral", window_sizes=None):
     use_amp = args.baseline_opts and not args.no_amp and device.type == "cuda"
     print(f"\n{'='*70}\n[POLICY = {policy}]\n{'='*70}")
     if args.smoke:
@@ -286,17 +322,21 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
             top_k=smoke_cfg["top_k"], hidden=smoke_cfg["hidden"],
             ffn=smoke_cfg["ffn"], vocab=smoke_cfg["vocab"])
     elif model_type == "deepseek":
+        # DeepSeek 是对照场景 (CPU 装得下, 不落 SSD), 有意只用全局 k_h/k_c,
+        # 不消费 compile_plan 产出的 per_layer_k_h/k_c —— 属预期行为, 非配置遗漏。
         model, caches = DT.build_tiered_model(
             args.state_path_resolved, args.state_path_resolved, store, device,
             plan.placement, plan.k_h, plan.k_c, policy=policy,
             cold_ssd=args.cold_ssd)
     else:
+        # 仅当编译期确实产出了 per-layer 自适应分配 (per_layer_alpha 非空) 时才传 per-layer；
+        # --uniform 时 per_layer_alpha 为空, 传 None 走全局 k_h/k_c, 避免误报 "per-layer adaptive"。
         model, caches = MT.build_tiered_model(
             args.state_path_resolved, args.state_path_resolved, store, device,
             plan.placement, plan.k_h, plan.k_c, policy=policy,
             cold_ssd=args.cold_ssd,
-            per_layer_k_h=plan.per_layer_k_h if plan.per_layer_k_h else None,
-            per_layer_k_c=plan.per_layer_k_c if plan.per_layer_k_c else None)
+            per_layer_k_h=plan.per_layer_k_h if plan.per_layer_alpha else None,
+            per_layer_k_c=plan.per_layer_k_c if plan.per_layer_alpha else None)
 
     # ── torch.compile 不适合动态 MoE (会触发达纳错误), 跳过 ──
     # cudnn.benchmark + TF32 在 main() 中已启用, 所有策略自动受益
@@ -324,6 +364,14 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
                 c.set_phase(phase)
 
     lat = []
+    # Motivation III: 逐窗口命中/字节快照（任务切换序列 A→B/B→A/A→A 用）
+    window_sizes = window_sizes or [len(prompts)]
+    window_hits = []          # 每个窗口的 [hbm, cpu, ssd, cpu_compute] 增量
+    window_ssd_bytes = []     # 每个窗口的 ssd_read 字节增量
+    win_idx = 0
+    win_count = 0
+    win_snapshot = [0, 0, 0, 0]
+    win_ssd_snapshot = 0
     for prompt_index, p in enumerate(prompts):
         if args.smoke:
             ids = torch.randint(0, smoke_cfg["vocab"], (1, args.prompt_len), device=device)
@@ -344,6 +392,23 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
         lat.append(measure_latency(model, ids, args.max_new_tokens, device, use_cache,
                                    use_amp=use_amp, trace_fn=measured_trace,
                                    phase_cb=set_phase_all))
+        # 窗口边界：快照本窗口增量命中 + SSD 读字节
+        win_count += 1
+        if win_idx < len(window_sizes) and win_count >= window_sizes[win_idx]:
+            cur = [0, 0, 0, 0]
+            ssd_bytes = 0
+            for c in caches:
+                if c is None:
+                    continue
+                for i in range(4):
+                    cur[i] += c.hits[i]
+                ssd_bytes += c.io_bytes.get("ssd_read", 0)
+            window_hits.append([cur[i] - win_snapshot[i] for i in range(4)])
+            window_ssd_bytes.append(ssd_bytes - win_ssd_snapshot)
+            win_snapshot = cur
+            win_ssd_snapshot = ssd_bytes
+            win_idx += 1
+            win_count = 0
 
     agg = {
         "ttft_ms": round(statistics.mean(l["ttft_ms"] for l in lat), 2),
@@ -384,6 +449,9 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
             io_bytes[k] += c.io_bytes[k]
     agg["phase_hits"] = phase_hits
     agg["io_bytes"] = io_bytes
+    agg["window_hits"] = window_hits        # Motivation III: 逐窗口增量命中 [hbm,cpu,ssd,cpu_compute]
+    agg["window_sizes"] = window_sizes      # 窗口边界（prompt 数）
+    agg["window_ssd_bytes"] = window_ssd_bytes  # Motivation III: 逐窗口 ssd_read 字节增量
 
     print(f"  TTFT={agg['ttft_ms']}ms  TPOT={agg['tpot_ms']}ms  "
           f"throughput={agg['tokens_per_s']} tok/s  PPL={agg['ppl']}")
@@ -453,6 +521,12 @@ def _main():
     ap.add_argument("--warm_ssd", dest="cold_ssd", action="store_false")
     ap.add_argument("--uniform", action="store_true", default=False,
                     help="统一 per-layer 分配 (不生成随机 per_layer_alpha, 与之前 A100 实验一致)")
+    ap.add_argument("--init-plan", default="per_layer", choices=["per_layer", "global", "avg"],
+                    help="Insight I: 初始放置策略 (per_layer=逐层热度 / global=全局热度 / avg=平均配额)")
+    ap.add_argument("--update-rule", default=None, choices=["joint", "independent", "fixed_cpu"],
+                    help="Insight II: 缓存更新规则; 指定后覆盖 --policies (joint=ours / independent / fixed_cpu=swapmoe)")
+    ap.add_argument("--task-seq", default="none", choices=["none", "a_b", "b_a", "a_a"],
+                    help="Motivation III: 任务切换序列 (none / A→B / B→A / A→A)")
     ap.add_argument("--platform", default=None,
                     help="真实实验平台名称；未指定时从当前 torch device 自动检测")
     ap.add_argument("--smoke", action="store_true", help="本机自检: 微型随机 MoE, 不下载")
@@ -482,7 +556,11 @@ def _main():
     else:
         print("[opts] baseline (no torch-level optimizations)")
 
-    policies = POLICIES if args.policies == "all" else args.policies.split(",")
+    if getattr(args, 'update_rule', None):
+        # Insight II: --update-rule 覆盖 --policies，映射到单一策略（冻结其他变量只换更新规则）
+        policies = [UPDATE_RULE_TO_POLICY[args.update_rule]]
+    else:
+        policies = POLICIES if args.policies == "all" else args.policies.split(",")
 
     # ───────────── SMOKE: 本机微型自检 ─────────────
     if args.smoke:
@@ -531,7 +609,8 @@ def _main():
         per_layer_alpha = [max(0.5, min(2.0, random.gauss(args.alpha, 0.3))) for _ in range(n_layers)]
     plan = compile_plan(args.model, args.hbm_budget, args.cpu_budget,
                         alpha=args.alpha, profile_path=args.profile,
-                        per_layer_alpha=per_layer_alpha)
+                        per_layer_alpha=per_layer_alpha,
+                        init_plan=args.init_plan)
     print_plan(plan)
 
     # 自动检测模型类型
@@ -577,6 +656,7 @@ def _main():
     prompts, ppl_text = load_prompts(
         args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl,
         manifest=input_manifest)
+    prompts, window_sizes = organize_task_sequence(prompts, args.task_seq)
     prompt_digest = hashlib.sha256(json.dumps(prompts, ensure_ascii=False).encode()).hexdigest()
     ppl_digest = hashlib.sha256(ppl_text.encode()).hexdigest()
     ppl_input_tokens = tokenizer(ppl_text, return_tensors="pt").input_ids[:, :args.ppl_tokens].shape[1]
@@ -591,7 +671,8 @@ def _main():
         _phase("running_policy", policy=policy, completed_policies=list(results),
                partial_output=os.path.abspath(args.partial_out) if args.partial_out else None)
         results[policy] = run_policy(policy, args, plan, store, device, prompts, ppl_text,
-                                     tokenizer, use_cache=True, model_type=mtype)
+                                     tokenizer, use_cache=True, model_type=mtype,
+                                     window_sizes=window_sizes)
         _emit_partial(args, device, plan, results, smoke=False)
     block_io = {
         "device": block_dev,

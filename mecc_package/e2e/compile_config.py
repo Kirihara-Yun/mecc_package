@@ -50,26 +50,69 @@ class CompiledPlan:
     placement: Dict[int, List[int]] = field(default_factory=dict)
 
 
-def _rank_from_profile(profile_path: Optional[str], n_layers: int, n_experts: int
-                       ) -> Dict[int, List[int]]:
-    """若有真实 profiling (profile_real_moe.py 产出), 用每层访问计数排热度;
-    否则退化为自然序 0..n_experts-1 (warm-up 用, 运行期动态 LRU 会自适应)。"""
+def _per_layer_counts_from_profile(profile_path: Optional[str],
+                                   n_layers: int, n_experts: int
+                                   ) -> Optional[Dict[int, List[int]]]:
+    """从 profile JSON 提取每层访问计数；失败返回 None。"""
     if profile_path and os.path.exists(profile_path):
         try:
             prof = json.load(open(profile_path))
-            per_layer = prof.get("per_layer_counts")  # 可选: {layer: [count_e0,...]}
+            per_layer = prof.get("per_layer_counts")  # {layer: [count_e0,...]}
             if per_layer:
-                out = {}
+                counts = {}
                 for L in range(n_layers):
-                    counts = per_layer.get(str(L)) or per_layer.get(L)
-                    if counts:
-                        out[L] = sorted(range(len(counts)), key=lambda e: -counts[e])[:n_experts]
-                    else:
-                        out[L] = list(range(n_experts))
-                return out
+                    c = per_layer.get(str(L)) or per_layer.get(L)
+                    if c:
+                        counts[L] = list(c)
+                if counts:
+                    return counts
         except Exception as e:  # noqa: BLE001
-            print(f"  [compile] profile parse failed ({e}), fall back to natural order")
+            print(f"  [compile] profile parse failed ({e})")
+    return None
+
+
+def _rank_from_profile(profile_path: Optional[str], n_layers: int, n_experts: int
+                       ) -> Dict[int, List[int]]:
+    """per_layer（逐层统计）：用每层访问计数排热度；无 profile 退化为自然序。"""
+    counts = _per_layer_counts_from_profile(profile_path, n_layers, n_experts)
+    if counts:
+        return {L: sorted(range(n_experts), key=lambda e: -counts[L][e])[:n_experts]
+                for L in range(n_layers) if L in counts}
     return {L: list(range(n_experts)) for L in range(n_layers)}
+
+
+def _rank_global(profile_path: Optional[str], n_layers: int, n_experts: int
+                 ) -> Dict[int, List[int]]:
+    """global（全局排序）：跨层汇总热度，所有层用同一排序；无 profile 退化为自然序。"""
+    counts = _per_layer_counts_from_profile(profile_path, n_layers, n_experts)
+    if counts:
+        global_counts = [0] * n_experts
+        for L in counts:
+            row = counts[L]
+            for e in range(min(n_experts, len(row))):
+                global_counts[e] += row[e]
+        ranking = sorted(range(n_experts), key=lambda e: -global_counts[e])
+        return {L: ranking for L in range(n_layers)}
+    return {L: list(range(n_experts)) for L in range(n_layers)}
+
+
+def _rank_avg(n_layers: int, n_experts: int) -> Dict[int, List[int]]:
+    """avg（平均配额）：无热度信息，自然序 0..n_experts-1（每层等量）。"""
+    return {L: list(range(n_experts)) for L in range(n_layers)}
+
+
+def gen_placement(init_plan: str, profile_path: Optional[str],
+                  n_layers: int, n_experts: int) -> Dict[int, List[int]]:
+    """Insight I：三种初始放置入口。
+    - per_layer: 逐层热度排序（默认）
+    - global:    跨层全局热度排序
+    - avg:       平均配额（无热度信息，自然序）
+    """
+    if init_plan == "global":
+        return _rank_global(profile_path, n_layers, n_experts)
+    if init_plan == "avg":
+        return _rank_avg(n_layers, n_experts)
+    return _rank_from_profile(profile_path, n_layers, n_experts)
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -238,7 +281,8 @@ def compile_plan(model_name: str,
                  n_experts: Optional[int] = None,
                  expert_mb: Optional[float] = None,
                  hw_name: str = "rtx5090",
-                 enable_m3: bool = True) -> CompiledPlan:
+                 enable_m3: bool = True,
+                 init_plan: str = "per_layer") -> CompiledPlan:
     """给定 expert 可用的 HBM / CPU 预算 (GB), 计算 (K_H, K_C)。
 
     若提供 per_layer_alpha, 使用 Theorem 4 per-layer 自适应分配:
@@ -345,8 +389,10 @@ def compile_plan(model_name: str,
         print(f"  [M3] Routing-aware joint placement active "
               f"(cooc layers={len(cooc_data)}, boost={0.5})")
     else:
-        # 无共现数据或 M3 禁用 → 纯热度排序 (向后兼容)
-        placement = _rank_from_profile(profile_path, n_layers, n_experts)
+        # 无共现数据或 M3 禁用 → 按 init_plan 选择初始放置入口 (Insight I)
+        placement = gen_placement(init_plan, profile_path, n_layers, n_experts)
+        if init_plan != "per_layer":
+            print(f"  [InsightI] init_plan={init_plan} active")
 
     plan = CompiledPlan(
         model=model_name,

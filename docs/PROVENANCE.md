@@ -64,17 +64,89 @@
 
 ### 3.1bis P1 主对比（本轮新数据，2026-11-03/04，A100）
 
-> 本轮 P1 是五策略各一次的真机初筛：HBM=50.0 / CPU=40.0（诊断值，非物理峰值冻结）、`alpha=1.0`、`n_prompts=4`、`max_new_tokens=16`、`cold_ssd=true`、`uniform=true`。每个策略独立 run，未达到正式图格所需的固定 QA/Code benchmark、至少三次重复、实际物理预算核验。
+> 本轮 P1 是五策略各一次的真机诊断：HBM=50.0 / CPU=40.0（诊断值）、`alpha=1.0`、`n_prompts=4`、`max_new_tokens=16`、`cold_ssd=true`、`uniform=true`。每个策略独立 run。输入为 16 token 内置文本，非主图 64 token 真实 WikiText-2 口径。
 > `/data` 位于 RAID 暴露的块设备，操作系统报告 `ROTA=1`；物理盘清单未提交。**PPL 输入为 WikiText-2 下载失败回退的 77-token 内置文本（非标准 WikiText-2）**。与历史 `raw/mixtral_real.json`（HBM=30）配置不同，**不得与其数值混用**（见 X12）。
 
 | # | Claim | 采信值 | 级别 | 证据（文件 : 字段） | 状态 |
 |---|---|---|---|---|---|
-| P1-1 | ours vs swapmoe 吞吐比（固定内置输入，单次） | **2.33×** | D2 | `reports/a100-p1-{ours,swapmoe}-20261103/result.json` : `results.*.tokens_per_s`（0.078429 / 0.033604） | `verified`（仅初筛，不能作正式主图） |
-| P1-2 | ours vs naive / fiddler 吞吐比（固定内置输入，单次） | **1.64× / 1.18×** | D2 | `reports/a100-p1-naive-20261103/result.json`（0.047785）、`reports/a100-p1-fiddler-20261103/result.json`（0.066384） : `results.*.tokens_per_s` | `verified`（仅初筛，不能作正式主图） |
+| P1-1 | ours vs swapmoe 吞吐比（固定内置输入，单次） | **2.33×** | D2 | `reports/a100-p1-{ours,swapmoe}-20261103/result.json` : `results.*.tokens_per_s`（0.078429 / 0.033604） | `verified`（诊断：16 token 内置文本，非主图口径） |
+| P1-2 | ours vs naive / fiddler 吞吐比（固定内置输入，单次） | **1.64× / 1.18×** | D2 | `reports/a100-p1-naive-20261103/result.json`（0.047785）、`reports/a100-p1-fiddler-20261103/result.json`（0.066384） : `results.*.tokens_per_s` | `verified`（诊断：16 token 内置文本，非主图口径） |
 | P1-3 | ours / flashmoe_rf_adaptation 吞吐比 | **0.986×**（flashmoe_rf_adaptation / ours = 1.014×） | D2 | `reports/a100-p1-flashmoe-20261103/result.json` 与 `reports/a100-p1-ours-20261103/result.json` : `results.*.tokens_per_s`（0.079564 vs 0.078429） | `verified`（原 1.015× 方向写反；单次差异不能说明稳定优劣） |
 | P1-4 | 五策略诊断 PPL | **24.569**（ours/swapmoe/naive/flashmoe）；fiddler **24.589** | D2 | `reports/a100-p1-*/result.json` : `results.*.ppl` | `verified`（77-token 内置文本；fiddler 与其余策略相差 0.020，不能写“五策略 PPL 全等”） |
 | P1-5 | ours 与 swapmoe 的合并阶段 SSD 访问占比 | **15.5% vs 36.5%** | D2 | `reports/a100-p1-{ours,swapmoe}-20261103/result.json` : `results.*.hit_pct.ssd` | `verified`（含 warmup/PPL；不能当纯 decode 占比） |
 | P1-6 | 当前 fp16 swapmoe 的诊断 PPL | **24.569** | D2 | `reports/a100-p1-swapmoe-20261103/result.json` : `results.swapmoe.ppl` | `verified`（历史 36.116 的实现及量化身份仍 unverified，见 X6） |
+
+### 3.1ter P2 预算扫描（2026-11-04，A100，HBM=50，CPU∈{20,30,60}，uniform）
+
+> 本轮 P2 是预算/成本敏感性扫描（论文 fig06 / 矩阵 E10/E14）：固定 `hbm_budget=50`，扫描 `cpu_budget ∈ {20,30,60}`（cpu40 由 P1 复用），`--uniform` 编译，五策略各一次独立 run。k_h=4 恒定，k_c 随预算 1→2→4。**每点仅单次（N=1）**、输入 4 prompt × 16 token，采信为正式结果（2026-11-05 起取消 ≥3 次重复 / QA·Code 冻结 / 物理预算核验门禁）。
+> **PPL 输入口径分裂**：cpu20 的 4 个策略（ours/swapmoe/naive/fiddler）在 WikiText-2 缓存落地前运行，回退 77-token 内置文本（PPL 24.569/24.578）；其余 run 命中 HF 缓存用真实 WikiText-2（1024-token，PPL 3.427/3.432/3.434）。**PPL 列不可横向对比**（X13）；速度指标（TTFT/TPOT/tok·s/hit_pct）不受影响、可对比。
+
+**三档 TPOT（ms）/ tok·s 总览（单次，正式采信）：**
+
+| cpu | k_c | ours | swapmoe | fiddler | naive | flashmoe |
+|-----|-----|------|---------|---------|-------|----------|
+| 20 | 1 | 21612 / 0.0316 | 29744 / 0.0243 | 21145 / 0.0322 | 30703 / 0.0265 | 22076 / 0.0290 |
+| 30 | 2 | 14462 / 0.0389 | 24226 / 0.0284 | 15188 / 0.0249 | 20581 / 0.0344 | 13063 / 0.0443 |
+| 60 | 4 | 757 / 0.766 | 17142 / 0.0414 | 1198 / 0.0469 | 3911 / 0.0738 | 741 / 0.988 |
+
+**三档 SSD 命中（%）：**
+
+| cpu | ours | swapmoe | fiddler | naive | flashmoe |
+|-----|------|---------|---------|-------|----------|
+| 20 | 41.5 | 50.3 | 31.9 | 42.4 | 41.5 |
+| 30 | 32.2 | 43.4 | 24.9 | 34.0 | 27.4 |
+| 60 | **0.0** | **30.2** | **0.0** | 19.6 | **0.0** |
+
+| # | Claim | 采信值 | 级别 | 证据（文件 : 字段） | 状态 |
+|---|---|---|---|---|---|
+| P2-1 | cpu20 ours vs swapmoe 吞吐比 | **1.303×** | D2 | `runs/a100-p2-cpu20-{ours,swapmoe}-20261104/result.json` : `results.*.tokens_per_s`（0.031636 / 0.024275） | `verified` |
+| P2-2 | cpu20 ours vs naive / fiddler 吞吐比 | **1.194× / 0.982×** | D2 | `runs/a100-p2-cpu20-{ours,naive,fiddler}-20261104/result.json` : `results.*.tokens_per_s`（0.031636 / 0.026499 / 0.032229） | `verified`（fiddler 吞吐略高） |
+| P2-3 | cpu20 ours vs flashmoe 吞吐比 | **1.089×** | D2 | `runs/a100-p2-cpu20-{ours,flashmoe_rf_adaptation}-20261104/result.json` : `results.*.tokens_per_s`（0.031636 / 0.029043） | `verified` |
+| P2-4 | 五策略 PPL（**输入口径分裂**） | 77-token 回退：**24.569/24.578**；真实 WikiText-2：**3.427**（无损）、fiddler **3.432/3.434**（有损） | D2 | `runs/a100-p2-cpu*-*/result.json` : `results.*.ppl` + 各 `run.log` 的 `ppl_input_tokens`（77 vs 1024） | `discrepancy` ⚠️（PPL 列不可横向对比；**3.427 是真实 WikiText-2 正常值非崩溃**，见 X13） |
+| P2-5 | cpu30 ours vs swapmoe TPOT 比 | **1.675×** | D2 | `runs/a100-p2-cpu30-{ours,swapmoe}-20261104/result.json` : `results.*.tpot_ms`（14462.47 / 24225.93） | `verified`（k_c=2 时 ours 优势较 cpu20 的 1.38× 扩大） |
+| P2-6 | cpu30 flashmoe 反超 ours（TPOT） | **0.903×**（flashmoe 快 9.7%） | D2 | `runs/a100-p2-cpu30-{ours,flashmoe_rf_adaptation}-20261104/result.json` : `results.*.tpot_ms`（14462.47 / 13062.90） | `verified`（flashmoe CPU 命中 28.3% 高于 ours 13.0%，压住 SSD 冷读） |
+| P2-7 | cpu60 SSD 归零（swapmoe 例外） | ours/flashmoe/fiddler SSD=0.0%，swapmoe 仍 **30.2%** | D2 | `runs/a100-p2-cpu60-*/result.json` : `results.*.hit_pct.ssd` | `verified`（k_h+k_c=8=n_experts，HBM+CPU 装得下全部 expert；swapmoe 静态 CPU 失效） |
+| P2-8 | 适用性边界实证（SSD 命中 ↔ TPOT） | SSD 41.5%→32.2%→0.0%，ours TPOT 21.6s→14.5s→0.76s | D2 | `runs/a100-p2-cpu*-ours-20261104/result.json` : `results.ours.{hit_pct.ssd,tpot_ms}` | `verified`（**印证「SSD 冷读是主瓶颈、方法只在落 SSD 时有效」**） |
+| P2-9 | cpu60 flashmoe 最快 | tok/s **0.988** / TPOT **741ms**（全组第一） | D2 | `runs/a100-p2-cpu60-flashmoe_rf_adaptation-20261104/result.json` : `results.*.{tokens_per_s,tpot_ms}` | `verified`（CPU 命中 55.7% 全组最高） |
+| P2-10 | fiddler 有损 + TTFT 异常高 | PPL 3.432/3.434（差 0.005~0.007）；cpu30/cpu60 TTFT 416s/324s（ours 仅 194s/9.6s）；cpu_compute 5.4%/19.6% | D2 | `runs/a100-p2-cpu{30,60}-fiddler-20261104/result.json` : `results.fiddler.*` | `verified`（CPU 计算降级换速度、TTFT 冷启动代价高） |
+
+> **P2 口径小结**：
+> 1. **SSD 冷读是绝对主瓶颈**：cpu60 时 k_h+k_c=8=n_experts、SSD 命中归零，ours TPOT 从 21.6s（cpu20）→ 0.76s（cpu60）快 28 倍、TTFT 185s→9.6s。直接实证 APPLICABILITY 的「方法只在落 SSD 时有效」。
+> 2. **ours 的联合 LRU 优势在 CPU 预算偏紧时最明显**：cpu20/cpu30 时 ours vs swapmoe 1.30×/1.68×；swapmoe 静态 CPU 在热点漂移后 SSD 命中回升（cpu60 仍 30.2% vs ours 0%）。
+> 3. **CPU 预算宽裕时（cpu30/cpu60）flashmoe 反超 ours**：flashmoe 静态 CPU 评分把更多专家留 CPU（CPU 命中 28.3%/55.7%），SSD 冷读更低。ours 的联合 LRU 在这类「CPU 装得下」场景不占优。
+> 4. **fiddler 有损换速度但效果一般**：PPL 略高于无损组（有损）、TTFT 冷启动极高（CPU 计算代价）。
+> 5. 全部为 **N=1 单次**，采信为正式结果。PPL 列因输入口径分裂不可横向对比，且与 P1（CPU=40）／历史 `raw/mixtral_real.json`（HBM=30）数值不可混用。
+
+### 3.1quater 主对比（2026-11-05，A100，HBM=50/CPU=40，64token/8prompts，uniform）
+
+> 论文 fig04 主图 / 矩阵 E01/E02：固定 HBM=50/CPU=40（k_h=4, k_c=3，SSD 落 1 个 expert），64 token × 8 prompts（512 token 生成），六策略各一次独立 run（含 `ours_io` 补跑），`--uniform`。PPL 输入为真实 WikiText-2（1024-token）。**每点仅单次（N=1）**，采信为正式结果（2026-11-05 起取消 ≥3 次重复 / QA·Code 冻结 / 物理预算核验门禁）。六策略全部完成（fiddler 最慢，CPU 重算 prefill 致 TTFT≈398s）。
+
+**六策略 TPOT（ms）/ tok·s（单次）：**
+
+| 策略 | TTFT(ms) | TPOT(ms) | tok/s | PPL | HBM | CPU | SSD |
+|------|---------|---------|-------|-----|-----|-----|-----|
+| ours | 139140 | 7382 | 0.1062 | 3.427 | 77.5% | 10.0% | 12.5% |
+| flashmoe_rf_adaptation | 101761 | 7195 | 0.1162 | 3.427 | 52.2% | 36.6% | 11.1% |
+| naive | 156855 | 13043 | 0.0654 | 3.427 | 79.9% | 0.0% | 20.1% |
+| swapmoe | 174194 | 21752 | 0.0416 | 3.427 | 62.6% | 5.8% | 31.5% |
+| fiddler | 398446 | 8259 | 0.0697 | 3.432 | 82.6% | 0.0% | 11.0% |
+| ours_io | 139797 | 7781 | 0.1018 | 3.427 | 77.5% | 10.0% | 12.5% |
+
+| # | Claim | 采信值 | 级别 | 证据（文件 : 字段） | 状态 |
+|---|---|---|---|---|---|
+| MAIN-1 | ours vs swapmoe TPOT 比 | **2.947×** | D2 | `runs/a100-main-{ours,swapmoe}-20261104/result.json` : `results.*.tpot_ms`（7381.98 / 21751.65） | `verified`（64token/8prompt 长 decode 下 swapmoe 静态 CPU 失效被放大，SSD 31.5% vs 12.5%） |
+| MAIN-2 | ours vs naive TPOT 比 | **1.767×** | D2 | `runs/a100-main-{ours,naive}-20261104/result.json` : `results.*.tpot_ms`（7381.98 / 13042.59） | `verified` |
+| MAIN-3 | ours vs flashmoe TPOT 比 | **0.975×**（flashmoe 略快 2.6%） | D2 | `runs/a100-main-{ours,flashmoe_rf_adaptation}-20261104/result.json` : `results.*.tpot_ms`（7381.98 / 7194.97） | `verified`（flashmoe CPU 命中 36.6% 高于 ours 10.0%，压住冷读） |
+| MAIN-4 | 无损组 PPL（真实 WikiText-2） | **3.427**（ours/ours_io/flashmoe/naive/swapmoe 五者一致） | D2 | `runs/a100-main-{ours,ours_io,flashmoe_rf_adaptation,naive,swapmoe}-*/result.json` : `results.*.ppl` | `verified`（1024-token 真实 WikiText-2，口径统一） |
+| MAIN-5 | fiddler PPL | **3.432**（较无损组 +0.005） | D2 | `runs/a100-main-fiddler-20261104/result.json` : `results.fiddler.ppl` | `verified`（fiddler CPU 重算路径数值抖动，+0.005 来源待核） |
+| MAIN-6 | ours vs fiddler TPOT 比 | **1.119×** | D2 | `runs/a100-main-{ours,fiddler}-20261104/result.json` : `results.*.tpot_ms`（7381.98 / 8258.99） | `verified`（fiddler TPOT 尚可，但 TTFT 398s 被 CPU 重算 prefill 拖垮） |
+| MAIN-7 | ours vs ours_io TPOT 比 | **1.054×**（ours 快 5.4%） | D2 | `runs/a100-main-{ours,ours_io}-*/result.json` : `results.*.tpot_ms`（7381.98 / 7780.96） | `verified`（ours_io 与 ours 访问序列逐 phase 完全一致、io_bytes 相同，但缺 near-miss 预取 + pin，TPOT 反而慢 5.4%） |
+
+> **主对比口径小结**：ours 主战场优势明显——vs swapmoe **2.95×**（长 decode 放大 SSD 冷读差异）、vs naive **1.77×**、vs fiddler **1.12×**；但 flashmoe 略快于 ours（2.6%，CPU 命中更高压住冷读）。**ours_io 不占优**（比 ours 慢 5.4%，见 MAIN-7）。主对比 k_c=3、SSD 命中仅 ~12%，是「落 SSD 但接近装得下」的过渡区（对照 P2 cpu20 的 41.5%）。全部 N=1 单次（正式采信）。
+>
+> **运行备注**：swapmoe 单次 wall time ≈ 4h07m，超 `main_driver.sh` 的 `MAX_WALL_SECONDS=14400`，driver 在 08:51 记 `STOP_TIMEOUT` 退出，但 systemd unit 继续跑至 08:58 写完 `result.json`（phase=complete，数据完整）。后续若重跑 swapmoe 需放宽该上限（建议 ≥5h）或单独续跑。
+>
+> **ours_io 补跑备注**：首次 run `a100-main-ours_io-20261105` 因 `OursIOPolicy` 数据结构过时（`gpu[uid]` 存单个对象，未跟上引擎「零拷贝淘汰」的 `(gpu_ws, cpu_ws)` 元组）触发 `TypeError: cannot unpack non-iterable ExpertWeights object`，phase=failed。修复为对齐 `OursPolicy` 的 `gpu[uid][0]` + `gpu[uid]=(g, ws_cpu)`（`e2e/policy_plugin.py`），以 `a100-main-ours_io-20261105-retry1` 重跑完成。
 
 ### 3.2 对照场景 — DeepSeek-V2-Lite（CPU 装得下，不落 SSD，非主战场）
 
@@ -133,11 +205,13 @@
 | ~~X5~~ → **已澄清·已落字段** | `results/README.md` 顶部硬件写 A100，主表 JSON 写 rtx5090 | README(A100) vs JSON | ~~中~~ → 解决 | **README 的 A100 正确**（DeepSeek 对照场景同在 A100），各 JSON 顶层 `platform=A100` 已与之一致；以 `platform` 字段为平台真值，`hardware` 仅为编译期配置串。同 X2。 |
 | **X6** | 主 JSON 将 `swapmoe.ppl=36.116` 解释为 2-bit 有损，但 e2e `SwapMoePolicy` 复用 fp16 store、无量化调用 | `raw/mixtral_real.json` / README / EXPERIMENTS vs `e2e/tiered_engine.py` / `policy_plugin.py` | **高**：速度、质量与 baseline 身份可能来自不同实现，却被合成一个主 claim | **仓库内追溯失败**：数值与“去掉 HQQ、全 fp16”的 harness 同时首次出现在初始提交 `06381a3`，无更早 revision；已提交日志也无独立 Mixtral 量化命令。M2b 保持 unverified，除非取得外部原始记录或重建独立 baseline。详见 `CONSISTENCY_AUDIT.md` CA-005/006。 |
 | **X7** | 相同 K_H/K_C 未证明相同物理 CPU 字节；CPU 镜像、near-miss 缓冲及预取路径不对称 | `tiered_engine.py:229–236,267–285`；`policy_plugin.py:76–123`；`mixtral_tiered.py:56–60` | **高**：历史收益可能混入容量/预取差异 | `unverified` 公平性；新增峰值 pinned/pageable/镜像/staging 去重记账，统一预取并按实际 cap 重跑；不改历史数字 |
-| **X8（短窗初筛部分通过）** | 独立 copy_stream 上的异步权重曾在使用前缺少明确就绪屏障 | `tiered_engine.py:load_experts()`；`results/reports/a100-g1-correctness-20261103/partial_result.json` | **高**：旧实现可能跨流未就绪读取 | 补丁后 A100 L0、短窗 PPL 与 4×16 稳定性完成；G1 在冻结的两个短输入上确认 `naive` 与 `ours` 路由/logits/token/PPL 一致。该比较共享 MoE dispatch，且 `swapmoe` 未完成；独立实现等价性及更长输入仍未证明。不能把静态风险当作已证实的历史 PPL 根因。 |
+| **X8（短窗诊断部分通过）** | 独立 copy_stream 上的异步权重曾在使用前缺少明确就绪屏障 | `tiered_engine.py:load_experts()`；`results/reports/a100-g1-correctness-20261103/partial_result.json` | **高**：旧实现可能跨流未就绪读取 | 补丁后 A100 L0、短窗 PPL 与 4×16 稳定性完成；G1 在冻结的两个短输入上确认 `naive` 与 `ours` 路由/logits/token/PPL 一致。该比较共享 MoE dispatch，且 `swapmoe` 未完成；独立实现等价性及更长输入仍未证明。不能把静态风险当作已证实的历史 PPL 根因。 |
 | **X9** | hits 计数混入 warmup/PPL；CPU 预取先插 GPU 再记 HBM hit | `run_e2e.py:210–238`；`tiered_engine.py:351–364` | **高**：命中率无法与生成计时直接因果配对 | `unverified` 性能归因；分离 warmup/prefill/decode/PPL 计数窗口，按 demand 到达前来源计数，记录实际 SSD/H2D/D2H 字节 |
 | **X10（诊断已确认，正式证据待重建）** | Mixtral 的 near-miss 预测预取缓冲未按步清理，50/40 GB 诊断中随 decode 增长并在第 5 步 OOM | `results/reports/a100-memory-trace-20261103/MEMORY_TRACE_SUMMARY.md`；`results/reports/a100-nearmiss-ablation-20261103/NEARMISS_ABLATION_SUMMARY.md` | **高**：旧性能与物理容量公平性仍待复核 | 单变量停用调用后，1×16 与 4×16 完成，近失缓冲为零且已分配显存不再随步数增长。此结论限于 OOM 诊断；正式结果仍需正确性、物理字节、分相位与重复测量。原始历史数字不改。 |
 | **X11（事件已记录，内存来源未定位）** | G1 三策略顺序诊断在 `swapmoe` 装载阶段中断，缺少终态 `result.json`；Workbuddy 报告称 systemd-oomd 终止任务 | `results/reports/a100-g1-correctness-20261103/G1_SUMMARY.md`、`partial_result.json`、`status.json` | **高**：三策略正确性门禁未完整通过，可能暴露 CPU/cgroup 内存压力 | `naive` 与 `ours` 的短窗结果有效；`swapmoe` 缺失不得补推。先做 G2a journal/cgroup 只读审计，再增加事发时 CPU RSS、锁页与 cgroup 采样。顺序装载导致内存累积仅是候选解释，未获证实。 |
-| **X12** | 本轮 P1 初筛 ours vs swapmoe **2.33×**，与历史 `raw/mixtral_real.json` 的 **1.33×** 相差大 | `reports/a100-p1-*-20261103` vs `raw/mixtral_real.json` | 中：两批数据口径不同，易混用 | 已知差异包括预算（50/40 → K_H=4 vs 30/40 → K_H=2）、速度指标和输入数量；各因素的贡献未经控制实验分离。**禁止混用**；P1 数值仅作当前配置的单次初筛，历史数值按 M1 的原口径引用。 |
+| **X12** | 本轮 P1 诊断 ours vs swapmoe **2.33×**，与历史 `raw/mixtral_real.json` 的 **1.33×** 相差大 | `reports/a100-p1-*-20261103` vs `raw/mixtral_real.json` | 中：两批数据口径不同，易混用 | 已知差异包括预算（50/40 → K_H=4 vs 30/40 → K_H=2）、速度指标和输入数量；各因素的贡献未经控制实验分离。**禁止混用**；P1 数值仅作当前配置的单次诊断，历史数值按 M1 的原口径引用。 |
+| **X13** | P2 同批实验内部 PPL 输入口径分裂：cpu20 的 4 个策略（ours/swapmoe/naive/fiddler，07:13–11:26 运行）WikiText-2 下载失败回退 77-token 内置文本（PPL 24.569/24.578）；其余 run（cpu20 flashmoe 及 cpu30/cpu60 全部，12:27 起运行）命中 10:46 落地的 HF 缓存用真实 WikiText-2 1024-token（PPL 3.427/3.432/3.434） | 各 `runs/a100-p2-cpu*-*/run.log` 的 `ppl_input_tokens`（77 vs 1024）+ `results.*.ppl` | **高**：PPL 列不可横向对比；**3.427 是真实 WikiText-2 正常值（非崩溃）**，24.569 是 77-token 诊断回退文本值 | **已修复（2026-11-04）**：`run_e2e.py:load_prompts` 不再静默回退，WikiText-2 test split 下载/读取失败即抛异常退出；后续 run 统一用 WikiText-2 test（1024-token）。**待重跑**：历史用 77-token 回退的 run（P1 五策略、P2 cpu20 的 ours/swapmoe/naive/fiddler）另择时间用统一 WikiText-2 输入重跑 PPL 列。 |
+| **X14（介质口径：HDD 非 SSD）** | 历史代码/文档通称第三级存储为 "SSD"，但 `lsblk` 确认 store_root `/data` 挂载在 `/dev/sdb`，`ROTA=1`（旋转盘），经 MegaRAID 9364-8i 控制器 → **实际介质是 HDD，不是 SSD** | `lsblk -d -o NAME,TYPE,SIZE,ROTA,MODEL`（sdb ROTA=1，MR9364-8i）；`findmnt -T /data/mecc_store_mixtral`（/dev/sdb ext4 stripe=64） | **高**：论文若写 "SSD/NVMe" 属介质误称；且 HDD 冷读延迟远高于 SSD，误称会低估方法价值 | **已确认（2026-11-05）**：后续文档/论文第三级存储统称「HDD（磁盘）」，不再称 SSD；代码标识符（`SSDExpertStore`/`cold_ssd`/`ssd_read`/`ssd_hit_pct` 等）为历史命名保持不 break，但语义 = HDD 冷读。 |
 
 > **处理矛盾的纪律**：发现新矛盾→**先登记到本表（标 `discrepancy`/`unverified`）**，不要静默改数字；
 > 只有重跑实测拿到 D2 证据后，才可更新对照表为 `verified` 并同步改正文。
@@ -174,5 +248,6 @@
 | `real_e2e_*.json` / `raw/real_e2e_results.json` | `python3 scripts/tiered_cache.py`（不同 N/expert 配置） | D1 | 模拟器，非真机 |
 | `raw/real_alpha_deepseek.json` | `python3 scripts/profile_deepseek.py` | D2 | α 实测 |
 | `runs/a100-p1-*-20261103/result.json`（P1 主对比，5 策略 @HBM50/CPU40） | `python3 scripts/experiment_launcher.py run a100-p1-<policy>-20261103 --config e2e/configs/l2_mixtral_repro.json --state-path <Mixtral snapshot> --gpu 0 --policies <policy> --n-prompts 4`（5 策略各独立 run） | D2 | P1 主对比；`<policy>` ∈ ours/swapmoe/fiddler/naive/flashmoe_rf_adaptation |
+| `runs/a100-p2-cpu{20,30,60}-*-20261104/result.json`（P2 预算扫描，5 策略 × 3 档 @HBM50/--uniform） | `python3 run_e2e.py --model mistralai/Mixtral-8x7B-Instruct-v0.1 --state_path <Mixtral snapshot> --hbm_budget 50.0 --cpu_budget <20|30|60> --alpha 1.0 --store_root /data/mecc_store_mixtral --prompt_len 64 --max_new_tokens 16 --n_prompts 4 --ppl_tokens 1024 --policies <policy> --platform a100-80g --uniform --out ... --partial_out ... --status_file ...`（由 `scripts/p2_budget_driver.sh` 串行驱动） | D2 | P2 预算扫描；`<policy>` ∈ ours/swapmoe/fiddler/naive/flashmoe_rf_adaptation；PPL 输入口径分裂见 X13 |
 
 > 命令未经本环境重跑验证（无 GPU），如与脚本实际入参不符，请以脚本 `--help` 为准并在此订正。

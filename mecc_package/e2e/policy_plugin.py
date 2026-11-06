@@ -101,6 +101,34 @@ class OursPolicy(CachePolicy):
 
 
 @register
+class IndependentLruPolicy(CachePolicy):
+    """Insight II: 独立更新。HBM 独立 LRU + CPU 独立 LRU，两者不联动：
+    HBM 淘汰不回写 CPU（直接落 SSD），CPU 命中搬到 HBM 后从 CPU 移除、不回流补充。
+    与联合更新（OursPolicy: spill_to_cpu=True）的差异在于缺「HBM→CPU→SSD」级联淘汰；
+    与固定 CPU（swapmoe: static_cpu 命中不 pop）的差异在于 CPU 是动态 LRU 而非静态。"""
+    name = "independent"
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            ws_cpu = cache.cpu.pop(uid)                 # 命中即搬走, CPU 不保留
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
+        else:
+            ws_cpu = cache._load_from_ssd(uid).pin()
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                             h2d_bytes=ws_cpu.nbytes())
+        cache.gpu[uid] = (g, ws_cpu)
+        cache.gpu.move_to_end(uid)
+        cache._evict_gpu_if_needed(spill_to_cpu=False)   # 独立: 不回写 CPU
+        return g
+
+
+@register
 class SwapMoePolicy(CachePolicy):
     """SwapMoE: 仅 HBM 动态 LRU; CPU 静态 top-K_C; 不回写 CPU"""
     name = "swapmoe"
@@ -235,7 +263,7 @@ class OursIOPolicy(CachePolicy):
         if uid in cache.gpu:
             cache.gpu.move_to_end(uid)
             cache.record_hit(0)
-            return cache.gpu[uid]
+            return cache.gpu[uid][0]
         if uid in cache.cpu:
             ws_cpu = cache.cpu.pop(uid)
             g = cache._to_gpu(ws_cpu)
@@ -245,7 +273,7 @@ class OursIOPolicy(CachePolicy):
             g = cache._to_gpu(ws_cpu)
             cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
                              h2d_bytes=ws_cpu.nbytes())
-        cache.gpu[uid] = g
+        cache.gpu[uid] = (g, ws_cpu)
         cache.gpu.move_to_end(uid)
         cache._evict_gpu_if_needed(spill_to_cpu=True)
         return g
