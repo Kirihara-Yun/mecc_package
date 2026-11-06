@@ -1,0 +1,172 @@
+{
+  "artifact": {
+    "pages": 8,
+    "body_pages": 6,
+    "reference_pages": [
+      7
+    ],
+    "appendix_pages": [
+      8
+    ],
+    "issues": [],
+    "figures": {
+      "fig:intro": {
+        "number": 1,
+        "page": 1,
+        "references": [
+          1
+        ]
+      },
+      "fig:insights": {
+        "number": 2,
+        "page": 2,
+        "references": [
+          2
+        ]
+      },
+      "fig:overview": {
+        "number": 3,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:compile": {
+        "number": 4,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:retention": {
+        "number": 5,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:delivery": {
+        "number": 6,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:performance": {
+        "number": 7,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:target_mechanisms": {
+        "number": 8,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_ablation": {
+        "number": 9,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_traffic": {
+        "number": 10,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_models": {
+        "number": 11,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_gpu": {
+        "number": 12,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_sensitivity": {
+        "number": 13,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_quota": {
+        "number": 14,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_mismatch": {
+        "number": 15,
+        "page": 6,
+        "references": [
+          6
+        ]
+      }
+    },
+    "references": 44,
+    "no_banner": true,
+    "sha256": "68494d104e3640acb1cffd9fa138a74188368ba13450edb62e4b89a6d84e2530"
+  },
+  "column_bottoms_pt": [
+    {
+      "page": 1,
+      "left": 695.69,
+      "right": 705.59
+    },
+    {
+      "page": 2,
+      "left": 710.65,
+      "right": 693.77
+    },
+    {
+      "page": 3,
+      "left": 719.84,
+      "right": 693.57
+    },
+    {
+      "page": 4,
+      "left": 708.43,
+      "right": 693.09
+    },
+    {
+      "page": 5,
+      "left": 706.85,
+      "right": 719.84
+    },
+    {
+      "page": 6,
+      "left": 681.38,
+      "right": 678.41
+    },
+    {
+      "page": 8,
+      "left": 706.22,
+      "right": 698.37
+    }
+  ],
+  "language_screen": {
+    "sentences": 278,
+    "mean_words": 12.0,
+    "share_at_most_25": 0.996,
+    "long_sentences": [],
+    "banned_tone": {}
+  },
+  "frozen_versions_preserved": true,
+  "appendix_unchanged": true,
+  "figures_and_data_unchanged": true,
+  "citation_keys_unchanged": true,
+  "editorial_record": "EDITORIAL_REVIEW.md"
+}

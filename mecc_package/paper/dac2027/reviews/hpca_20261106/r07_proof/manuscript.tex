@@ -1,0 +1,346 @@
+\documentclass[conference,9pt,letterpaper]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{soul}
+\DeclareRobustCommand{\pending}[1]{{\sethlcolor{yellow}\hl{#1}}}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{2pt}
+\setlength{\intextsep}{6pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{7pt plus 1pt minus 1pt}
+\setlength{\floatsep}{6pt plus 1pt minus 1pt}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{stfloats}
+\usepackage{balance}
+\makeatletter
+\patchcmd{\@BAlancecol}
+ {\setbox\@leftcolumn=\vbox to \@tempdima}
+ {\@tempdimb=\ht1\advance\@tempdimb by\dp1
+  \ifdim\@tempdimb>\@tempdima\@tempdima=\@tempdimb\fi
+  \@tempdimb=\ht3\advance\@tempdimb by\dp3
+  \ifdim\@tempdimb>\@tempdima\@tempdima=\@tempdimb\fi
+  \setbox\@leftcolumn=\vbox to \@tempdima}
+ {\typeout{MECC: balance packing includes split-box depth.}}
+ {\errmessage{Failed to patch balanced-column packing}}
+\makeatother
+\usepackage{capt-of}
+\usepackage{float}
+\usepackage{needspace}
+\setcounter{dbltopnumber}{3}
+\renewcommand{\dbltopfraction}{0.85}
+\renewcommand{\textfraction}{0.10}
+\newcommand{\mecc}{\textsc{MECC}}
+\newcommand{\BH}{B_{\mathrm H}}
+\newcommand{\BC}{B_{\mathrm C}}
+\newcommand{\KH}{K_{\mathrm H}}
+\newcommand{\KC}{K_{\mathrm C}}
+\newtheorem{proposition}{Proposition}
+\title{MECC: Single-GPU MoE Inference with\protect\\Compiler-Guided Three-Tier Expert Caching}
+% Anonymous review copy: no author names or affiliation spacer rows.
+\author{}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={MECC: Single-GPU MoE Inference with Compiler-Guided Three-Tier Expert Caching},pdfauthor={}}
+\begin{document}
+\maketitle\raggedbottom
+\balance
+\begin{abstract}
+Expert offloading enables single-GPU inference for mixture-of-experts (MoE) models. Repeated HDD reads make expert residency a source of inference latency. We present MECC, the MoE Expert Cache Compiler, for profile-guided placement and joint HBM/CPU caching. Its compiler allocates slots by layer and emits the expert IDs used for initialization. The runtime promotes router-selected experts and retains displaced GPU weights in the host cache. The delivery path orders HDD reads and H2D copies before GPU consumption. On one A100, MECC decodes FP16 Mixtral-8x7B at 7.38~s/token with uniform initialization. Decode speedups are 1.77$\times$ over streaming and 2.95$\times$ over fixed CPU retention, with matching perplexity.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Mixture of experts, single-GPU inference, expert offloading, three-tier caching, hardware/software co-design.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Mixture-of-experts (MoE) models scale parameter capacity through sparse expert activation~\cite{shazeer,switch,mixtral,deepseekmoe}. For example, Mixtral selects two of eight experts in each layer. A single-GPU deployment can use high-bandwidth memory (HBM), host memory, and a hard disk drive (HDD) to hold that pool. The selected expert's location then determines its delivery path. HBM residents are ready for GPU execution; host residents require a host-to-device (H2D) copy; cold experts require an HDD read followed by H2D. The next layer consumes the current layer's output, so an exposed read also delays downstream computation. These accesses recur at successive MoE layers during generation. Prefill can reuse one fetched expert across prompt rows, and decoding can reuse its weights across output tokens. Retaining the corresponding cache state avoids fetching those weights again. The placement problem is therefore tied to the request sequence, rather than to model loading alone. On shared servers, a serving task manages its expert allocation alongside other jobs and model instances. We study how to distribute that allocation across layers and preserve the resulting reuse during inference. All MoE layers share the HBM and host allowances. Increasing one layer's allocation leaves fewer slots for others. The value of another slot depends on the demand already covered in that layer. Placement therefore couples the layers' local request distributions to a shared storage allocation.
+
+Expert parallelism distributes expert weights over multiple GPUs~\cite{deepspeedmoe,tutel,flashmoedist}. Single-GPU systems instead combine caching, transfers, and host execution~\cite{offloading,moeinfinity,fiddler,lightning,promoe}. MoE-CORE uses layer-wise allocation, profile initialization, and online replacement~\cite{core}; SSD-LLaMA coordinates RAM/VRAM retention with storage delivery~\cite{ssdllama}. Edge FlashMoE studies cache replacement for storage-backed expert access~\cite{flashmoe}. Within such a hierarchy, initial placement and later admission affect different requests. A profile determines which weights are available when serving begins. GPU turnover then determines which of those weights survive on the host. Promoting a CPU expert vacates a host position just as an HBM victim loses its GPU position. Using that position for the victim preserves its place in the reuse order. Figure~\ref{fig:intro} compares this joint rule with independent HBM/CPU caches on an A100. Decode time is 7.38~s/token under joint retention and 32.94~s/token under independent replacement. Their HDD-demand shares are 12.5\% and 47.9\%. These results motivate compiling an initial resident set and preserving subsequent reuse across both tiers.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{measured_figures/intro_evidence.pdf}
+\par\nointerlineskip
+\caption{Single-A100 expert-cache comparison on Mixtral-8x7B. Separate uses independent HBM/CPU replacement. Joint retention lowers both plotted metrics.}
+\label{fig:intro}
+\end{figure}
+
+We present \mecc{}, the MoE Expert Cache Compiler, to connect these two stages. Compilation ranks experts within each layer and allocates slots by marginal covered demand. The resulting plan specifies both per-layer capacities and the IDs loaded into HBM and CPU. The runtime then maintains a joint recency order across those tiers. A CPU hit promotes the selected expert and demotes the GPU victim; a cold admission can also evict a host resident. The runtime keeps a host mirror with each HBM resident and reuses that copy during demotion. Host admission therefore updates the cache metadata at that boundary. Newly requested experts follow the read/copy path, and execution waits for their weights. Consuming-stream tracking keeps the tensor storage live through kernel execution. This process keeps the capacities fixed while updating membership from the actual request stream. The profile supplies an initial distribution, and runtime accesses supply an order of use. Weight delivery follows the selected experts' read and copy dependencies before GPU execution. Prefill submits cold reads for the active expert batch, while decode loads selected experts on demand. The same layer/expert identity passes from profiling through placement to execution, preserving the router's assignments and FP16 expert computation.
+
+This paper makes three contributions.
+\begin{list}{}{\setlength{\leftmargin}{16pt}\setlength{\labelwidth}{14pt}\setlength{\labelsep}{2pt}\setlength{\itemsep}{3pt}\setlength{\topsep}{3pt}}
+\item[(1)] \textbf{Compiling initial residency.} We map layer profiles and expert allowances to per-layer capacities and ranked expert IDs. A marginal-coverage scan determines how each additional slot extends the initial resident set.
+\item[(2)] \textbf{Updating cross-tier residency.} We connect the compiled state to joint promotion and victim demotion. Host retention preserves GPU evictions for later reuse, while read/copy ordering prepares selected weights for consumption.
+\item[(3)] \textbf{Evaluating weight delivery.} We compare placement, retention, and scheduling through decode latency, first-token time, source-tier demand, and sample perplexity. Workload plots examine calibration, task transfer, prompt length, and batch size. Capacity and deployment comparisons relate these mechanisms to host allocation and accelerator occupancy. Startup analysis accounts for the output length over which initialization is amortized.
+\end{list}
+\twocolumn[{
+\begin{minipage}{\textwidth}
+\centering
+\includegraphics[width=\textwidth]{completion_figures/motivation_evidence.pdf}\par
+\vspace{2pt}
+\includegraphics[width=\textwidth]{measured_figures/insights_lower.pdf}
+\par\nointerlineskip
+\captionof{figure}{Motivation evidence and matching insights. (a--c) compare layer pressure, cross-tier reuse, and workload change; (b) counts A100 demand across all phases. (d--f) show layer-specific capacity cuts, joint victim retention, and online membership updates.}
+\label{fig:insights}
+\vspace{5pt}
+\end{minipage}
+}]
+\nobalance
+\section{Background}
+\label{sec:background}
+\subsection{Sparse Execution, Full Weight Capacity}
+An MoE layer routes each token to a subset of experts and combines their outputs~\cite{shazeer,switch,gshard}. Mixtral and the DeepSeek family separate active computation from the size of the stored expert pool~\cite{mixtral,deepseekmoe,deepseekv2,deepseekv3,mixtral22}. An expert belongs to one layer; equal indices at different layers identify different weights. For input $x$, let $G(x)$ be the selected set and $g_e(x)$ its normalized gate weights. The layer computes
+\begin{equation}
+y(x)=\sum_{e\in G(x)}g_e(x)E_e(x).
+\end{equation}
+A token traverses the MoE layers in order, revealing expert demand at each gate. Decoding revisits those layers for the next token. Caching changes the source of the selected weights while preserving the routing weights and expert functions.
+
+\subsection{Expert Residency on One GPU}
+Expert parallelism places experts on GPU owners and dispatches token activations to them~\cite{deepspeedmoe,tutel,megablocks,flashmoedist,harmoeny}. A single-GPU offloading system instead delivers selected weights to the execution device. Experts share HBM with dense weights, activations, and the KV cache~\cite{pagedattention,sglang}. The host cache supplies H2D copies; HDD supplies weights absent from both resident tiers. Heterogeneous inference systems combine these paths with CPU/GPU scheduling~\cite{flexgen,dsinference,zeroinfinity,llmflash,powerinfer}. In prefill, several prompt rows can share a fetched expert. Decode advances one token per sequence, exposing fewer rows to each active expert. The amount of ready computation therefore changes between the two phases. MECC retains FP16 expert weights across these layer visits and uses HDD as the backing store.
+
+A cache entry identifies one expert's weights and its position in the resident order. HBM and host residency persist across layer calls. A later router selection can therefore reuse weights loaded by an earlier token. Calibration counts determine expert ranking; runtime accesses determine recency. Within one layer, sequences $[a,a,b,b]$ and $[b,b,a,a]$ have equal counts and different last-access orders. MECC uses both kinds of information.
+
+\section{Motivation and Insights}
+\label{sec:challenges}
+\subsection{Allocating Slots by Marginal Demand}
+Equal expert counts do not imply equal demand across layers. A few ranks may cover most requests in one layer, while another layer spreads requests over more experts. Figure~\ref{fig:insights}(a,d) illustrates the resulting allocation choice. Its profile-guided plan shifts slots toward the layer groups with more cold demand. The compiler makes this choice by comparing each layer's next uncovered rank. Allocating a slot exposes that layer's following rank as a new candidate. This process distributes a shared allowance across layers and retains the IDs that fill each allocation. Routing locality across models has also been studied independently~\cite{routingconsistency}.
+
+\subsection{Preserving Reuse after GPU Eviction}
+A GPU victim is also a candidate for host admission. Figure~\ref{fig:insights}(b,e) shows a CPU promotion vacating a host position as the GPU selects its victim. Joint retention admits that victim into the vacated position, carrying recency across the tier boundary. The independent-cache control reports 47.9\% HDD demand, compared with 12.5\% for the joint rule. Both start from the same allocation and expert order. The difference concerns how each policy retains the weights selected during execution. Preserving the victim lets a later selection use its host copy instead of initiating another cold read.
+
+\subsection{Updating Residency beyond Calibration}
+Calibration and serving inputs can select different expert sets. In Figure~\ref{fig:insights}(c,f), a task switch changes demand while preserving the cache capacities. The fixed placement continues to retain its original expert set. Online admission instead brings newly selected experts into the resident order. Profile initialization lowers the early demand transient, and online replacement follows the subsequent switch. These effects occur at different points in the same request sequence. MECC therefore uses the profile to initialize membership and uses observed accesses to update it. The plan remains in place as resident IDs change.
+
+\twocolumn[{
+\begin{minipage}{\textwidth}
+\section{Overview}
+\label{sec:overview}
+\centering\includegraphics[width=\textwidth]{figures/fig01_overview.pdf}
+\par\nointerlineskip
+\captionof{figure}{MECC framework. The placement compiler emits per-layer capacities and ranked IDs. Online execution resolves unchanged router selections against HBM, CPU resident memory, and HDD, then delivers weights before their GPU consumers. Dashed arrows carry control or plan metadata; solid arrows move weights.}
+\label{fig:overview}
+
+\vspace{8pt}
+\end{minipage}
+}]
+
+Figure~\ref{fig:overview} follows the plan from profiling to GPU execution. The compiler receives layer/expert counts, skew parameters, model metadata, and expert allowances. It emits capacities and ranked IDs for each layer. Initialization loads the corresponding HBM and CPU residents; the complete expert pool remains on HDD. The runtime subsequently consumes this plan as an initial cache state.
+
+Consider the selected experts $e_2$ and $e_6$ in the framework. The residency lookup finds $e_2$ on the host and $e_6$ in the backing store. Promoting $e_2$ frees a host position for an HBM victim. Loading $e_6$ then admits another GPU resident and updates the same tier order. The delivery path resolves each weight's read and copy before its consumer executes. The model combines the expert outputs using the gate weights and continues to the next layer.
+
+After a layer finishes, its residents remain available for the next token. Capacities still come from the compiled plan, but recency reflects the accesses just served. Each layer keeps its own expert identities and resident state. This separates the profile's distributional information from the request order encountered during generation. Section~\ref{sec:method} details the allocation and transition rules; Section~\ref{sec:evaluation} examines their effect on weight delivery.
+
+\section{Method}
+\label{sec:method}
+\subsection{Compiling Capacities and Initial Identities}
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{method_redesign/compile_frontiers.pdf}
+\par\nointerlineskip
+\caption{Compiling the initial state. The left grid contains ranked per-layer demand; circles mark the next uncovered candidates. Shared HBM/CPU slot allowances produce different cuts in the emitted rows. A, B, and C identify different layers. }
+\label{fig:compile}
+\end{figure}
+
+Consider $L$ MoE layers with $N_\ell$ experts per layer. Within each model, experts have equal size $s$ and layers use the same top-$k$. Expert allowances $B_{\mathrm H}$ and $B_{\mathrm C}$ provide $S_{\mathrm H}=\lfloor B_{\mathrm H}/s\rfloor$ HBM slots and $S_{\mathrm C}=\lfloor B_{\mathrm C}/s\rfloor$ CPU slots. These slots define the primary resident sets.
+
+For each layer, the compiler receives an expert order and a skew parameter $\alpha_\ell$. Profile counts determine the order. A discrete Zipf model gives the probability associated with each rank:
+\begin{equation}
+q_{\ell,r}=\frac{r^{-\alpha_\ell}}{\sum_{j=1}^{N_\ell}j^{-\alpha_\ell}},
+\qquad p_{\ell,r}=q_{\ell,r}/L.
+\end{equation}
+Here $q_{\ell,r}$ is conditional on an access to layer $\ell$. Equal top-$k$ gives equal selection mass across layers. The ranked list preserves the original ID at each position.
+
+Figure~\ref{fig:compile} shows the HBM and CPU cuts in those lists. Capacities satisfy $\sum_\ell K_{\mathrm H,\ell}\le S_{\mathrm H}$, $\sum_\ell K_{\mathrm C,\ell}\le S_{\mathrm C}$, and $K_{\mathrm H,\ell}+K_{\mathrm C,\ell}\le N_\ell$. The adaptive scan reserves one slot per layer in each fast tier, then distributes the remaining slots by marginal coverage.
+
+The scan first assigns HBM slots. At each step, it chooses the layer with the largest next-rank score:
+\begin{equation}
+\Delta_\ell=q_{\ell,K_{\mathrm H,\ell}+1}.
+\end{equation}
+CPU allocation continues from the first ranks beyond each HBM cut. Every allocation exposes a new next-rank candidate in that layer. Layer ID breaks score ties, and expert ID breaks count ties. The direct scan takes $O(L(S_{\mathrm H}+S_{\mathrm C}))$ time after sorting. Its score is the request probability covered by the next slot.
+
+The emitted plan contains the final capacities and ordered expert IDs. Initialization places each layer's first HBM ranks on the GPU and its next CPU ranks on the host. Natural ID order initializes the uniform control. During execution, admission changes membership within the compiled capacities.
+
+\subsection{Retaining Victims across the Tier Boundary}
+Each layer maintains two ordered sets, from most-recently used (MRU) to least-recently used (LRU). Their concatenation places HBM residents before CPU residents. An HBM hit moves its expert to HBM MRU. A CPU hit removes its host entry and promotes it to HBM MRU. The GPU LRU victim then becomes CPU MRU. A cold admission follows the same GPU insertion and can remove the CPU LRU. HDD retains the backing weights for every expert.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{method_redesign/residency_cases.pdf}
+\par\nointerlineskip
+\caption{Three requests from the same initial state. A hit changes recency; a host promotion also demotes the GPU victim; a cold admission can additionally evict the CPU victim. Rows show completed logical states, each ordered MRU to LRU.}
+\label{fig:retention}
+\end{figure}
+Each row in Figure~\ref{fig:retention} starts from HBM $[a_1,a_2]$ and CPU $[a_3,a_4]$. An $a_2$ hit changes the GPU order. Promoting $a_3$ releases its CPU position, which receives the HBM victim $a_2$. A cold $a_5$ admission releases no CPU position. Retaining its GPU victim therefore removes the host LRU $a_4$. The two admission paths use the same demotion rule; their difference is the host space released by the request.
+
+Completed serial transitions implement exclusive LRU over the combined resident capacity. Batch preparation can schedule several promotions before their consumers execute. Temporary copies bridge that preparation to the same ordered expert computation. The initial plan supplies the first resident order; subsequent requests update it.
+
+A host mirror accompanies each GPU resident and supplies its weights during demotion. Reusing that copy avoids a return transfer from the GPU. Cache eviction changes membership, while stream tracking keeps the underlying storage live through GPU consumption.
+
+\subsection{Ordering Delivery before Expert Consumption}
+Prefill groups token rows by selected expert and submits the corresponding cold reads. Each read is resolved when its expert reaches consumption. Figure~\ref{fig:delivery} shows resident work overlapping a pending read for another selected expert. Decode uses demand delivery. Both paths execute the original selected set and preserve aggregation order.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{method_redesign/delivery_overlap.pdf}
+\par\nointerlineskip
+\caption{Prefill delivery of resident $a_1$ and cold $a_5$ selected by one gate. Overlap executes ready work during the same read/copy path. The copy/use boundary orders $a_5$'s consumer; the host source remains live through copy completion. }
+\label{fig:delivery}
+\end{figure}
+A completed read future supplies the host weights for H2D. The loader waits on the copy stream before yielding CUDA weights to a consumer. Recording that consumer's stream preserves tensor storage until its kernels finish. Read completion, copy synchronization, and storage lifetime therefore order the same selected expert from HDD to execution.
+
+The available overlap comes from work ready to execute during the read batch. Once a transfer completes, the next selected expert can consume its weights. Retention and scheduling affect different terms: retention avoids a delivery, whereas overlap shortens its exposed time. The component comparisons examine both effects.
+
+\subsection{Sharing the Expert Execution Interface}
+All policies use the same FP16 loader, model graph, and router. Layer/expert IDs resolve to weight tensors, while the router supplies the selected set and aggregation weights. A policy chooses residency and the source tier for each request. Delivery then prepares those tensors for the shared expert consumer.
+
+\section{Evaluation}
+\label{sec:evaluation}
+\subsection{Evaluation Overview}
+We report time per output token (TPOT), time to first token (TTFT), expert-demand classifications, and workload sensitivity. Placement, retention, and scheduling comparisons follow the corresponding method decisions. Deployment results report latency alongside accelerator occupancy. Appendix~\ref{app:setup} gives configurations, policy definitions, and figure data annotations.
+
+\subsection{Single-GPU Performance}
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{measured_figures/main.pdf}
+\par\nointerlineskip
+\caption{Single-A100 runtime comparison. The panels report per-token decode time and time to first token.}
+\label{fig:performance}
+\end{figure}
+Figure~\ref{fig:performance} reports 7.38~s/token for MECC, compared with 13.04 for streaming and 21.75 for fixed CPU retention. The corresponding decode speedups are 1.77$\times$ and 2.95$\times$. The recency/frequency (RF) adapter, MECC I/O, and CPU-compute take 7.19, 7.78, and 8.26~s/token. First-token time is 139.1~s for MECC, 156.9 for streaming, and 174.2 for fixed CPU. Perplexity (PPL) is 3.427 for the GPU-execution policies and 3.432 for CPU-compute. The timing panels capture the prompt's first response and the recurring cost of later tokens. Weight residency persists between these phases, allowing decode requests to use experts admitted during earlier layer visits.
+
+The reported access mix also distinguishes the MECC and RF policies. MECC records 77.5\% HBM, 10.0\% CPU, and 12.5\% HDD; RF records 52.2\%, 36.6\%, and 11.1\%, respectively. MECC thus has a larger HBM-hit component, while RF has a larger host-hit component. Both execute the selected FP16 experts through the shared delivery interface. Their differences lie in which experts remain resident after each admission. A GPU hit supplies an expert already available for consumption; a host hit supplies weights through H2D. RF combines frequency with recency, whereas MECC maintains a joint recency order. These rules can retain different host experts after admitting the same GPU victim. The recorded demand and latency follow those residency decisions.
+
+\subsection{Mechanism Attribution}
+\label{sec:mechanisms}
+\begin{figure*}[!t]
+\centering\includegraphics[width=\textwidth]{completion_figures/mechanism_sweeps.pdf}
+\par\nointerlineskip
+\caption{Component comparisons on three models. (a) Placement with runtime fixed. (b) Retention with initialization fixed. (c) Adaptation after a task switch. }
+\label{fig:target_mechanisms}
+\end{figure*}
+Figure~\ref{fig:target_mechanisms} varies one decision in each panel. The placement comparison keeps the runtime rule fixed; retention keeps initialization fixed; adaptation follows a task switch. For Mixtral-8x7B, per-layer placement changes TPOT from \pending{18.6 to 14.2 s/token}. Joint retention changes it from \pending{18.3 to 14.2}, and online adaptation changes the post-switch value from \pending{25.1 to 16.0}. The same comparisons span three models, relating each mechanism to its allocation or request sequence.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{completion_figures/ablation_startup.pdf}
+\par\nointerlineskip
+\caption{Ablation and startup. The right panel reports initialization cost per output token plus decode cost.}
+\label{fig:target_ablation}
+\end{figure}
+Adding placement, joint retention, and I/O scheduling gives the TPOT sequence \pending{24, 18, 11, and 8 s/token} in Figure~\ref{fig:target_ablation}(a). The final step keeps HDD demand at \pending{20 percent} and changes delivery timing. Panel (b) includes initialization through $T_{\mathrm{avg}}(n)=T_{\mathrm{init}}/n+T_{\mathrm{decode}}$. The curves cross at \pending{9 output tokens}. Short responses emphasize initial cost; later tokens amortize that cost and expose the decode-time difference.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{completion_figures/traffic_exposure.pdf}
+\par\nointerlineskip
+\caption{Source demand and exposed time. The last I/O step preserves the demand fractions while shortening the exposed read/copy path.}
+\label{fig:target_traffic}
+\end{figure}
+Figure~\ref{fig:target_traffic} decomposes that sequence into request sources and exposed time. Placement and joint retention lower the HDD-demand share from \pending{46 to 20 percent}, expanding the fraction served by the resident tiers. The I/O step preserves the source distribution and shortens the delivery components. The time stacks sum to the TPOT values in Figure~\ref{fig:target_ablation}. A request's source and its exposed time describe different parts of execution: host residency avoids an HDD read, and scheduling overlaps remaining transfers with ready work. The two panels locate the effect of each added component in the memory path.
+
+\subsection{Model and Deployment Scaling}
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{completion_figures/cross_model.pdf}
+\par\nointerlineskip
+\caption{Model and workload comparison. Mixtral-8x7B and 8x22B with QA/code inputs. Each policy uses the same model and workload within a group. }
+\label{fig:target_models}
+\end{figure}
+Figure~\ref{fig:target_models} compares QA and code inputs on two Mixtral sizes. MECC spans \pending{8 to 19 s/token}, streaming \pending{24 to 62}, and RF \pending{11 to 29}. The increase across model sizes appears in each policy. Within each model, QA and code produce different expert demand, changing the weights admitted and delivered during generation. Grouping the policies by model and input keeps those changes visible in the comparison.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{completion_figures/gpu_tradeoff.pdf}
+\par\nointerlineskip
+\caption{One-GPU/resident-reference tradeoff. The panels compare single-GPU MECC with resident configurations and report latency alongside GPU occupancy.}
+\label{fig:target_gpu}
+\end{figure}
+The endpoints in Figure~\ref{fig:target_gpu} pair \pending{one GPU at 8 s/token with eight GPUs at 1 s/token}. Both use \pending{8 GPU-s/token}, with different response times. The \pending{two-GPU resident point uses 5.6 GPU-s/token}. Plotting the intermediate configurations shows how accelerator provisioning changes both latency and occupancy. The single-GPU point represents the latency paid to supply expert capacity through the memory hierarchy.
+
+\begin{figure*}[!t]
+\centering\includegraphics[width=\textwidth]{completion_figures/workload_sensitivity.pdf}
+\par\nointerlineskip
+\caption{Profile, input-length, and batch sensitivity. Profile size changes initialization quality, input length changes first-token work, and batch size changes aggregate throughput. The panels vary one workload parameter at a time.}
+\label{fig:target_sensitivity}
+\end{figure*}
+\subsection{Capacity and Workload Sensitivity}
+
+Increasing the host allowance from 30 to 60~GB changes MECC TPOT from 14.46 to 0.76~s/token. The reported HDD-demand share changes from 32.2\% to zero. At 60~GB, four HBM slots and four CPU slots cover all eight experts per layer. Expert requests then use the two resident tiers. The host retains experts that turn over in HBM, supplying their next H2D copy. RF takes 13.06 and 0.74~s/token at the same capacity points. This transition exposes the change from cold-store delivery to resident weight reuse.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{completion_figures/quota_targets.pdf}
+\par\nointerlineskip
+\caption{Host-memory allowance sweep. Five host allowances compare MECC and three-tier LRU within one comparison protocol.}
+\label{fig:target_quota}
+\end{figure}
+Figure~\ref{fig:target_quota} adds the intermediate allowances. MECC changes from \pending{16 to 7 s/token} across \pending{16--48 GB}, compared with \pending{27 to 12} for three-tier LRU. Increasing host capacity retains more experts after GPU eviction, reducing later cold requests. The curve approaches the resident regime as the combined tiers cover more of each layer's expert set. Capacity thus changes both the number of retained victims and the source used by a later request.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{completion_figures/profile_mismatch.pdf}
+\par\nointerlineskip
+\caption{Profile transfer across tasks. Rows select the calibration task and columns the inference task. Cells are TPOT in s/token; the two panels share a color scale.}
+\label{fig:target_mismatch}
+\end{figure}
+The profile-guided curve in Figure~\ref{fig:target_sensitivity} falls as calibration size grows, while the uniform control stays flat. Longer prompts increase TTFT; batching increases aggregate token rate. Figure~\ref{fig:target_mismatch} then transfers the calibration profile between WikiText-2, GSM8K, and code inputs. Diagonal cells pair the same task, and off-diagonal cells change the inference task. The fixed cache retains the calibration IDs throughout serving. Online admission instead brings newly selected experts into those slots. Its lower off-diagonal values show the effect of admitting weights selected by the new task.
+
+\balance
+\section{Related Work}
+MoE-CORE combines nonuniform device-cache allocation, domain-informed initialization, online replacement, and cross-layer prefetching~\cite{core}. Its main path executes router-selected experts, with optional substitution for eligible misses. MECC also uses a profile to initialize residency. It connects the resulting layer capacities to a joint HBM/CPU admission order, carrying GPU victims into host residency during generation.
+
+SSD-LLaMA manages RAM/VRAM caches and pipelines storage reads with weight delivery~\cite{ssdllama}. It can retain GPU victims in RAM and combines caching with lossless compression and CPU/GPU work partitioning. Edge FlashMoE studies device-cache replacement for on-demand storage access~\cite{flashmoe}. MECC's retention comparisons use whole FP16 experts with GPU execution, separating the resident state from the weight representation and execution device.
+
+Early expert offloading and SwapMoE expose placement and paging choices~\cite{offloading,swapmoe}. Heterogeneous systems select CPU/GPU execution~\cite{fiddler,daop} or pipeline host and device work~\cite{lightning}. Profiling, prediction, and lookahead guide expert delivery in MoE-Infinity, ProMoE, Pre-gated MoE, Fate, and ExpertFlow~\cite{moeinfinity,promoe,pregated,fate,expertflow}. Other designs change the cached unit or representation through precision selection~\cite{hobbit,specter}, expert segments~\cite{moepic}, precision slices~\cite{slicemoe}, or staging and compression~\cite{mira,zipmoe}. These choices affect the bytes and work associated with each expert request.
+
+Klotski and Bevy schedule work across batches or requests~\cite{klotski,bevy}; OD-MoE distributes on-demand loading across edge nodes~\cite{odmoe}. HeteGen studies heterogeneous dense-model inference~\cite{hetegen}. Such schedulers expose work from outside the current gate. MECC's delivery path instead uses the expert work already selected at that gate. Residency controls which of those weights are ready, while the execution schedule controls when their consumers run.
+
+\section{Conclusion}
+MECC compiles an initial expert placement and updates it through joint HBM/CPU retention. Per-layer ranking determines the starting residents; promotion and victim demotion carry later reuse across the tier boundary. The delivery path orders reads, copies, and GPU consumption for the original router selections. The A100 comparison reports 7.38~s/token for MECC, alongside source-tier demand and perplexity. Component and workload comparisons relate these outcomes to allocation, admission, and exposed weight delivery.
+
+\clearpage
+\nobalance
+\IEEEtriggeratref{24}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\clearpage
+\appendices
+\balance
+\section{Experimental Configuration and Figure Data}
+\label{app:setup}
+\subsection{Hardware and Weight Representation}
+The measured testbed uses one NVIDIA A100 80~GB PCIe. Expert weights use FP16. Dense layers and the router execute on the GPU. The expert store resides on a RAID logical volume reporting rotational media through ROTA=1. The manuscript calls this backing tier HDD. The logical-device record identifies the exposed storage path; the controller's physical-drive inventory is a separate platform record.
+
+Each stored expert contains its gate, up, and down weight tensors. Layer and expert IDs identify the block used by the loader. HBM holds GPU residents. Host memory holds CPU residents, mirrors, and staging tensors. HDD retains the complete expert pool throughout inference.
+
+\subsection{Measured Protocols}
+The main comparison uses Mixtral-8x7B-Instruct-v0.1, four HBM slots and three CPU slots per layer, and uniform initialization. It processes eight WikiText-2 prompts with 64 input tokens and 64 output tokens. Each policy has one measured run. The planner settings are 50~GB for HBM expert slots and 40~GB for CPU expert slots. Perplexity uses a 1024-token WikiText-2 sample. The same loader and model graph serve the policy comparisons.
+
+The 30/60~GB host-allocation comparison uses four WikiText-2 prompts and 16 output tokens. Its HBM allocation has four slots per layer. At the 60~GB setting, four HBM and four CPU slots cover the eight experts in each layer. The paper presents these points as a separate capacity comparison. The shorter protocol is retained with the corresponding numbers.
+
+\subsection{Policy Definitions}
+Streaming loads selected experts through the shared delivery path. Fixed CPU keeps an initial host set and uses GPU replacement. Independent caching updates HBM and CPU recency separately. MECC couples GPU promotion to host admission of the GPU victim. These controls share the model and expert store.
+
+The RF adapter derives its public recency and frequency features from edge FlashMoE. It uses HBM LRU and a CPU score that combines inverse recency with normalized access count. Equal deterministic weights combine the two score terms. The paper labels it RF adapter to identify this mechanism implementation. CPU-compute evaluates selected expert work on the host. The I/O variant supplies a separate delivery control.
+
+For candidate expert $e$, the RF score is $0.5/d_e+0.5f_e/f_{\max}$. Here $d_e$ is recency distance, $f_e$ is cumulative access count, and $f_{\max}$ normalizes frequency. The host cache removes the candidate with the lowest score. Expert ID breaks score ties. The access clock advances on each request.
+
+\subsection{Timing and Demand Counters}
+TTFT denotes time to first token. TPOT denotes time per output token during decode. Accelerator occupancy is GPU count multiplied by TPOT, reported in GPU-s/token. It describes accelerator provisioning over response time. The paper reports that product alongside latency.
+
+The measured HDD-demand shares aggregate all instrumented phases. They count classified expert accesses. An expert installed by prefetch is classified by its resident tier at consumption. Read and copy traffic use different byte counters. Initialization, warmup, prefill, decode, and PPL are distinct execution windows. The reported demand percentages retain the aggregate window used by the source runs. The short-window correctness diagnostic compares the streaming and MECC paths through routing, logits, gates, and generated tokens. The reported PPL values use the stated WikiText-2 sample.
+
+\subsection{Figure Data Annotations}
+Yellow-highlighted numerical values and panel titles identify authored design targets. They are unmeasured values used to specify the illustrated comparisons. The unhighlighted A100 results come from committed run records. Thus the source of a panel remains distinct from the mechanism illustrated beside it.
+
+The Introduction comparison and single-A100 runtime figure use measured results. In the Motivation figure, panel (b) uses measured aggregate demand; panels (a,c) use design arrays. Panels (d--f), the framework, and the method diagrams describe mechanisms. Their expert IDs, slot counts, and schedules serve as examples of the corresponding operations.
+
+The component, startup, traffic/exposure, cross-model, GPU-occupancy, quota, workload-sensitivity, and profile-transfer plots use design targets. The model labels name the configurations to compare. QA and Code identify the workload groups in those arrays. WikiText-2 and GSM8K identify language-modeling and arithmetic inputs. The Code label identifies the code-input group. These arrays do not add measured model or benchmark runs.
+
+The plotted startup example uses $T_{\mathrm{avg}}(n)=T_{\mathrm{init}}/n+T_{\mathrm{decode}}$. Its crossing at nine output tokens follows from the supplied initial and decode costs. The source-demand stacks sum to 100\%. The exposed-time stacks sum to the component TPOT values. These checks align the panels within the design example.
+
+\subsection{Memory and Execution Accounting}
+Planner allowances count primary expert slots. The implementation also retains host mirrors for GPU residents. Those mirrors consume host storage and supply later demotions. Staging and temporary copies add allocations during delivery. Physical accounting therefore tracks primary residency, mirrors, and staging separately from the slot plan.
+
+The compiler library accepts per-layer skew parameters and ranked IDs. The measured main run uses uniform initialization. The non-uniform e2e CLI branch generates layer skew parameters; a calibrated profile is an explicit compiler input. Prefill submits read futures for the selected expert batch. Decode loads experts on demand. Copy-stream synchronization orders CUDA weight consumption, and consuming-stream tracking preserves tensor storage through kernel execution.
+
+\subsection{Plan and Request Records}
+A compiled plan stores the model identifier, layer count, experts per layer, expert size, per-layer capacities, and ranked IDs. The capacity arrays define the HBM and CPU cuts. The placement array maps ranks back to original expert identities. Cache initialization consumes both arrays.
+
+\subsection{Source Records}
+Committed per-run JSON files supply the A100 measurements. The measured-figure audit lists the run IDs and field mappings. The two design-array files supply the highlighted figures. Their source manifest records field names and SHA-256 hashes. The revision preserves those arrays and the measured plots. Each archived manuscript version includes its sources and an artifact hash record.
+
+\end{document}

@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 7 日逐段英文审阅与终校稿**：[R07 PDF](./reviews/hpca_20261106/r07_proof/manuscript.pdf) / [终校记录](./reviews/hpca_20261106/r07_proof/EDITORIAL_REVIEW.md)。R06 重写机械串联和重复解释，R07 继续核对主语、动作、术语和图文关系；保留四段引言、六页正文、第七页引用和第八页附录。冻结稿、配图、数据和附录均未覆盖。
+
 - **11 月 7 日表达修订版**：[R05 PDF](./reviews/hpca_20261106/r05_direct/manuscript.pdf) / [修改记录](./reviews/hpca_20261106/r05_direct/CHANGELOG.md)。保留四段引言，正文直接说明问题、方法和结果；配置、计时、数据来源与黄色高亮含义统一移至第八页附录。仍为六页正文，第七页参考文献，图形和数值来源保持不变，冻结版未覆盖。
 
 - **用户认可版已冻结，另存四轮修订**：[版本与评审索引](./reviews/hpca_20261106/README.md) / [冻结 PDF](./reviews/hpca_20261106/r00_frozen/MECC_DAC_title_highlight.pdf) / [最新冷读稿](./reviews/hpca_20261106/r04_coldread/manuscript.pdf)。每轮保存独立 PDF、源文件、评审、差异和检查记录；不覆盖冻结版，不改理想数组。最新稿完成方法语义、叙事和短句修订，总体条件推荐仍为 3/5；未将文字评分当作 strong accept。具体技术补强见索引。
