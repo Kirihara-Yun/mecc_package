@@ -29,9 +29,9 @@ COLORS = {"naive": GRAY, "swapmoe": ORANGE, "independent": ORANGE,
           "ours_io": MID, "ours": BLUE, "flashmoe_rf_adaptation": TEAL,
           "fiddler": "#A4ADB5"}
 
-plt.rcParams.update({"font.family": "serif", "font.serif": ["Times New Roman", "DejaVu Serif"],
-                     "font.size": 9, "axes.titlesize": 10, "axes.labelsize": 9,
-                     "xtick.labelsize": 8, "ytick.labelsize": 8,
+plt.rcParams.update({"font.family": "sans-serif", "font.sans-serif": ["Arial", "DejaVu Sans"],
+                     "font.size": 11, "axes.titlesize": 11, "axes.labelsize": 10,
+                     "xtick.labelsize": 10, "ytick.labelsize": 10,
                      "axes.spines.top": False, "axes.spines.right": False,
                      "savefig.facecolor": "white", "figure.facecolor": "white",
                      "pdf.fonttype": 42, "svg.fonttype": "none"})
@@ -73,9 +73,18 @@ def load() -> dict:
 
 
 def style(ax):
-    ax.grid(axis="y", color="#DCE3E8", linewidth=.6)
+    ax.grid(axis="x", color="#E4E9ED", linewidth=.65)
     ax.set_axisbelow(True)
-    ax.tick_params(length=2.5, color="#7B858C")
+    ax.tick_params(length=0, pad=7)
+    ax.spines["left"].set_visible(False)
+    ax.spines["bottom"].set_color("#B4BEC6")
+
+
+def rows(ax, n):
+    for y in range(n):
+        if y % 2 == 0:
+            ax.axhspan(y - .46, y + .46, color="#F5F8FA", zorder=0)
+    ax.set_ylim(-.55, n - .45)
 
 
 def save(fig, stem: str):
@@ -86,26 +95,31 @@ def save(fig, stem: str):
 
 def main_figure(data: dict):
     main = data["main"]
-    order = ["naive", "swapmoe", "ours_io", "ours", "flashmoe_rf_adaptation", "fiddler"]
-    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.05), gridspec_kw={"width_ratios": [1.45, 1]})
-    fig.subplots_adjust(left=.07, right=.99, bottom=.26, top=.82, wspace=.32)
-    x = np.arange(len(order))
-    vals = [main[p]["metrics"]["tpot_ms"] / 1000 for p in order]
-    bars = ax[0].bar(x, vals, color=[COLORS[p] for p in order], width=.64)
-    ax[0].bar_label(bars, fmt="%.1f", padding=2, fontsize=8)
-    ax[0].set_xticks(x, [NAMES[p].replace(" ", "\n") for p in order])
-    ax[0].set_ylim(0, 25)
-    ax[0].set_ylabel("TPOT (s/token)")
-    ax[0].set_title("(a) Single-A100 decode latency")
-    style(ax[0])
-    vals = [main[p]["metrics"]["hit_pct"]["ssd"] for p in order]
-    bars = ax[1].bar(x, vals, color=[COLORS[p] for p in order], width=.64)
-    ax[1].bar_label(bars, fmt="%.1f", padding=2, fontsize=8)
-    ax[1].set_xticks(x, [NAMES[p].replace(" ", "\n") for p in order])
-    ax[1].set_ylim(0, 38)
-    ax[1].set_ylabel("Cold-tier demand share (%)")
-    ax[1].set_title("(b) All-phase demand share")
-    style(ax[1])
+    order = ["swapmoe", "naive", "fiddler", "ours_io", "ours", "flashmoe_rf_adaptation"]
+    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.65), gridspec_kw={"width_ratios": [1.13, 1]})
+    fig.subplots_adjust(left=.18, right=.985, bottom=.16, top=.86, wspace=.22)
+    labels = [NAMES[p] for p in order]
+    n = len(order)
+    for a, metric, limit, ticks, title, xlabel in [
+        (ax[0], "tpot_ms", 25, [0, 5, 10, 15, 20], "A  Decode latency", "TPOT (s/token)  ·  lower is better"),
+        (ax[1], "ssd", 39, [0, 10, 20, 30], "B  Cold-tier access", "Demand share (%)  ·  lower is better")]:
+        rows(a, n)
+        for y, p in enumerate(order):
+            value = (main[p]["metrics"]["hit_pct"]["ssd"] if metric == "ssd"
+                     else main[p]["metrics"]["tpot_ms"] / 1000)
+            color = BLUE if p == "ours" else TEAL if p == "flashmoe_rf_adaptation" else GRAY
+            a.plot([0, value], [y, y], color=color, lw=1.65, alpha=.65, zorder=2)
+            a.scatter([value], [y], s=73 if p == "ours" else 55, color=color,
+                      edgecolor="white", linewidth=.8, zorder=3)
+            a.annotate(f"{value:.1f}", (value, y), xytext=(7, 0), textcoords="offset points",
+                       va="center", fontsize=10, color=DARK, weight="bold" if p == "ours" else "normal")
+        a.set_xlim(0, limit)
+        a.set_xticks(ticks)
+        a.set_yticks(range(n), labels if a is ax[0] else [""] * n)
+        a.invert_yaxis()
+        a.set_title(title, loc="left", fontweight="bold", color=DARK)
+        a.set_xlabel(xlabel)
+        style(a)
     save(fig, "main")
 
 
@@ -114,19 +128,24 @@ def retention_figure(data: dict):
     indep = data["independent"]
     groups = [("Independent", indep), ("Fixed CPU", main["swapmoe"]),
               ("MECC", main["ours"])]
-    fig, ax = plt.subplots(1, 2, figsize=(10.7, 2.95))
-    fig.subplots_adjust(left=.08, right=.98, bottom=.23, top=.82, wspace=.30)
-    for a, field, div, ylabel, limit, title in [
-        (ax[0], "tpot_ms", 1000, "TPOT (s/token)", 38, "(a) Decode latency"),
-        (ax[1], "ssd", 1, "Cold-tier demand share (%)", 54, "(b) All-phase demand share")]:
+    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.2))
+    fig.subplots_adjust(left=.17, right=.985, bottom=.18, top=.84, wspace=.23)
+    for a, field, div, xlabel, limit, title in [
+        (ax[0], "tpot_ms", 1000, "TPOT (s/token)  ·  lower is better", 40, "A  Decode latency"),
+        (ax[1], "ssd", 1, "Demand share (%)  ·  lower is better", 56, "B  Cold-tier access")]:
+        rows(a, 3)
         vals = [(r["metrics"]["hit_pct"][field] if field == "ssd"
                  else r["metrics"][field] / div) for _, r in groups]
-        bars = a.bar(range(3), vals, color=[ORANGE, GRAY, BLUE], width=.56)
-        a.bar_label(bars, fmt="%.1f", padding=3, fontsize=9)
-        a.set_xticks(range(3), [name for name, _ in groups])
-        a.set_ylim(0, limit)
-        a.set_ylabel(ylabel)
-        a.set_title(title)
+        for y, (v, color) in enumerate(zip(vals, [GRAY, GRAY, BLUE])):
+            a.plot([0, v], [y, y], color=color, lw=1.8, alpha=.72)
+            a.scatter(v, y, s=90 if y == 2 else 65, color=color, edgecolor="white", zorder=3)
+            a.annotate(f"{v:.1f}", (v, y), xytext=(8, 0), textcoords="offset points",
+                       va="center", fontsize=10, weight="bold" if y == 2 else "normal")
+        a.set_xlim(0, limit)
+        a.set_yticks(range(3), [name for name, _ in groups] if a is ax[0] else [""] * 3)
+        a.invert_yaxis()
+        a.set_xlabel(xlabel)
+        a.set_title(title, loc="left", fontweight="bold", color=DARK)
         style(a)
     save(fig, "retention")
 
@@ -134,22 +153,32 @@ def retention_figure(data: dict):
 def budget_figure(data: dict):
     budget = data["budget"]
     order = ["naive", "swapmoe", "ours", "flashmoe_rf_adaptation", "fiddler"]
-    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.0))
-    fig.subplots_adjust(left=.08, right=.98, bottom=.27, top=.80, wspace=.34)
-    x = np.arange(len(order))
-    for a, field, ylabel, limit, title in [
-        (ax[0], "tpot_ms", "TPOT (s/token)", 29, "(a) Decode latency"),
-        (ax[1], "ssd", "Cold-tier demand share (%)", 50, "(b) All-phase demand share")]:
-        for c, shift, col in [(30, -.18, MID), (60, .18, BLUE)]:
-            vals = [(budget[c][p]["metrics"]["hit_pct"][field] if field == "ssd"
-                     else budget[c][p]["metrics"][field] / 1000) for p in order]
-            a.bar(x + shift, vals, width=.34, color=col, label=f"CPU {c} GB")
-        a.set_xticks(x, [NAMES[p].replace(" ", "\n") for p in order])
-        a.set_ylim(0, limit)
-        a.set_ylabel(ylabel)
-        a.set_title(title)
+    fig, ax = plt.subplots(1, 2, figsize=(10.7, 3.65))
+    fig.subplots_adjust(left=.18, right=.985, bottom=.17, top=.82, wspace=.22)
+    for a, field, limit, title, xlabel in [
+        (ax[0], "tpot_ms", 29, "A  Decode latency", "TPOT (s/token)  ·  lower is better"),
+        (ax[1], "ssd", 51, "B  Cold-tier access", "Demand share (%)  ·  lower is better")]:
+        rows(a, len(order))
+        for y, p in enumerate(order):
+            values = [(budget[c][p]["metrics"]["hit_pct"][field] if field == "ssd"
+                       else budget[c][p]["metrics"][field] / 1000) for c in (30, 60)]
+            col = BLUE if p == "ours" else GRAY
+            a.plot(values, [y, y], color=col, lw=2 if p == "ours" else 1.35, alpha=.75)
+            a.scatter(values[0], y, s=59, facecolor="white", edgecolor=col,
+                      linewidth=1.7, zorder=3)
+            a.scatter(values[1], y, s=65, facecolor=col, edgecolor="white", zorder=3)
+            if p == "ours":
+                a.annotate(f"{values[0]:.1f}", (values[0], y), xytext=(5, 9),
+                           textcoords="offset points", fontsize=9, color=BLUE)
+                a.annotate(f"{values[1]:.1f}", (values[1], y), xytext=(5, -13),
+                           textcoords="offset points", fontsize=9, color=BLUE)
+        a.set_xlim(-1, limit)
+        a.set_yticks(range(len(order)), [NAMES[p] for p in order] if a is ax[0] else [""] * len(order))
+        a.invert_yaxis()
+        a.set_xlabel(xlabel)
+        a.set_title(title, loc="left", fontweight="bold", color=DARK)
         style(a)
-    ax[0].legend(frameon=False, ncol=2, loc="upper right")
+    fig.text(.72, .94, "○  CPU 30 GB     ●  CPU 60 GB", color=DARK, fontsize=10)
     save(fig, "budget")
 
 

@@ -19,8 +19,8 @@ def slide(prs):
 def figure_page(prs, n, title, lead, figure, caption):
     s = slide(prs)
     r.base(s, n, title, lead)
-    s.shapes.add_picture(str(FIGS / (figure + ".png")), Inches(.83), Inches(2.38),
-                         width=Inches(11.65))
+    s.shapes.add_picture(str(FIGS / (figure + ".png")), Inches(1.26), Inches(2.28),
+                         width=Inches(10.75))
     r.box(s, .97, 6.03, 11.39, .48, r.PALE)
     r.t(s, 1.08, 6.11, 11.12, .32, caption, 15, True, r.NAVY, PP_ALIGN.CENTER)
     return s
