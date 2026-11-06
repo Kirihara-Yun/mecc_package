@@ -1,0 +1,9 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-10-10T19:02:37+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-mixtral-preflight-20261010-1900/result.json",
+  "completed_policies": [
+    "ours",
+    "swapmoe"
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "device": "cuda",
+  "mode": "smoke",
+  "model": "smoke-tiny-moe",
+  "platform": "cpu-local",
+  "run_time": "2026-11-03T20:35:41+08:00",
+  "compiled_plan": {
+    "model": "smoke",
+    "hardware": "rtx5090 (HBM_budget=0.0006GB, CPU_budget=0.0008GB)",
+    "alpha": 1.0,
+    "n_layers": 2,
+    "n_experts": 8,
+    "expert_mb": 0.2,
+    "k_h": 2,
+    "k_c": 3,
+    "per_layer_k_h": [
+      1,
+      1
+    ],
+    "per_layer_k_c": [
+      2,
+      2
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 36.8,
+    "cpu_hit_pct": 30.7,
+    "ssd_hit_pct": 32.5,
+    "hbm_gb_used": 0.0,
+    "cpu_gb_used": 0.0
+  },
+  "config": {
+    "max_new_tokens": 6,
+    "prompt_len": 8,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 33.02,
+      "tpot_ms": 35.3,
+      "tokens_per_s": 28.729025,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.0,
+        "cpu": 2.4,
+        "ssd": 97.6,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          0,
+          12,
+          220,
+          0
+        ],
+        "decode": [
+          0,
+          2,
+          354,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 225705984,
+        "h2d": 231211008,
+        "d2h": 0
+      },
+      "speedup_vs": {
+        "swapmoe": 0.544,
+        "fiddler": 0.546,
+        "naive": 0.644,
+        "flashmoe_rf_adaptation": 0.708
+      }
+    },
+    "swapmoe": {
+      "ttft_ms": 18.3,
+      "tpot_ms": 19.08,
+      "tokens_per_s": 52.798366,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.2,
+        "cpu": 37.8,
+        "ssd": 62.0,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          1,
+          91,
+          149,
+          0
+        ],
+        "decode": [
+          0,
+          139,
+          228,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 148242432,
+        "h2d": 238682112,
+        "d2h": 0
+      }
+    },
+    "fiddler": {
+      "ttft_ms": 18.28,
+      "tpot_ms": 19.27,
+      "tokens_per_s": 52.600097,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 26.2,
+        "cpu": 0.0,
+        "ssd": 73.0,
+        "cpu_compute": 0.8
+      },
+      "phase_hits": {
+        "warmup": [
+          63,
+          0,
+          171,
+          5
+        ],
+        "decode": [
+          95,
+          0,
+          270,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 173408256,
+        "h2d": 0,
+        "d2h": 0
+      }
+    },
+    "naive": {
+      "ttft_ms": 25.14,
+      "tpot_ms": 22.12,
+      "tokens_per_s": 44.577371,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 26.1,
+        "cpu": 0.0,
+        "ssd": 73.9,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          64,
+          0,
+          180,
+          0
+        ],
+        "decode": [
+          96,
+          0,
+          274,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 178520064,
+        "h2d": 178520064,
+        "d2h": 0
+      }
+    },
+    "flashmoe_rf_adaptation": {
+      "ttft_ms": 23.97,
+      "tpot_ms": 24.94,
+      "tokens_per_s": 40.566857,
+      "ppl": "exact(lossless)",
+      "hit_pct": {
+        "hbm": 0.7,
+        "cpu": 3.7,
+        "ssd": 95.7,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          4,
+          12,
+          222,
+          0
+        ],
+        "decode": [
+          0,
+          10,
+          352,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 225705984,
+        "h2d": 234356736,
+        "d2h": 0
+      }
+    }
+  }
+}

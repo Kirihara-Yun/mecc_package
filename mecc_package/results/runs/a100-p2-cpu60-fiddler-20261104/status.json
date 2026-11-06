@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-04T22:04:05+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-p2-cpu60-fiddler-20261104/result.json",
+  "completed_policies": [
+    "fiddler"
+  ]
+}

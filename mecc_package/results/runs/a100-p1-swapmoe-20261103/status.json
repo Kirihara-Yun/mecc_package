@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-03T23:34:35+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-p1-swapmoe-20261103/result.json",
+  "completed_policies": [
+    "swapmoe"
+  ]
+}

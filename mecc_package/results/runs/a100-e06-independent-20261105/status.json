@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-06T00:13:13+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-e06-independent-20261105/result.json",
+  "completed_policies": [
+    "independent"
+  ]
+}

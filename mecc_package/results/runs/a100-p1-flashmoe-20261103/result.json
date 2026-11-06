@@ -1,0 +1,136 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "a100-80g",
+  "run_time": "2026-11-04T01:24:04+08:00",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=50.0GB, CPU_budget=40.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 4,
+    "k_c": 3,
+    "per_layer_k_h": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "per_layer_k_c": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 76.7,
+    "cpu_hit_pct": 18.7,
+    "ssd_hit_pct": 4.6,
+    "hbm_gb_used": 42.0,
+    "cpu_gb_used": 31.5
+  },
+  "config": {
+    "max_new_tokens": 16,
+    "prompt_len": 64,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "flashmoe_rf_adaptation": {
+      "ttft_ms": 91394.77,
+      "tpot_ms": 7382.43,
+      "tokens_per_s": 0.079564,
+      "ppl": 24.569,
+      "hit_pct": {
+        "hbm": 44.4,
+        "cpu": 41.1,
+        "ssd": 14.5,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          646,
+          797,
+          292,
+          0
+        ],
+        "decode": [
+          2332,
+          1851,
+          624,
+          0
+        ],
+        "ppl": [
+          40,
+          147,
+          69,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 347036712960,
+        "h2d": 1331775406080,
+        "d2h": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-08-11T20:38:33+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/l2-mixtral-20260811-1915-retry2-smoke/result.json",
+  "completed_policies": [
+    "ours"
+  ]
+}

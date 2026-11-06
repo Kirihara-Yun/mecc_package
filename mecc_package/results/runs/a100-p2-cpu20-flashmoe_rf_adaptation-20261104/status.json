@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-04T12:27:29+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-p2-cpu20-flashmoe_rf_adaptation-20261104/result.json",
+  "completed_policies": [
+    "flashmoe_rf_adaptation"
+  ]
+}

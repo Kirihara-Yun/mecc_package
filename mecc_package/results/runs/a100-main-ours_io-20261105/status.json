@@ -1,0 +1,6 @@
+{
+  "phase": "failed",
+  "updated_at": "2026-11-05T14:17:47+08:00",
+  "error_type": "TypeError",
+  "error": "cannot unpack non-iterable ExpertWeights object"
+}

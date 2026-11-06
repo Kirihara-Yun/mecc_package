@@ -1,0 +1,147 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "a100-80g",
+  "run_time": "2026-11-04T22:04:05+08:00",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=50.0GB, CPU_budget=60.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 4,
+    "k_c": 4,
+    "per_layer_k_h": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "per_layer_k_c": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 76.7,
+    "cpu_hit_pct": 23.3,
+    "ssd_hit_pct": 0.0,
+    "hbm_gb_used": 42.0,
+    "cpu_gb_used": 42.0
+  },
+  "config": {
+    "max_new_tokens": 16,
+    "prompt_len": 64,
+    "n_prompts": 4,
+    "cold_ssd": true
+  },
+  "results": {
+    "fiddler": {
+      "ttft_ms": 323851.36,
+      "tpot_ms": 1198.03,
+      "tokens_per_s": 0.046924,
+      "ppl": 3.432,
+      "hit_pct": {
+        "hbm": 80.4,
+        "cpu": 0.0,
+        "ssd": 0.0,
+        "cpu_compute": 19.6
+      },
+      "phase_hits": {
+        "warmup": [
+          1236,
+          0,
+          0,
+          555
+        ],
+        "prefill": [
+          512,
+          0,
+          0,
+          511
+        ],
+        "decode": [
+          3681,
+          0,
+          0,
+          159
+        ],
+        "ppl": [
+          128,
+          0,
+          0,
+          128
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 0,
+        "h2d": 0,
+        "d2h": 0
+      }
+    }
+  },
+  "block_io": {
+    "device": "sdb",
+    "disk_read_bytes": 45097197568,
+    "proc_read_bytes": 45097156608
+  }
+}

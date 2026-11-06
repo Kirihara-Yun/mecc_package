@@ -1,0 +1,7 @@
+{
+  "phase": "running_policy",
+  "updated_at": "2026-11-06T05:55:26+08:00",
+  "policy": "ours",
+  "completed_policies": [],
+  "partial_output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-e05-per_layer-20261105/partial_result.json"
+}

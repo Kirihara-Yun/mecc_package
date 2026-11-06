@@ -8,6 +8,9 @@ dist/
 *.egg-info/
 .DS_Store
 
-# GPU launcher working data can contain very large logs and partial artifacts.
-# Use `experiment_launcher.py report <run-id>` to create a compact tracked handoff.
-mecc_package/results/runs/
+# GPU launcher working data：只忽略大日志/trace/中间产物，追踪紧凑结果 json。
+# result/status/run.json 是复算实验图的唯一原始证据，必须入 Git（总计 < 1 MB）。
+mecc_package/results/runs/*/run.log
+mecc_package/results/runs/*/run_tail.log
+mecc_package/results/runs/*/partial_result.json
+mecc_package/results/runs/*/*.jsonl
