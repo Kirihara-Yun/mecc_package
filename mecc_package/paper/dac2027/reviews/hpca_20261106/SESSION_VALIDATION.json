@@ -1,0 +1,510 @@
+{
+  "baseline_preserved": true,
+  "data_arrays_unchanged": true,
+  "measured_assets_unchanged": true,
+  "rounds": {
+    "r01_method": {
+      "pages": 7,
+      "body_pages": 6,
+      "issues": [],
+      "figures": {
+        "fig:intro": {
+          "number": 1,
+          "page": 1,
+          "references": [
+            1
+          ]
+        },
+        "fig:insights": {
+          "number": 2,
+          "page": 2,
+          "references": [
+            2
+          ]
+        },
+        "fig:overview": {
+          "number": 3,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:compile": {
+          "number": 4,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:retention": {
+          "number": 5,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:delivery": {
+          "number": 6,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:performance": {
+          "number": 7,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:target_mechanisms": {
+          "number": 8,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_ablation": {
+          "number": 9,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_traffic": {
+          "number": 10,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_models": {
+          "number": 11,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_gpu": {
+          "number": 12,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_sensitivity": {
+          "number": 13,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_quota": {
+          "number": 14,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_mismatch": {
+          "number": 15,
+          "page": 6,
+          "references": [
+            6
+          ]
+        }
+      },
+      "references": 44,
+      "no_banner": true,
+      "sha256": "56e2f28619a0ad939ed865d538d43ddc508c352d721ccbd8449d477be059b4d4"
+    },
+    "r02_story": {
+      "pages": 7,
+      "body_pages": 6,
+      "issues": [],
+      "figures": {
+        "fig:intro": {
+          "number": 1,
+          "page": 1,
+          "references": [
+            1
+          ]
+        },
+        "fig:insights": {
+          "number": 2,
+          "page": 2,
+          "references": [
+            2
+          ]
+        },
+        "fig:overview": {
+          "number": 3,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:compile": {
+          "number": 4,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:retention": {
+          "number": 5,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:delivery": {
+          "number": 6,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:performance": {
+          "number": 7,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:target_mechanisms": {
+          "number": 8,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_ablation": {
+          "number": 9,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_traffic": {
+          "number": 10,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_models": {
+          "number": 11,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_gpu": {
+          "number": 12,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_sensitivity": {
+          "number": 13,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_quota": {
+          "number": 14,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_mismatch": {
+          "number": 15,
+          "page": 6,
+          "references": [
+            6
+          ]
+        }
+      },
+      "references": 44,
+      "no_banner": true,
+      "sha256": "596df331bf212c0be17bd3fb9c1222d3c0f4de207b709669c31395689c91b45a"
+    },
+    "r03_language": {
+      "pages": 7,
+      "body_pages": 6,
+      "issues": [],
+      "figures": {
+        "fig:intro": {
+          "number": 1,
+          "page": 1,
+          "references": [
+            1
+          ]
+        },
+        "fig:insights": {
+          "number": 2,
+          "page": 2,
+          "references": [
+            2
+          ]
+        },
+        "fig:overview": {
+          "number": 3,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:compile": {
+          "number": 4,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:retention": {
+          "number": 5,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:delivery": {
+          "number": 6,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:performance": {
+          "number": 7,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:target_mechanisms": {
+          "number": 8,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_ablation": {
+          "number": 9,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_traffic": {
+          "number": 10,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_models": {
+          "number": 11,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_gpu": {
+          "number": 12,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_sensitivity": {
+          "number": 13,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_quota": {
+          "number": 14,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_mismatch": {
+          "number": 15,
+          "page": 6,
+          "references": [
+            6
+          ]
+        }
+      },
+      "references": 44,
+      "no_banner": true,
+      "sha256": "ccd4057636db78c0c7b6ddc453867c859831ce7e760edf838c67be607a812803"
+    },
+    "r04_coldread": {
+      "pages": 7,
+      "body_pages": 6,
+      "issues": [],
+      "figures": {
+        "fig:intro": {
+          "number": 1,
+          "page": 1,
+          "references": [
+            1
+          ]
+        },
+        "fig:insights": {
+          "number": 2,
+          "page": 2,
+          "references": [
+            2
+          ]
+        },
+        "fig:overview": {
+          "number": 3,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:compile": {
+          "number": 4,
+          "page": 3,
+          "references": [
+            3
+          ]
+        },
+        "fig:retention": {
+          "number": 5,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:delivery": {
+          "number": 6,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:performance": {
+          "number": 7,
+          "page": 4,
+          "references": [
+            4
+          ]
+        },
+        "fig:target_mechanisms": {
+          "number": 8,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_ablation": {
+          "number": 9,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_traffic": {
+          "number": 10,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_models": {
+          "number": 11,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_gpu": {
+          "number": 12,
+          "page": 5,
+          "references": [
+            5
+          ]
+        },
+        "fig:target_sensitivity": {
+          "number": 13,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_quota": {
+          "number": 14,
+          "page": 6,
+          "references": [
+            6
+          ]
+        },
+        "fig:target_mismatch": {
+          "number": 15,
+          "page": 6,
+          "references": [
+            6
+          ]
+        }
+      },
+      "references": 44,
+      "no_banner": true,
+      "sha256": "1766e3559d6f3445fb290f68c31653d965d20f6ebc6f0dda5660c30759863430"
+    }
+  },
+  "final_columns_pt": [
+    {
+      "page": 1,
+      "left": 715.66,
+      "right": 705.29
+    },
+    {
+      "page": 2,
+      "left": 716.7,
+      "right": 704.77
+    },
+    {
+      "page": 3,
+      "left": 704.78,
+      "right": 704.57
+    },
+    {
+      "page": 4,
+      "left": 716.35,
+      "right": 713.06
+    },
+    {
+      "page": 5,
+      "left": 712.69,
+      "right": 719.84
+    },
+    {
+      "page": 6,
+      "left": 697.89,
+      "right": 691.55
+    }
+  ],
+  "final_language": {
+    "sentences": 297,
+    "mean_words": 11.53,
+    "share_at_most_25": 1.0,
+    "long_sentences": [],
+    "banned_tone": {}
+  },
+  "recommendation": 3,
+  "target_recommendation": 5,
+  "target_achieved": false,
+  "remaining": "Technical distinction and implementation/resource contracts; not the ideal-data assumption."
+}

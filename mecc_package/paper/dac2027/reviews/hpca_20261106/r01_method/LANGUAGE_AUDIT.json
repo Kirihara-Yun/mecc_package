@@ -1,0 +1,19 @@
+{
+  "sentences": 258,
+  "mean_words": 13.35,
+  "share_at_most_25": 0.984,
+  "long_sentences": [
+    {
+      "words": 34,
+      "text": "The problem addressed in this paper is how to use bounded HBM and host capacity to reduce expert delivery on the critical path of single-GPU inference, while preserving the model's routing and FP16 weights."
+    },
+    {
+      "words": 32,
+      "text": "The interfaces make each decision independently testable: a placement control changes the emitted plan, a retention control changes the membership transition, and a delivery control changes scheduling for the same selected weights."
+    }
+  ],
+  "banned_tone": {
+    "very": 1,
+    "effective": 1
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "sentences": 269,
+  "mean_words": 12.22,
+  "share_at_most_25": 1.0,
+  "long_sentences": [],
+  "banned_tone": {
+    "very": 1,
+    "effective": 1
+  }
+}

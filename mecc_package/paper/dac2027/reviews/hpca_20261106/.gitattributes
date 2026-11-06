@@ -1,0 +1,5 @@
+# Preserve the exact bytes covered by the frozen manifests on every platform.
+r*/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Upstream class formatting and unified-diff context lines are intentional.
+r*/IEEEtran.cls -whitespace
+r*/changes.diff -whitespace

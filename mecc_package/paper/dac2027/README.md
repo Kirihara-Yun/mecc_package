@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **用户认可版已冻结，另存四轮修订**：[版本与评审索引](./reviews/hpca_20261106/README.md) / [冻结 PDF](./reviews/hpca_20261106/r00_frozen/MECC_DAC_title_highlight.pdf) / [最新冷读稿](./reviews/hpca_20261106/r04_coldread/manuscript.pdf)。每轮保存独立 PDF、源文件、评审、差异和检查记录；不覆盖冻结版，不改理想数组。最新稿完成方法语义、叙事和短句修订，总体条件推荐仍为 3/5；未将文字评分当作 strong accept。具体技术补强见索引。
+
 - **当前黄标研究草稿**：[论文 PDF](./MECC_DAC_research_draft.pdf) / [LaTeX](./MECC_DAC_research_draft.tex) / [整篇预览](./editing/research_review/MECC_research_contact_sheet.png)。IEEE 9 pt、六页正文加一页引用。Introduction 保留四段结构，贡献分项换行；背景、三项动机和 Overview 按“初始放置—跨层级复用—在线更新”展开。保留 Overview 之前的图形设计，Method 重绘容量分配、缓存状态和传输时序三图。两张表均已删除，共 15 张图；新增来源／暴露时间分解、画像规模／输入长度／批量敏感性、跨任务画像矩阵。已逐页渲染，核对全部 12 个正文栏底部和图文位置。未实测数值用黄色及简短的 Illustrative 标识区分，正文清除 to measure 等编辑指令。
 - 对这版的判断与处理见 [体系结构会议标准自审](./editing/ARCHITECTURE_REVIEW_20261106.md)。黄色占位如何逐项替换见 [实验图替换清单](./editing/RESEARCH_DRAFT_EXPERIMENT_REGISTER.md)。此稿用于补齐证据，不能据理想图宣称新增实测收益。
 - 重建黄标稿：`python build_method_redesign.py` → `python build_completion_figures.py` → `python build_research_draft.py` → `latexmk -pdf -interaction=nonstopmode -halt-on-error MECC_DAC_research_draft.tex` → `python check_research_draft.py`。正文主线见 [conference_story.py](./conference_story.py)；目标字段及两个源文件的哈希在 [SOURCE_MANIFEST.json](./completion_figures/SOURCE_MANIFEST.json)。新增图的数组集中保存在 [narrative_targets.json](./narrative_targets.json)，未写回实测目录。
