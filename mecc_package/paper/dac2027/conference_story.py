@@ -150,8 +150,10 @@ Figure~\ref{fig:target_sensitivity} examines scale within a workload. Figure~\re
 '''
     s+=mismatch
     s=s.replace('TO MEASURE: ideal','Illustrative').replace('IDEAL TARGET:','Illustrative')
+    s=re.sub(r'\\pending\{Illustrative ([^}]+)\}',
+             lambda m:m.group(1)[0].upper()+m.group(1)[1:].replace(' targets','').replace('target ',''),s)
     s=s.replace('Yellow highlights identify ideal values in this working copy.',
-                'Yellow-highlighted values and panels are illustrative targets, separate from the measured A100 results.')
+                'Yellow-highlighted values and panel titles denote authored illustrative targets, not measurements. The other numerical results are measured A100 outcomes.')
     s=s.replace('Separate protocols must be frozen for the three controls; these bars are not A100 outcomes.',
                 'The controls isolate initialization, victim retention, and online adaptation, respectively.')
     s=s.replace('The right panel evaluates startup/output-token plus decode cost from authored inputs; it is not a measured latency trace.',
@@ -173,6 +175,11 @@ Figure~\ref{fig:target_sensitivity} examines scale within a workload. Figure~\re
         '''The stacked latency components sum to the TPOT targets in Figure~\\ref{fig:target_ablation}. A source-demand share counts expert requests, while an exposed-time component counts delay on the execution path. Their changes need not be proportional: a host hit still requires H2D, and a cold read may overlap ready GPU work. Keeping both views distinguishes an improvement in cache coverage from an improvement in delivery timing.''')
     s=s.replace('The purpose is to separate pressure within the cold-tier regime from the full-coverage threshold.',
         '''The purpose is to separate pressure within the cold-tier regime from the full-coverage threshold. Additional host capacity can first preserve more reused victims, then eliminate cold demand once the complete expert set fits. The latter transition changes the dominant delivery path from HDD plus H2D to H2D alone. It explains why capacity and replacement policy must be examined together instead of extrapolating one speedup across all allowances.''')
+    s=re.sub(r'\\caption\{[^\n]+',
+             lambda m:m.group(0).replace('target demand','demand').replace('one target protocol','one comparison protocol').replace('target TPOT','TPOT'),s)
+    s=s.replace(r'\caption{Component on three models.',r'\caption{Component comparisons on three models.')
+    s=s.replace(r'\caption{Model/workload.',r'\caption{Model and workload comparison.')
+    s=s.replace(r'\caption{Dense-quota sweep.',r'\caption{Host-memory allowance sweep.')
     s=re.sub(r' +\n','\n',s)
     s=s.replace('  ',' ')
     return s

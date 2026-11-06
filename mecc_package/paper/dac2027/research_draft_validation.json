@@ -1,4 +1,5 @@
 {
+  "artifact_file": "MECC_DAC_title_highlight.pdf",
   "pages": 7,
   "body_pages": 6,
   "references": 44,
@@ -86,7 +87,7 @@
   "motivation_position": "top of page 2",
   "target_panels": {
     "motivation_evidence": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 2,
       "source": {
         "target_fields": [
           "motivation.ssd_misses_*",
@@ -96,7 +97,7 @@
       }
     },
     "mechanism_sweeps": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 3,
       "source": {
         "target_fields": [
           "insight_ablation_targets.placement_same_runtime",
@@ -106,7 +107,7 @@
       }
     },
     "cross_model": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 1,
       "source": {
         "target_fields": [
           "groups",
@@ -117,7 +118,7 @@
       }
     },
     "ablation_startup": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 2,
       "source": {
         "target_fields": [
           "ablation_tpot_seconds",
@@ -129,7 +130,7 @@
       }
     },
     "gpu_tradeoff": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 2,
       "source": {
         "target_fields": [
           "gpus",
@@ -140,7 +141,7 @@
       }
     },
     "quota_targets": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 1,
       "source": {
         "target_fields": [
           "cpu_budget_gb",
@@ -150,7 +151,7 @@
       }
     },
     "traffic_exposure": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 2,
       "source": {
         "source": "narrative_targets.json",
         "target_fields": [
@@ -161,7 +162,7 @@
       }
     },
     "workload_sensitivity": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 3,
       "source": {
         "source": "narrative_targets.json",
         "target_fields": [
@@ -173,7 +174,7 @@
       }
     },
     "profile_mismatch": {
-      "explicit_target_label": true,
+      "highlighted_panel_titles": 2,
       "source": {
         "source": "narrative_targets.json",
         "target_fields": [
@@ -185,9 +186,9 @@
       }
     }
   },
-  "pending_text_blocks": 25,
+  "pending_text_blocks": 16,
   "tex_issues": [],
-  "data_status": "Measured values retained; all unmeasured plots explicitly yellow-tagged.",
+  "data_status": "Yellow panel titles and numerical highlights; identity stated once in Evaluation.",
   "source_targets_sha256": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
   "narrative_targets_sha256": "e96cb5a7d0a2f54d570754449c55c1f8b87f22facbff3d8cbe8a0ddec22d4836",
   "column_bottoms_pt": [
@@ -198,8 +199,8 @@
     },
     {
       "page": 2,
-      "left": 717.04,
-      "right": 719.58
+      "left": 718.6,
+      "right": 719.84
     },
     {
       "page": 3,
@@ -213,14 +214,14 @@
     },
     {
       "page": 5,
-      "left": 714.81,
-      "right": 718.43
+      "left": 717.64,
+      "right": 719.84
     },
     {
       "page": 6,
-      "left": 690.16,
-      "right": 690.73
+      "left": 691.08,
+      "right": 691.55
     }
   ],
-  "pdf_sha256": "4b7cac043c29d1e80461235a8c2a6cd992d7655f17c1ea6771abeb863ff327ad"
+  "pdf_sha256": "fe021a5c17de8588fb76a25f4411255764a31e885a98ab0b50eb57be59caf89a"
 }

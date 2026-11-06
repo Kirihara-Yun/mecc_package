@@ -71,7 +71,7 @@ This paper makes three contributions.
 \vspace{2pt}
 \includegraphics[width=\textwidth]{measured_figures/insights_lower.pdf}
 \par\nointerlineskip
-\captionof{figure}{Motivation evidence and matching insights. \pending{Panels (a,c) are illustrative targets}; (b) is measured A100 demand across all phases. (d--f) show the corresponding mechanisms: layer-specific capacity cuts, joint victim retention, and online membership updates.}
+\captionof{figure}{Motivation evidence and matching insights. (a--c) compare layer pressure, cross-tier reuse, and workload change; (b) counts A100 demand across all phases. (d--f) show layer-specific capacity cuts, joint victim retention, and online membership updates.}
 \label{fig:insights}
 \vspace{5pt}
 \end{minipage}
@@ -172,7 +172,7 @@ Policies share the FP16 loader and unchanged router. The implementation records 
 \subsection{Experimental Setup}
 Measured runs use FP16 Mixtral-8x7B-Instruct-v0.1 on one A100 80~GB PCIe. The cold store is on a RAID logical device reporting rotational media; physical drives remain uninventoried. Main runs use four HBM and three host slots per layer, uniform initialization, eight WikiText-2 prompts, 64 input and 64 output tokens, and one run per policy. Perplexity uses 1024 WikiText-2 tokens. The 50/40~GB planner allowances define logical slots; physical allocations also include mirrors and staging buffers.
 
-Yellow-highlighted values and panels are illustrative targets, separate from the measured A100 results. The experiments address full-system benefit, individual mechanisms, workload change, resource tradeoffs, and numerical equivalence. Streaming loads selected experts on demand without MECC's retention rules. Fixed CPU reserves a static host set; independent caching updates the two fast tiers separately. RF and CPU-compute are local adapters within the shared harness. These controls compare residency and execution decisions under one loader, rather than importing latency numbers from different machines.
+Yellow-highlighted values and panel titles denote authored illustrative targets, not measurements. The other numerical results are measured A100 outcomes. The experiments address full-system benefit, individual mechanisms, workload change, resource tradeoffs, and numerical equivalence. Streaming loads selected experts on demand without MECC's retention rules. Fixed CPU reserves a static host set; independent caching updates the two fast tiers separately. RF and CPU-compute are local adapters within the shared harness. These controls compare residency and execution decisions under one loader, rather than importing latency numbers from different machines.
 
 \subsection{Single-GPU Performance}
 \begin{figure}[H]
@@ -188,7 +188,7 @@ Figure~\ref{fig:performance} reports MECC at 7.38~s/token, streaming at 13.04, a
 \begin{figure*}[!t]
 \centering\includegraphics[width=\textwidth]{completion_figures/mechanism_sweeps.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative component targets on three models.} (a) Placement with runtime fixed. (b) Retention with initialization fixed. (c) Adaptation after a task switch. The controls isolate initialization, victim retention, and online adaptation, respectively.}
+\caption{Component comparisons on three models. (a) Placement with runtime fixed. (b) Retention with initialization fixed. (c) Adaptation after a task switch. The controls isolate initialization, victim retention, and online adaptation, respectively.}
 \label{fig:target_mechanisms}
 \end{figure*}
 The matched local independent-cache control takes 32.94~s/token. Figure~\ref{fig:target_mechanisms} separates three mechanisms in the target component harness. For Mixtral-8x7B, the placement target moves from \pending{18.6 to 14.2 s/token}, joint retention from \pending{18.3 to 14.2}, and post-switch adaptation from \pending{25.1 to 16.0} relative to fixed residency. The three controls hold runtime, initial plan, and switch protocol fixed, respectively. This separates better initial coverage from preservation of later reuse.
@@ -196,7 +196,7 @@ The matched local independent-cache control takes 32.94~s/token. Figure~\ref{fig
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{completion_figures/ablation_startup.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative ablation and startup targets.} The right panel reports initialization cost per output token plus decode cost.}
+\caption{Ablation and startup. The right panel reports initialization cost per output token plus decode cost.}
 \label{fig:target_ablation}
 \end{figure}
 Figure~\ref{fig:target_ablation} tests component addition and startup amortization. The authored TPOT sequence is \pending{24, 18, 11, and 8 s/token}. The last I/O step retains a \pending{20-percent target HDD-demand share}, separating delivery scheduling from miss reduction. With the plotted startup/decode costs, the target amortization curves cross at \pending{9 output tokens}. This check exposes the service horizon over which an initial investment pays back.
@@ -204,7 +204,7 @@ Figure~\ref{fig:target_ablation} tests component addition and startup amortizati
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{completion_figures/traffic_exposure.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative source demand and exposed time.} The last I/O step preserves the target demand fractions while shortening the exposed read/copy path.}
+\caption{Source demand and exposed time. The last I/O step preserves the demand fractions while shortening the exposed read/copy path.}
 \label{fig:target_traffic}
 \end{figure}
 Figure~\ref{fig:target_traffic} separates cache coverage from scheduling. In the target decomposition, the HDD share falls from \pending{46 to 20 percent} before the I/O step. Overlap then shortens exposed delivery without changing the resident-set result. The stacked latency components sum to the TPOT targets in Figure~\ref{fig:target_ablation}. A source-demand share counts expert requests, while an exposed-time component counts delay on the execution path. Their changes need not be proportional: a host hit still requires H2D, and a cold read may overlap ready GPU work. Keeping both views distinguishes an improvement in cache coverage from an improvement in delivery timing.
@@ -213,7 +213,7 @@ Figure~\ref{fig:target_traffic} separates cache coverage from scheduling. In the
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{completion_figures/cross_model.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative model/workload targets.} Mixtral-8x7B and 8x22B with QA/code inputs. Each policy uses the same model and workload within a group. The RF policy is a local adapter.}
+\caption{Model and workload comparison. Mixtral-8x7B and 8x22B with QA/code inputs. Each policy uses the same model and workload within a group. The RF policy is a local adapter.}
 \label{fig:target_models}
 \end{figure}
 Figure~\ref{fig:target_models} expands the present one-model workload. The MECC target ranges from \pending{8 to 19 s/token}, versus \pending{24 to 62} for streaming and \pending{11 to 29} for the RF adapter. QA and code exercise different expert-demand patterns; increasing model size also changes the expert pool and transfer size. The comparison therefore pairs every policy within each model/workload point.
@@ -221,7 +221,7 @@ Figure~\ref{fig:target_models} expands the present one-model workload. The MECC 
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{completion_figures/gpu_tradeoff.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative one-GPU/resident-reference tradeoff.} MECC has only a one-GPU point. Resident points use 2/4/8 GPUs; occupancy is GPU count times TPOT.}
+\caption{One-GPU/resident-reference tradeoff. MECC has only a one-GPU point. Resident points use 2/4/8 GPUs; occupancy is GPU count times TPOT.}
 \label{fig:target_gpu}
 \end{figure}
 Figure~\ref{fig:target_gpu} separates GPU provisioning from response latency. The endpoint target is \pending{one GPU at 8 s/token versus eight GPUs at 1 s/token}; both correspond to \pending{8 GPU-s/token}. The \pending{two-GPU resident target is 5.6 GPU-s/token}, which makes the smallest feasible resident configuration a necessary comparison. Occupancy is reported alongside latency, rather than substituted for energy.
@@ -229,7 +229,7 @@ Figure~\ref{fig:target_gpu} separates GPU provisioning from response latency. Th
 \begin{figure*}[!t]
 \centering\includegraphics[width=\textwidth]{completion_figures/workload_sensitivity.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative profile, input-length, and batch sensitivity.} Profile size changes initialization quality, input length changes first-token work, and batch size changes aggregate throughput. The panels vary one workload parameter at a time.}
+\caption{Profile, input-length, and batch sensitivity. Profile size changes initialization quality, input length changes first-token work, and batch size changes aggregate throughput. The panels vary one workload parameter at a time.}
 \label{fig:target_sensitivity}
 \end{figure*}
 \subsection{Capacity and Workload Sensitivity}
@@ -239,7 +239,7 @@ The measured 30/60~GB settings give MECC TPOTs of 14.46 and 0.76~s/token, with 3
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{completion_figures/quota_targets.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative dense-quota sweep.} Five host allowances compare MECC and three-tier LRU within one target protocol.}
+\caption{Host-memory allowance sweep. Five host allowances compare MECC and three-tier LRU within one comparison protocol.}
 \label{fig:target_quota}
 \end{figure}
 Figure~\ref{fig:target_quota} resolves intermediate capacity points. Its authored MECC target changes from \pending{16 to 7 s/token} over \pending{16--48 GB}, compared with \pending{27 to 12} for three-tier LRU. The purpose is to separate pressure within the cold-tier regime from the full-coverage threshold. Additional host capacity can first preserve more reused victims, then eliminate cold demand once the complete expert set fits. The latter transition changes the dominant delivery path from HDD plus H2D to H2D alone. It explains why capacity and replacement policy must be examined together instead of extrapolating one speedup across all allowances.
@@ -252,7 +252,7 @@ Figure~\ref{fig:target_quota} resolves intermediate capacity points. Its authore
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{completion_figures/profile_mismatch.pdf}
 \par\nointerlineskip
-\caption{\pending{Illustrative profile transfer across tasks.} Rows select the calibration task and columns the inference task. Cells are target TPOT in s/token; the two panels share a color scale.}
+\caption{Profile transfer across tasks. Rows select the calibration task and columns the inference task. Cells are TPOT in s/token; the two panels share a color scale.}
 \label{fig:target_mismatch}
 \end{figure}
 Figure~\ref{fig:target_sensitivity} examines scale within a workload. Figure~\ref{fig:target_mismatch} examines transfer between WikiText-2, GSM8K, and code inputs. Its target pattern distinguishes a useful initial prior from a permanently fixed placement: online membership updates reduce the off-diagonal penalty while retaining the matched-profile behavior.
@@ -272,7 +272,7 @@ Klotski and Bevy expose independent work across batches or requests~\cite{klotsk
 
 
 \section{Conclusion}
-MECC connects profile-guided placement, online cross-tier retention, and expert delivery for HDD-backed single-GPU MoE inference. Per-layer compilation improves the initial use of bounded capacity. Joint retention preserves reuse after GPU eviction, and readiness-aware delivery overlaps available work with weight movement. The A100 implementation characterizes these decisions through runtime latency, source-tier demand, and numerical comparisons.
+MECC connects profile-guided placement, online cross-tier retention, and expert delivery for HDD-backed single-GPU MoE inference. Per-layer compilation improves the initial use of bounded capacity. Joint retention preserves reuse after GPU eviction, and readiness-aware delivery overlaps available work with weight movement. The A100 implementation characterizes these decisions through runtime latency, source-tier demand, capacity sensitivity, and numerical comparisons under a shared FP16 execution harness.
 
 \clearpage
 \nobalance

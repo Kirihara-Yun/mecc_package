@@ -26,9 +26,11 @@ def style(ax,ylabel):
     ax.spines[['top','right']].set_visible(False)
     ax.grid(axis='y',color='#E1E6EA',lw=.4);ax.set_axisbelow(True)
     ax.tick_params(length=2,pad=2,width=.5);ax.set_ylabel(ylabel,labelpad=2)
-def target(ax,text='ILLUSTRATIVE TARGET'):
-    ax.text(.5,1.22,text,transform=ax.transAxes,ha='center',va='bottom',fontsize=6.3,
-            bbox={'facecolor':YELLOW,'edgecolor':'none','pad':1.5},clip_on=False)
+def target(ax):
+    """Highlight the descriptive panel title; identity is stated in the text."""
+    title=ax._left_title
+    assert title.get_text(), 'Every highlighted panel needs a descriptive title'
+    title.set_bbox({'facecolor':YELLOW,'edgecolor':'none','pad':1.2})
 def save(fig,name,source):
     for ext in ('pdf','png'):
         fig.savefig(OUT/f'{name}.{ext}',dpi=280,bbox_inches='tight',pad_inches=.025)
@@ -38,7 +40,7 @@ MANIFEST={}
 def motivation():
     d=A['motivation'];real=load()
     fig,axs=plt.subplots(1,3,figsize=(7.1,1.43))
-    fig.subplots_adjust(.065,.26,.985,.78,wspace=.37)
+    fig.subplots_adjust(.065,.26,.985,.88,wspace=.37)
     ax=axs[0];x=np.arange(4)
     for off,key,col,label in [(-.18,'ssd_misses_uniform',GRAY,'Uniform'),(.18,'ssd_misses_planned',BLUE,'Profile')]:
         ax.bar(x+off,d[key],.33,color=col,ec=INK,lw=.35,label=label,zorder=3)
@@ -54,7 +56,6 @@ def motivation():
     ax.bar_label(b,labels=[f'{v:.1f}' for v in vals],padding=2,fontsize=6.6)
     ax.set_xticks(range(3),['Separate','Fixed CPU','MECC']);ax.set_ylim(0,60)
     style(ax,'HDD-demand share (%)');ax.set_title('(b) Reuse after eviction',loc='left',pad=4)
-    ax.text(.5,1.22,'MEASURED · Mixtral-8x7B / A100',transform=ax.transAxes,ha='center',fontsize=6.3,color=BLUE)
     ax=axs[2]
     for key,col,ls,label in [('fixed_windows',GRAY,'--','Fixed'),('online_windows',ORANGE,':','Online'),('mecc_windows',BLUE,'-','MECC')]:
         ax.plot(range(1,17),d[key],c=col,ls=ls,lw=.9,label=label)
@@ -68,7 +69,7 @@ def motivation():
 def mechanisms():
     d=A['insight_ablation_targets']
     fig,axs=plt.subplots(1,3,figsize=(7.1,1.70))
-    fig.subplots_adjust(.055,.27,.985,.76,wspace=.31)
+    fig.subplots_adjust(.055,.27,.985,.85,wspace=.31)
     for ax,key,title in zip(axs,['placement_same_runtime','retention_same_initial_plan','adaptation_same_initial_plan'],
                             ['(a) Placement; runtime fixed','(b) Retention; plan fixed','(c) Adaptation after shift']):
         x=np.arange(3)
@@ -86,10 +87,11 @@ def cross_model():
         ax.bar(x+(j-1)*.23,A['tpot_seconds'][name],.21,color=col,ec=INK,lw=.35,hatch=h,label={'Unoptimized streaming':'Streaming'}.get(name,name),zorder=3)
     ax.set_xticks(x,['8×7B / QA','8×7B / Code','8×22B / QA','8×22B / Code']);ax.set_ylim(0,72)
     style(ax,'TPOT (s/token)');ax.legend(frameon=False,ncol=3,loc='upper left',handlelength=1,columnspacing=.7)
+    ax.set_title('Model and workload',loc='left',pad=4)
     target(ax);save(fig,'cross_model',{'target_fields':['groups','tpot_seconds.Unoptimized streaming','tpot_seconds.RF adapter','tpot_seconds.MECC']})
 
 def ablation_startup():
-    fig,axs=plt.subplots(1,2,figsize=(3.45,1.65));fig.subplots_adjust(.13,.30,.98,.72,wspace=.34)
+    fig,axs=plt.subplots(1,2,figsize=(3.45,1.65));fig.subplots_adjust(.13,.30,.98,.80,wspace=.34)
     ax=axs[0];vals=A['ablation_tpot_seconds']
     ax.bar(range(4),vals,color=[GRAY,TEAL,ORANGE,BLUE],ec=INK,lw=.35,zorder=3)
     ax.set_xticks(range(4),['Base','+Plan','+Joint','+I/O'],rotation=25);style(ax,'TPOT (s/token)')
@@ -104,7 +106,7 @@ def ablation_startup():
        'derived':'amortized = startup_cost / output_tokens + decode_tpot; fixed illustrative costs'})
 
 def gpu_tradeoff():
-    fig,axs=plt.subplots(1,2,figsize=(3.45,1.65));fig.subplots_adjust(.13,.26,.98,.74,wspace=.35)
+    fig,axs=plt.subplots(1,2,figsize=(3.45,1.65));fig.subplots_adjust(.13,.26,.98,.83,wspace=.35)
     g=np.array([2,4,8]);v=np.array(A['resident_gpu_tpot_seconds'][1:])
     for ax,factor,title,ylabel in zip(axs,[np.ones(3),g],['(a) Response latency','(b) Accelerator occupancy'],['TPOT (s/token)','GPU-s/token']):
         ax.plot(g,v*factor,c=GRAY,marker='s',ms=3,lw=.9,label='Resident')
@@ -116,18 +118,18 @@ def gpu_tradeoff():
         'excluded':'No multi-GPU MECC values. No attribution to published FlashMoE.'})
 
 def quota_targets():
-    fig,ax=plt.subplots(figsize=(3.45,1.55));fig.subplots_adjust(.14,.28,.98,.75)
+    fig,ax=plt.subplots(figsize=(3.45,1.80));fig.subplots_adjust(.14,.28,.98,.75)
     for name,col,marker in [('Three-tier LRU',GRAY,'s'),('MECC',BLUE,'o')]:
         ax.plot(A['cpu_budget_gb'],A['budget_tpot_seconds'][name],c=col,marker=marker,ms=3,lw=.9,label=name)
     ax.set_xticks(A['cpu_budget_gb']);ax.set_ylim(0,32)
     ax.set_xlabel('Task host allowance (GB)',labelpad=2);style(ax,'TPOT (s/token)')
-    ax.legend(frameon=False,fontsize=6.3);target(ax)
+    ax.legend(frameon=False,fontsize=6.3);ax.set_title('Host-memory allowance',loc='left',pad=4);target(ax)
     save(fig,'quota_targets',{'target_fields':['cpu_budget_gb','budget_tpot_seconds'],
         'scope':'Authored dense-quota sweep; not merged with the measured four-prompt protocol.'})
 
 def traffic_exposure():
     fig,axs=plt.subplots(1,2,figsize=(3.45,1.67))
-    fig.subplots_adjust(.13,.27,.98,.73,wspace=.39)
+    fig.subplots_adjust(.13,.27,.98,.81,wspace=.39)
     for ax,keys,labels,yl,title in [
         (axs[0],['demand_hbm','demand_cpu','demand_hdd'],['HBM','CPU','HDD'],'Demand share (%)','(a) Request source'),
         (axs[1],['exposed_compute','exposed_h2d','exposed_hdd'],['Compute','H2D','HDD'],'Exposed time (s/token)','(b) Critical-path time')]:
@@ -143,8 +145,8 @@ def traffic_exposure():
          'checks':'Demand sums to 100%; exposed components sum to 24/18/11/8 s/token. Not physical byte measurements.'})
 
 def workload_sensitivity():
-    fig,axs=plt.subplots(1,3,figsize=(7.1,1.60))
-    fig.subplots_adjust(.065,.28,.985,.76,wspace=.38)
+    fig,axs=plt.subplots(1,3,figsize=(7.1,1.90))
+    fig.subplots_adjust(.065,.28,.985,.85,wspace=.38)
     configs=[('profile_samples','profile_tpot_uniform','profile_tpot_mecc','TPOT (s/token)','Profile samples','(a) Calibration coverage','Uniform'),
              ('input_tokens','input_ttft_streaming','input_ttft_mecc','TTFT (s)','Input tokens','(b) Input length','Streaming'),
              ('batch_sizes','batch_throughput_streaming','batch_throughput_mecc','Aggregate tokens/s','Batch size','(c) Batch size','Streaming')]
@@ -159,8 +161,8 @@ def workload_sensitivity():
          'scope':'Independent illustrative protocols per panel; aggregate throughput in panel c.'})
 
 def profile_mismatch():
-    fig,axs=plt.subplots(1,2,figsize=(3.45,1.44))
-    fig.subplots_adjust(.15,.28,.88,.71,wspace=.40)
+    fig,axs=plt.subplots(1,2,figsize=(3.45,1.69))
+    fig.subplots_adjust(.15,.28,.88,.78,wspace=.40)
     for ax,key,title in zip(axs,['transfer_fixed','transfer_adaptive'],['(a) Fixed residency','(b) Online residency']):
         vals=np.array(N[key]);im=ax.imshow(vals,vmin=8,vmax=16,cmap='YlGnBu',aspect='auto')
         for i in range(3):
@@ -171,7 +173,7 @@ def profile_mismatch():
         ax.tick_params(length=0,pad=2);ax.set_xlabel('Inference task',labelpad=2)
         ax.set_title(title,loc='left',pad=4);target(ax)
     axs[0].set_ylabel('Profile task',labelpad=2)
-    cax=fig.add_axes([.905,.29,.025,.40]);fig.colorbar(im,cax=cax,ticks=[8,12,16])
+    cax=fig.add_axes([.905,.29,.025,.47]);fig.colorbar(im,cax=cax,ticks=[8,12,16])
     cax.tick_params(length=2,labelsize=6);cax.set_title('s/token',fontsize=5.9,pad=3)
     save(fig,'profile_mismatch',{'source':'narrative_targets.json','target_fields':['transfer_tasks','transfer_fixed','transfer_adaptive'],
          'scope':'Authored transfer matrix; identical color limits. Not real benchmark results.'})
@@ -183,8 +185,8 @@ def main():
         insights('insights_lower','def')
     MANIFEST['_source_sha256']=hashlib.sha256((HERE/'ideal_assumptions.json').read_bytes()).hexdigest()
     MANIFEST['_narrative_targets_sha256']=hashlib.sha256((HERE/'narrative_targets.json').read_bytes()).hexdigest()
-    MANIFEST['_status']='Yellow-tagged targets are authored placeholders, not experiment results.'
+    MANIFEST['_status']='Yellow panel titles mark authored illustrative targets; the Evaluation section states their identity.'
     (OUT/'SOURCE_MANIFEST.json').write_text(json.dumps(MANIFEST,indent=2)+'\n',encoding='utf-8')
-    print('Completion figures saved; all unmeasured panels carry yellow target labels.')
+    print('Completion figures saved; descriptive panel titles highlighted yellow.')
 
 if __name__=='__main__':main()

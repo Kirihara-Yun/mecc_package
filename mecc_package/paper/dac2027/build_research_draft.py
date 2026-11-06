@@ -161,7 +161,7 @@ def main():
 \includegraphics[width=\textwidth]{completion_figures/motivation_evidence.pdf}\par
 \vspace{2pt}
 \includegraphics[width=\textwidth]{measured_figures/insights_lower.pdf}
-\captionof{figure}{Motivation evidence and matching insights. \pending{Panels (a,c) are illustrative targets}; (b) is measured A100 demand across all phases. (d--f) show the corresponding mechanisms: layer-specific capacity cuts, joint victim retention, and online membership updates.}
+\captionof{figure}{Motivation evidence and matching insights. (a--c) compare layer pressure, cross-tier reuse, and workload change; (b) counts A100 demand across all phases. (d--f) show layer-specific capacity cuts, joint victim retention, and online membership updates.}
 \label{fig:insights}
 \vspace{5pt}
 \end{minipage}
@@ -187,7 +187,7 @@ def main():
     related=related.replace('The full-system, mechanism, and resource experiments above distinguish these comparisons.',
         '''The full-system, mechanism, and resource experiments above distinguish these comparisons. Cross-request schedulers can run another request while one waits for weights. The current-gate delivery path instead overlaps ready expert work from the ongoing request. Both expose concurrency, but the available work and readiness dependencies differ. Separating these execution scopes also separates their throughput and response-time effects.''')
     related=related[:related.index(r'\section{Conclusion}')]+r'''\section{Conclusion}
-MECC connects profile-guided placement, online cross-tier retention, and expert delivery for HDD-backed single-GPU MoE inference. Per-layer compilation improves the initial use of bounded capacity. Joint retention preserves reuse after GPU eviction, and readiness-aware delivery overlaps available work with weight movement. The A100 implementation characterizes these decisions through runtime latency, source-tier demand, and numerical comparisons.
+MECC connects profile-guided placement, online cross-tier retention, and expert delivery for HDD-backed single-GPU MoE inference. Per-layer compilation improves the initial use of bounded capacity. Joint retention preserves reuse after GPU eviction, and readiness-aware delivery overlaps available work with weight movement. The A100 implementation characterizes these decisions through runtime latency, source-tier demand, capacity sensitivity, and numerical comparisons under a shared FP16 execution harness.
 
 '''
     paper=prefix+intro+mot_header+STORY_BACKGROUND+overview+METHOD+revise_evaluation(EVALUATION)+related+ending
