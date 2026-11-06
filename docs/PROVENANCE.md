@@ -148,6 +148,44 @@
 >
 > **ours_io 补跑备注**：首次 run `a100-main-ours_io-20261105` 因 `OursIOPolicy` 数据结构过时（`gpu[uid]` 存单个对象，未跟上引擎「零拷贝淘汰」的 `(gpu_ws, cpu_ws)` 元组）触发 `TypeError: cannot unpack non-iterable ExpertWeights object`，phase=failed。修复为对齐 `OursPolicy` 的 `gpu[uid][0]` + `gpu[uid]=(g, ws_cpu)`（`e2e/policy_plugin.py`），以 `a100-main-ours_io-20261105-retry1` 重跑完成。
 
+### 3.1quinquies E05–E08 动机三连真机（2026-11-06，A100，HBM=50/CPU=40，64token/8prompts，uniform）
+
+> 论文 fig02 动机三连（容量/驻留/切换）的真机版。复用主对比配置（HBM=50/CPU=40、64token/8prompts、`--uniform`），由 `scripts/insight_driver.sh` 串行 7 arm，全部 N=1 单次（正式采信）。三组 Insight 对应三个开关：`--init-plan`（初始放置）、`--update-rule`（更新规则）、`--task-seq`（任务切换，**真实 WikiText-2↔GSM8K**，2026-11-06 起不再用「同一输入切前后半」）。PPL 均为真实 WikiText-2（1024-token）。
+
+**Insight I（E05，初始放置精度）：**
+
+| init-plan | TTFT(ms) | TPOT(ms) | PPL | HBM | CPU | SSD |
+|-----------|---------|---------|-----|-----|-----|-----|
+| per_layer（逐层画像） | 138275 | 7322.04 | 3.427 | 77.6% | 9.7% | 12.6% |
+| global（全局画像） | 138172 | 7306.78 | 3.427 | 77.6% | 9.7% | 12.6% |
+| avg（自然序，不画像） | 137868 | 7327.48 | 3.427 | 77.6% | 9.7% | 12.6% |
+
+**Insight II（E06，更新规则；joint/fixed_cpu 复用主对比）：**
+
+| 更新规则 | TPOT(ms) | SSD | CPU | 备注 |
+|----------|---------|-----|-----|------|
+| joint（ours） | 7382 | 12.5% | 10.0% | 主对比 `a100-main-ours-20261104` |
+| fixed_cpu（swapmoe） | 21752 | 31.5% | 5.8% | 主对比 `a100-main-swapmoe-20261104` |
+| independent | 32942 | 47.9% | 0.3% | `a100-e06-independent-20261105`（TTFT 258696ms、tok/s 0.0275、read_bytes≈2.75TB） |
+
+**Motivation III（E07/E08，任务切换逐窗 SSD 命中）：**
+
+| 序列 | window0 任务 | window1 任务 | SSD 变化 | 窗口容量 |
+|------|-------------|-------------|---------|---------|
+| a_a（no-shift 对照） | WikiText-2 | WikiText-2 | +2.4%（2265→2320） | 4+4 prompt |
+| a_b | WikiText-2 | GSM8K | -4.5%（4663→4455） | 8+8 prompt |
+| b_a | GSM8K | WikiText-2 | +7.4%（4390→4713） | 8+8 prompt |
+
+| # | Claim | 采信值 | 级别 | 证据（文件 : 字段） | 状态 |
+|---|---|---|---|---|---|
+| INS-1 | 初始放置精度（逐层/全局/自然序）TPOT 差 | **<0.3%**（三臂 7306.78–7327.48） | D2 | `runs/a100-e05-{per_layer-20261105-retry1,global,avg}-20261105/result.json` : `results.ours.tpot_ms` | `verified`（三臂命中率逐项一致，画像精度无杠杆） |
+| INS-2 | independent vs joint TPOT 比 | **4.46×**（32942/7382） | D2 | `runs/a100-e06-independent-20261105/result.json` + 主对比 ours : `results.*.tpot_ms` | `verified`（independent 不回写 CPU，SSD 47.9% vs 12.5%） |
+| INS-3 | 任务切换 SSD 命中变化 vs no-shift | **±7% 内**（a_b -4.5%、b_a +7.4%，no-shift +2.4%） | D2 | `runs/a100-e07-a_b / a100-e08-b_a / a100-e08-a_a -20261105/result.json` : `results.ours.window_hits / window_ssd_bytes` | `verified`（无显著热点漂移，与自然抖动同量级） |
+
+> **动机三连口径小结**：三组 Insight 自洽地指向同一根因——**Mixtral-8×7B 的 expert 分布接近均匀（profile α≈0.12–0.64，均值≈0.35）**，导致「静态放置精度」（INS-1）与「任务切换漂移」（INS-3）都不是关键杠杆；方法真正的价值锚定在「运行期联合 LRU」上（INS-2 的 4.46× 是唯一显著信号）。INS-1/INS-3 是诚实负结果，如实记录，不构造漂移。
+>
+> **运行备注**：E05 per_layer 首次 run `a100-e05-per_layer-20261105` 因 driver 重启前被 stop，phase=running_policy 不完整，以 `-retry1` 重跑完成。E07/E08 的 GSM8K 任务 B 为真实 `openai/gsm8k` test 前 8 条（2026-11-06 经 hf-mirror 下载固定）；`organize_task_sequence` 已改为「缺任务 B 即抛异常，拒绝同一输入切前后半」。a_a 窗口容量 4+4 与 a_b/b_a 的 8+8 不同，SSD 计数绝对值不可直接比，只比变化率。
+
 ### 3.2 对照场景 — DeepSeek-V2-Lite（CPU 装得下，不落 SSD，非主战场）
 
 | # | Claim | 采信值 | 级别 | 证据 | 状态 |

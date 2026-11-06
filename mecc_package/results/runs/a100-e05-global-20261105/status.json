@@ -1,0 +1,8 @@
+{
+  "phase": "complete",
+  "updated_at": "2026-11-06T11:49:59+08:00",
+  "output": "/home/qinzy/mecc_package/mecc_package/results/runs/a100-e05-global-20261105/result.json",
+  "completed_policies": [
+    "ours"
+  ]
+}

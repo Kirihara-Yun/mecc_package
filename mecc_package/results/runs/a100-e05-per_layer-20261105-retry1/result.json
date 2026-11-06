@@ -1,0 +1,167 @@
+{
+  "device": "cuda",
+  "mode": "real",
+  "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+  "platform": "a100-80g",
+  "run_time": "2026-11-06T10:05:10+08:00",
+  "compiled_plan": {
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "hardware": "rtx5090 (HBM_budget=50.0GB, CPU_budget=40.0GB)",
+    "alpha": 1.0,
+    "n_layers": 32,
+    "n_experts": 8,
+    "expert_mb": 336.0,
+    "k_h": 4,
+    "k_c": 3,
+    "per_layer_k_h": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "per_layer_k_c": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "per_layer_alpha": [],
+    "hbm_hit_pct": 76.7,
+    "cpu_hit_pct": 18.7,
+    "ssd_hit_pct": 4.6,
+    "hbm_gb_used": 42.0,
+    "cpu_gb_used": 31.5
+  },
+  "config": {
+    "max_new_tokens": 64,
+    "prompt_len": 64,
+    "n_prompts": 8,
+    "cold_ssd": true
+  },
+  "results": {
+    "ours": {
+      "ttft_ms": 138275.31,
+      "tpot_ms": 7322.04,
+      "tokens_per_s": 0.107022,
+      "ppl": 3.427,
+      "hit_pct": {
+        "hbm": 77.6,
+        "cpu": 9.7,
+        "ssd": 12.6,
+        "cpu_compute": 0.0
+      },
+      "phase_hits": {
+        "warmup": [
+          1522,
+          1144,
+          917,
+          0
+        ],
+        "prefill": [
+          126,
+          1019,
+          902,
+          0
+        ],
+        "decode": [
+          27924,
+          1428,
+          2904,
+          0
+        ],
+        "ppl": [
+          29,
+          126,
+          101,
+          0
+        ]
+      },
+      "io_bytes": {
+        "ssd_read": 1699599089664,
+        "h2d": 3009178238976,
+        "d2h": 0
+      },
+      "window_hits": [
+        [
+          29572,
+          3591,
+          4723,
+          0
+        ]
+      ],
+      "window_sizes": [
+        8
+      ],
+      "window_ssd_bytes": [
+        1664014614528
+      ]
+    }
+  },
+  "profile": {
+    "path": "/home/qinzy/mecc_package/mecc_package/results/raw/mixtral_profile_20261105.json",
+    "has_per_layer_counts": true,
+    "has_per_layer_trace": true,
+    "sha256": "a1c523d00f3144721a54cb312d48231534fcd3fc4642701307416a83500c0bc0"
+  },
+  "block_io": {
+    "device": "sdb",
+    "disk_read_bytes": 1762664644608,
+    "proc_read_bytes": 1762664644608
+  }
+}
