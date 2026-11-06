@@ -19,14 +19,14 @@ log() { echo "[$(date '+%F %T')] $*" >> "$LOGFILE"; }
 
 # QUEUE 每行 "run_id|extra launcher args"（| 分隔，extra 内可含空格由 bash 分词）
 QUEUE="a100-e06-independent-20261105|--uniform --update-rule independent
-a100-e05-per_layer-20261105|--policies ours --uniform --profile $PROFILE --init-plan per_layer
+a100-e05-per_layer-20261105-retry1|--policies ours --uniform --profile $PROFILE --init-plan per_layer
 a100-e05-global-20261105|--policies ours --uniform --profile $PROFILE --init-plan global
 a100-e05-avg-20261105|--policies ours --uniform --profile $PROFILE --init-plan avg
 a100-e07-a_b-20261105|--policies ours --uniform --task-seq a_b
 a100-e08-b_a-20261105|--policies ours --uniform --task-seq b_a
 a100-e08-a_a-20261105|--policies ours --uniform --task-seq a_a"
 
-MAX_WALL_SECONDS=14400
+MAX_WALL_SECONDS=28800
 
 while IFS='|' read -r run_id extra; do
   [ -z "$run_id" ] && continue
