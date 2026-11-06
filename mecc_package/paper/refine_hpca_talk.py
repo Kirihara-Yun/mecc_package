@@ -87,8 +87,9 @@ def intro(s):
   box(s,8.31,y,.055,.72,BLUE)
   t(s,8.52,y+.07,3.62,.29,a,16,True,NAVY)
   t(s,8.52,y+.39,3.62,.27,b,14,False,DARK)
- t(s,8.31,5.52,4.04,.28,'MECC 的三项设计',16,True,NAVY)
- t(s,8.31,5.84,4.04,.40,'初始放置 · 缓存更新 · 动态调整',15,False,DARK)
+ t(s,8.31,5.43,4.04,.27,'MECC：MoE 专家缓存编译器',15,True,NAVY)
+ t(s,8.31,5.69,4.04,.25,'MoE Expert Cache Compiler',14,False,DARK)
+ t(s,8.31,5.94,4.04,.27,'初始放置 · 联合缓存 · 动态调整',14,False,DARK)
  foot(s,'研究目标：在单卡上运行完整 MoE 模型，降低专家权重读取造成的延迟。')
 
 def bridge(s):

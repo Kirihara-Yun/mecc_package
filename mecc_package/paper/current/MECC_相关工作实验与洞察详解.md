@@ -1,10 +1,10 @@
-# 单卡 MoE 部署：七项相关工作的动机、洞察与实验证据
+# MoE 部署：八项相关工作的动机、洞察与实验证据
 
 **MECC 专家导览配套材料｜2026-11-06**
 
-配套阅读：[MECC 工作主页与一日讲义](./MECC_单卡MoE专家一日讲义.md) · [17 页组会 PPT](./MECC_HPCA_current.pptx)
+延伸阅读：[单卡 MoE 与 MECC 独立中文导读](./MECC_单卡MoE专家一日讲义.md)。本文逐篇核对论文配置，也可单独查阅。
 
-这份材料回答七个问题：**每篇论文看到了什么现象？由此提出什么 Insight？怎样落成系统？具体用什么模型、卡、benchmark 和 baseline？实验结果到底是哪一个指标？** 各论文的数字均属于其原始实验配置；本文按论文分别解读，便于与 MECC 的单 A100、HDD 部署场景建立机制联系。
+这份材料回答七个问题：**每篇论文看到了什么现象？由此提出什么 Insight？怎样落成系统？具体用什么模型、卡、benchmark 和 baseline？实验结果到底是哪一个指标？** 八项工作覆盖单卡卸载和多卡全显存算子。各论文的数字均属于其原始实验配置；本文按论文分别解读，便于与 MECC 的单 A100、HDD 部署场景建立机制联系。
 
 ## 一眼看清实验地图
 
@@ -17,6 +17,7 @@
 | [SSD-LLaMA](https://arxiv.org/abs/2609.18110) | 1×RTX 5090 32 GB | DeepSeek-V4-Flash、Kimi-K2.7-Code、GLM-5.2，量化 | MMLU、Alpaca | llama.cpp、KTransformers、Colibri | prefill/decode 速率、TTFT/TPOT |
 | [FlashMoE](https://arxiv.org/abs/2601.17063) | 1×RTX 5070 Ti 16 GB | OLMoE-1B-7B、Qwen3-30B-A3B | TriviaQA 训练/测试划分 | LRU/LFU/LIFO/ARC/LeCaR；Fiddler、DAOP、llama.cpp、HF | 缓存命中、tok/s、加载/prefill |
 | [MoE-CORE](https://arxiv.org/abs/2610.01950) | Ascend 950PR，84 GB NPU 限额 | DeepSeek-V4-Flash-W4A8、GLM-5.2-W4A8C8 | GSM8K、AIME 2026、HumanEval、MMLU、LongBench v2 | Load-on-Demand、vLLM Prefetch | TTFT、TPOT、端到端延迟、TPS |
+| [FlashMoE（分布式算子）](https://arxiv.org/abs/2506.04667) | 8×H100 80 GB；部分利用率实验用 2×A100 | 最多 128 专家的 MoE 层配置 | 最高 16K token 序列；单层 forward | Comet、FasterMoE、Megatron-CUTLASS、Megatron-TE | 单层延迟、吞吐、GPU 利用率、通信计算重叠 |
 
 表中 `BrainStorm*` 表示论文作者为评估自行扩展的机制版本。下面每节把“论文的 Insight”与“我们从中学到的系统问题”分开写，便于在组会讨论时准确定位贡献。
 
@@ -31,6 +32,7 @@
 | SSD-LLaMA / 三种量化 MoE | llama.cpp、KTransformers、Colibri 的适用对照 | prefill 1.52—4.19×；decode 2.10—15.58× |
 | FlashMoE / OLMoE | LRU 缓存策略 | 命中率约 +21%；生成速度约 +22% |
 | MoE-CORE / DeepSeek GSM8K | Load on Demand | TPOT 66.5→38.0 ms/token；请求端到端 37.84→21.10 s |
+| FlashMoE（分布式算子）/ 8×H100 | Comet、FasterMoE、Megatron 系列等 | 所测配置最高 6× 更低单层延迟、5.7× 更高吞吐、9× GPU 利用率 |
 
 ---
 
@@ -208,21 +210,32 @@ GPU 显存容不下完整 Mixtral 时，CPU 中的专家权重搬到 GPU 会经�
 
 **对 MECC 的启发。** 逐层初始化、在线驻留和预取已是密切相关的设计轴。MECC 的重点是单 GPU、HDD 冷层、任务预算内的完整专家访问；讨论贡献时最有解释力的是相同权重、相同容量下逐项拆分初态、替换和数据交付的作用。
 
+## 8. FlashMoE（Aimuyo 等）：专家已在多卡显存，为什么 GPU 仍会等待
+
+### Motivation
+
+专家并行把同一 MoE 层的不同专家分散在多张 GPU 上。路由器选定专家后，系统要把 token 送往持有专家的 GPU，再把计算结果送回。传统实现常把门控、分发、专家计算和合并拆成许多 kernel；通信同步与 kernel 启动间隙让 GPU 空闲。这与 Kim 等人同名 FlashMoE 所研究的 SSD 缓存替换是两个问题。[论文 §1—2](https://arxiv.org/html/2506.04667v3)
+
+### Insight 与方法机制
+
+**Insight：在多卡全显存条件下，把分发、专家计算和合并放进同一个常驻 GPU kernel，可以细粒度重叠通信与计算。** FlashMoE 由 GPU 发起跨卡通信，用 tile 级任务调度决定计算何时进行。专家权重驻留在 GPU，跨卡主要移动 token 激活；它优化的是完整 MoE 层的执行路径，而非从 CPU 或 HDD 按需加载专家权重。[论文 §3](https://arxiv.org/html/2506.04667v3)
+
+### 原论文实验配置
+
+| 项目 | 配置 |
+|---|---|
+| 主测试机 | 8 张 H100 80 GB；另有 2 张 A100 的利用率诊断 |
+| 负载 | 分布式 MoE 层前向计算；专家数最高 128，序列最高 16K token |
+| Baseline | Comet、FasterMoE、Megatron-CUTLASS、Megatron-TE；部分分析包含 DeepEP |
+| 指标 | 单层 forward 延迟、吞吐、GPU 利用率、通信与计算重叠效率 |
+| 精度口径 | FlashMoE 使用 FP32，所比较的部分基线使用 FP16；阅读图表时应保留这一条件 |
+
+**代表结果。** 论文摘要汇总其所测配置的最高改善：GPU 利用率 **9×**、单层延迟降低 **6×**、吞吐提高 **5.7×**、重叠效率 **4×**。这些数字来自不同图格的最优改善，不能合成同一端到端完整模型推理速度。[论文摘要与 §4](https://arxiv.org/html/2506.04667v3)
+
+**对 MECC 的启发。** 一旦多卡总显存能容纳专家，主要瓶颈可能转向 token 通信与算子调度。若总显存不足，再采用 CPU／磁盘卸载时，专家权重传输重新进入关键路径。MECC 的单卡 HDD 问题属于后一类容量条件，因而多卡 FlashMoE 适合解释部署路径，不适合作为未重跑的直接性能基线。
+
 ---
 
-## 如何把七篇论文放进一次组会讨论
+## 阅读这些实验时，先核对哪些条件
 
-可以用同一个问题逐篇问：“**下一次路由选中一位目前不在 GPU 的专家，你让什么东西移动、让谁计算、又让哪个专家离开缓存？**”
-
-| 工作 | 未命中时主要改变的决策 | 一句话 Insight |
-|---|---|---|
-| SwapMoE | 有限内存里保留哪些虚拟专家 | 映射与预算规划共同决定质量、占用和速度 |
-| Fiddler | CPU 计算还是传权重到 GPU | 决策应比较传输与计算的端到端成本 |
-| MoE-Infinity | 该预取谁、该保留谁 | 请求级激活模式能提示后续层的访问 |
-| MoE-Lightning | 何时传输与计算 | 流水减少设备等待，提高批吞吐 |
-| SSD-LLaMA | 磁盘、主存、显存和执行设备如何配合 | 完整专家交付要端到端协调 |
-| FlashMoE | 谁被淘汰 | 最近性与频率联合预测未来重用 |
-| MoE-CORE | 每层留多少、何时预取 | 不同层和不同阶段需要不同的资源安排 |
-| MECC | 部署前放谁、运行时 GPU/CPU 如何联动 | 初始热度与在线路由分别管理两个时间尺度 |
-
-这也给出了阅读实验图的顺序：先看**模型与权重格式**，再看**GPU/CPU/磁盘预算**，接着看**benchmark 和输出长度**，最后看论文到底报告的是 **TTFT、TPOT、tok/s、总吞吐、命中率还是质量**。只有这些条件相近，图中的高低才回答相近的问题。
+比较两张实验图时，先看**模型与权重格式**，再看**GPU、CPU 和磁盘预算**，接着看**benchmark、批量和输出长度**，最后看指标是 **TTFT、TPOT、tok/s、总吞吐、命中率还是质量**。多卡 FlashMoE 测的是专家已驻留时的 MoE 层执行；其余卸载系统常测完整模型请求。它们回答的问题不同，实验数字也不能直接放在同一根柱上。

@@ -1,7 +1,34 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>MECC_相关工作实验与洞察详解</title><style>@page{size:A4;margin:18mm 16mm 16mm}body{font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:11pt;line-height:1.55;color:#222;max-width:900px;margin:auto}h1{font-size:23pt;color:#153957}h2{font-size:17pt;color:#153957;border-bottom:1px solid #aebdc9;padding-bottom:4px;break-after:avoid}h3{font-size:13pt;color:#153957;break-after:avoid}p,li{orphans:3;widows:3}table{border-collapse:collapse;width:100%;font-size:9pt;margin:8px 0;break-inside:auto}tr{break-inside:avoid}th,td{border:1px solid #b5c3ce;padding:5px;vertical-align:top}th{background:#eaf0f4}blockquote{border-left:4px solid #54768c;padding:3px 10px;background:#f3f6f8;margin:9px 0}pre{background:#f3f5f7;padding:10px;white-space:pre-wrap;font-size:9pt}a{color:#1d5b8b;text-decoration:none}code{font-family:Consolas,"Microsoft YaHei",monospace}</style><body><h1 id="moe">单卡 MoE 部署：七项相关工作的动机、洞察与实验证据</h1>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>单卡与多卡 MoE 部署：相关工作实验与洞察</title><style>
+@page { size: A4; margin: 18mm 17mm 17mm; }
+body { font-family: 'Times New Roman', 'SimSun', serif; font-size: 11pt;
+       line-height: 1.65; color: #20262c; max-width: 900px; margin: auto; }
+h1, h2, h3 { color: #1d3449; break-after: avoid; }
+h1 { font-size: 23pt; line-height: 1.25; margin-bottom: 4mm; }
+h1 + p { font-size: 13pt; color: #38566c; margin-bottom: 9mm; }
+h2 { font-size: 16pt; margin-top: 11mm; border-bottom: 1px solid #9eacb7;
+     padding-bottom: 2mm; }
+h3 { font-size: 12.5pt; margin-top: 7mm; }
+p, li { orphans: 3; widows: 3; }
+p { margin: 0 0 3.5mm; }
+table { border-collapse: collapse; width: 100%; font-size: 8.3pt;
+        line-height: 1.42; margin: 5mm 0; table-layout: fixed; }
+tr { break-inside: avoid; }
+th, td { border: 0.5pt solid #abb7c0; padding: 1.8mm 2mm;
+         vertical-align: top; overflow-wrap: anywhere; }
+th { background: #e9eff3; }
+blockquote { border-left: 3pt solid #5b8099; padding: 2mm 4mm;
+             background: #f2f6f8; margin: 4mm 0; }
+pre { background: #f2f5f7; border: 0.4pt solid #d8e0e5; padding: 3mm;
+      white-space: pre-wrap; font-size: 8.5pt; break-inside: avoid; }
+code { font-family: Consolas, 'SimSun', monospace; font-size: .88em; }
+a { color: #1d5b80; text-decoration: none; }
+img { display: block; max-width: 100%; height: auto; margin: 4mm auto 2mm;
+      break-inside: avoid; }
+hr { border: 0; border-top: 0.5pt solid #c9d3da; margin: 6mm 0; }
+</style></head><body><h1 id="moe">MoE 部署：八项相关工作的动机、洞察与实验证据</h1>
 <p><strong>MECC 专家导览配套材料｜2026-11-06</strong></p>
-<p>配套阅读：<a href="./MECC_单卡MoE专家一日讲义.md">MECC 工作主页与一日讲义</a> · <a href="./MECC_HPCA_current.pptx">17 页组会 PPT</a></p>
-<p>这份材料回答七个问题：<strong>每篇论文看到了什么现象？由此提出什么 Insight？怎样落成系统？具体用什么模型、卡、benchmark 和 baseline？实验结果到底是哪一个指标？</strong> 各论文的数字均属于其原始实验配置；本文按论文分别解读，便于与 MECC 的单 A100、HDD 部署场景建立机制联系。</p>
+<p>延伸阅读：<a href="./MECC_单卡MoE专家一日讲义.md">单卡 MoE 与 MECC 独立中文导读</a>。本文逐篇核对论文配置，也可单独查阅。</p>
+<p>这份材料回答七个问题：<strong>每篇论文看到了什么现象？由此提出什么 Insight？怎样落成系统？具体用什么模型、卡、benchmark 和 baseline？实验结果到底是哪一个指标？</strong> 八项工作覆盖单卡卸载和多卡全显存算子。各论文的数字均属于其原始实验配置；本文按论文分别解读，便于与 MECC 的单 A100、HDD 部署场景建立机制联系。</p>
 <h2 id="_1">一眼看清实验地图</h2>
 <table>
 <thead>
@@ -71,6 +98,14 @@
 <td>Load-on-Demand、vLLM Prefetch</td>
 <td>TTFT、TPOT、端到端延迟、TPS</td>
 </tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2506.04667">FlashMoE（分布式算子）</a></td>
+<td>8×H100 80 GB；部分利用率实验用 2×A100</td>
+<td>最多 128 专家的 MoE 层配置</td>
+<td>最高 16K token 序列；单层 forward</td>
+<td>Comet、FasterMoE、Megatron-CUTLASS、Megatron-TE</td>
+<td>单层延迟、吞吐、GPU 利用率、通信计算重叠</td>
+</tr>
 </tbody>
 </table>
 <p>表中 <code>BrainStorm*</code> 表示论文作者为评估自行扩展的机制版本。下面每节把“论文的 Insight”与“我们从中学到的系统问题”分开写，便于在组会讨论时准确定位贡献。</p>
@@ -118,6 +153,11 @@
 <td>MoE-CORE / DeepSeek GSM8K</td>
 <td>Load on Demand</td>
 <td>TPOT 66.5→38.0 ms/token；请求端到端 37.84→21.10 s</td>
+</tr>
+<tr>
+<td>FlashMoE（分布式算子）/ 8×H100</td>
+<td>Comet、FasterMoE、Megatron 系列等</td>
+<td>所测配置最高 6× 更低单层延迟、5.7× 更高吞吐、9× GPU 利用率</td>
 </tr>
 </tbody>
 </table>
@@ -412,58 +452,44 @@
 </table>
 <p><strong>代表结果。</strong> DeepSeek 的五类负载中，MoE-CORE 的平均 TPOT <strong>38.0—44.8 ms</strong>；相应 LoD 为 <strong>62.1—70.6 ms</strong>，即 <strong>1.39—1.75×</strong>。GSM8K 具体为 <strong>66.5→38.0 ms/token</strong>，端到端约 <strong>37.84→21.10 s</strong>。GLM 的平均 TPOT 为 <strong>206.6—220.5 ms</strong>，LoD 为 <strong>229.1—244.8 ms</strong>。论文还列出 vLLM Prefetch 的 TPOT，但其输出长度上限与另两项不同，适合阅读 TPOT，不适合直接用端到端请求时间求统一速度比。<a href="https://arxiv.org/abs/2610.01950">论文 §4、表 1</a></p>
 <p><strong>对 MECC 的启发。</strong> 逐层初始化、在线驻留和预取已是密切相关的设计轴。MECC 的重点是单 GPU、HDD 冷层、任务预算内的完整专家访问；讨论贡献时最有解释力的是相同权重、相同容量下逐项拆分初态、替换和数据交付的作用。</p>
-<hr />
-<h2 id="_9">如何把七篇论文放进一次组会讨论</h2>
-<p>可以用同一个问题逐篇问：“<strong>下一次路由选中一位目前不在 GPU 的专家，你让什么东西移动、让谁计算、又让哪个专家离开缓存？</strong>”</p>
+<h2 id="8-flashmoeaimuyo-gpu">8. FlashMoE（Aimuyo 等）：专家已在多卡显存，为什么 GPU 仍会等待</h2>
+<h3 id="motivation_7">Motivation</h3>
+<p>专家并行把同一 MoE 层的不同专家分散在多张 GPU 上。路由器选定专家后，系统要把 token 送往持有专家的 GPU，再把计算结果送回。传统实现常把门控、分发、专家计算和合并拆成许多 kernel；通信同步与 kernel 启动间隙让 GPU 空闲。这与 Kim 等人同名 FlashMoE 所研究的 SSD 缓存替换是两个问题。<a href="https://arxiv.org/html/2506.04667v3">论文 §1—2</a></p>
+<h3 id="insight_7">Insight 与方法机制</h3>
+<p><strong>Insight：在多卡全显存条件下，把分发、专家计算和合并放进同一个常驻 GPU kernel，可以细粒度重叠通信与计算。</strong> FlashMoE 由 GPU 发起跨卡通信，用 tile 级任务调度决定计算何时进行。专家权重驻留在 GPU，跨卡主要移动 token 激活；它优化的是完整 MoE 层的执行路径，而非从 CPU 或 HDD 按需加载专家权重。<a href="https://arxiv.org/html/2506.04667v3">论文 §3</a></p>
+<h3 id="_9">原论文实验配置</h3>
 <table>
 <thead>
 <tr>
-<th>工作</th>
-<th>未命中时主要改变的决策</th>
-<th>一句话 Insight</th>
+<th>项目</th>
+<th>配置</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>SwapMoE</td>
-<td>有限内存里保留哪些虚拟专家</td>
-<td>映射与预算规划共同决定质量、占用和速度</td>
+<td>主测试机</td>
+<td>8 张 H100 80 GB；另有 2 张 A100 的利用率诊断</td>
 </tr>
 <tr>
-<td>Fiddler</td>
-<td>CPU 计算还是传权重到 GPU</td>
-<td>决策应比较传输与计算的端到端成本</td>
+<td>负载</td>
+<td>分布式 MoE 层前向计算；专家数最高 128，序列最高 16K token</td>
 </tr>
 <tr>
-<td>MoE-Infinity</td>
-<td>该预取谁、该保留谁</td>
-<td>请求级激活模式能提示后续层的访问</td>
+<td>Baseline</td>
+<td>Comet、FasterMoE、Megatron-CUTLASS、Megatron-TE；部分分析包含 DeepEP</td>
 </tr>
 <tr>
-<td>MoE-Lightning</td>
-<td>何时传输与计算</td>
-<td>流水减少设备等待，提高批吞吐</td>
+<td>指标</td>
+<td>单层 forward 延迟、吞吐、GPU 利用率、通信与计算重叠效率</td>
 </tr>
 <tr>
-<td>SSD-LLaMA</td>
-<td>磁盘、主存、显存和执行设备如何配合</td>
-<td>完整专家交付要端到端协调</td>
-</tr>
-<tr>
-<td>FlashMoE</td>
-<td>谁被淘汰</td>
-<td>最近性与频率联合预测未来重用</td>
-</tr>
-<tr>
-<td>MoE-CORE</td>
-<td>每层留多少、何时预取</td>
-<td>不同层和不同阶段需要不同的资源安排</td>
-</tr>
-<tr>
-<td>MECC</td>
-<td>部署前放谁、运行时 GPU/CPU 如何联动</td>
-<td>初始热度与在线路由分别管理两个时间尺度</td>
+<td>精度口径</td>
+<td>FlashMoE 使用 FP32，所比较的部分基线使用 FP16；阅读图表时应保留这一条件</td>
 </tr>
 </tbody>
 </table>
-<p>这也给出了阅读实验图的顺序：先看<strong>模型与权重格式</strong>，再看<strong>GPU/CPU/磁盘预算</strong>，接着看<strong>benchmark 和输出长度</strong>，最后看论文到底报告的是 <strong>TTFT、TPOT、tok/s、总吞吐、命中率还是质量</strong>。只有这些条件相近，图中的高低才回答相近的问题。</p></body></html>
+<p><strong>代表结果。</strong> 论文摘要汇总其所测配置的最高改善：GPU 利用率 <strong>9×</strong>、单层延迟降低 <strong>6×</strong>、吞吐提高 <strong>5.7×</strong>、重叠效率 <strong>4×</strong>。这些数字来自不同图格的最优改善，不能合成同一端到端完整模型推理速度。<a href="https://arxiv.org/html/2506.04667v3">论文摘要与 §4</a></p>
+<p><strong>对 MECC 的启发。</strong> 一旦多卡总显存能容纳专家，主要瓶颈可能转向 token 通信与算子调度。若总显存不足，再采用 CPU／磁盘卸载时，专家权重传输重新进入关键路径。MECC 的单卡 HDD 问题属于后一类容量条件，因而多卡 FlashMoE 适合解释部署路径，不适合作为未重跑的直接性能基线。</p>
+<hr />
+<h2 id="_10">阅读这些实验时，先核对哪些条件</h2>
+<p>比较两张实验图时，先看<strong>模型与权重格式</strong>，再看<strong>GPU、CPU 和磁盘预算</strong>，接着看<strong>benchmark、批量和输出长度</strong>，最后看指标是 <strong>TTFT、TPOT、tok/s、总吞吐、命中率还是质量</strong>。多卡 FlashMoE 测的是专家已驻留时的 MoE 层执行；其余卸载系统常测完整模型请求。它们回答的问题不同，实验数字也不能直接放在同一根柱上。</p></body></html>

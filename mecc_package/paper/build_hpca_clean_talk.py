@@ -49,23 +49,32 @@ def save(fig,name):
 
 def charts():
  mdata=D['motivation']
- fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.21,right=.97,bottom=.19,top=.78)
+ fig=plt.figure(figsize=(6.15,2.75))
+ ax=fig.add_axes([.24,.21,.48,.57]);ref=fig.add_axes([.79,.21,.18,.57],sharey=ax)
  workload=['8×7B 问答','8×7B 代码','8×22B 问答','8×22B 代码']
  yy=np.arange(4)
- for name,label,c,marker,offset in [
-  ('Resident 8-GPU reference','8 卡全显存',GREY,'o',-.18),
-  ('Unoptimized streaming','未优化单卡',ORANGE,'s',0),
-  ('MECC','单卡 MECC',BLUE,'D',.18)]:
-  vals=D['ttft_seconds'][name]
-  ax.scatter(vals,yy+offset,s=47,marker=marker,color=c,edgecolor=INK,linewidth=.6,label=label,zorder=4)
-  if name!='Resident 8-GPU reference':
-   for x,y in zip(vals,yy+offset):ax.annotate(f'{x:g}',(x,y),xytext=(4,0),textcoords='offset points',va='center',fontsize=9)
- ax.set_xscale('log');ax.set_xlim(3,400);ax.set_xticks([5,10,30,100,300],['5','10','30','100','300'])
- ax.set_yticks(yy,workload);ax.invert_yaxis();ax.set_xlabel('首 token 延迟（秒，对数刻度）')
- ax.grid(axis='x',color='#DEE2E5',lw=.55);ax.set_axisbelow(True)
- ax.spines[['top','right']].set_visible(False);ax.spines[['left','bottom']].set_color(INK)
- ax.legend(ncol=3,loc='lower center',bbox_to_anchor=(.5,1.02),fontsize=9,frameon=False,
-           columnspacing=.8,handletextpad=.2)
+ for key,label,color,hatch,off in [
+  ('Unoptimized streaming','未优化单卡',ORANGE,'///',-.17),
+  ('MECC','MECC 单卡',BLUE,'xxx',.17)]:
+  vals=D['ttft_seconds'][key]
+  bars=ax.barh(yy+off,vals,height=.29,color=color,edgecolor=INK,linewidth=.6,hatch=hatch,label=label,zorder=3)
+  ax.bar_label(bars,labels=[f'{v:g}' for v in vals],padding=2,fontsize=9)
+ vals=D['ttft_seconds']['Resident 8-GPU reference']
+ bars=ref.barh(yy,vals,height=.46,color=GREY,edgecolor=INK,linewidth=.6,hatch='\\\\',label='8 卡全显存',zorder=3)
+ ref.bar_label(bars,labels=[f'{v:g}' for v in vals],padding=2,fontsize=9)
+ ax.set_yticks(yy,workload);ax.invert_yaxis();ax.set_xlim(0,330);ax.set_xticks([0,100,200,300])
+ ax.set_xlabel('单卡首 token 延迟（秒）',fontsize=11)
+ ref.tick_params(axis='y',left=False,labelleft=False);ref.set_xlim(0,13);ref.set_xticks([0,5,10])
+ ref.set_xlabel('8 卡（秒）',fontsize=11)
+ for a in (ax,ref):
+  a.grid(axis='x',color='#DEE2E5',lw=.55);a.set_axisbelow(True)
+  a.spines[['top','right']].set_visible(False);a.spines[['left','bottom']].set_color(INK)
+  a.tick_params(axis='both',labelsize=10)
+ fig.text(.48,.89,'单卡：相同模型与任务',ha='center',fontsize=11,color=INK)
+ fig.text(.88,.89,'多卡参照',ha='center',fontsize=11,color=INK)
+ handles=[plt.Rectangle((0,0),1,1,facecolor=c,edgecolor=INK,hatch=h) for c,h in [(ORANGE,'///'),(BLUE,'xxx'),(GREY,'\\\\')]]
+ fig.legend(handles,['未优化单卡','MECC 单卡','8 卡全显存'],ncol=3,loc='upper center',
+            bbox_to_anchor=(.57,1.04),fontsize=9,frameon=False,handlelength=1.1,columnspacing=.7)
  save(fig,'mot_cold_start')
 
  fig,ax=plt.subplots(figsize=(5.7,2.75));fig.subplots_adjust(left=.34,right=.95,bottom=.19,top=.91)
