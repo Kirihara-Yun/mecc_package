@@ -1,0 +1,82 @@
+{
+  "definition": "speedup = reference phase latency / policy phase latency; higher is better",
+  "reference": "a100-main-naive-20261104",
+  "display_names": {
+    "naive": "Streaming",
+    "swapmoe": "Swap-style",
+    "fiddler": "Fiddler-style",
+    "flashmoe_rf_adaptation": "Flash-RF",
+    "ours_io": "MECC I/O",
+    "ours": "MECC"
+  },
+  "main": {
+    "naive": {
+      "run_id": "a100-main-naive-20261104",
+      "source_sha256": "d2de3adf836a518c155d2d5de23d71902454fd2217b1ca9e260b2bcc7e6b5e60",
+      "tpot_ms": 13042.59,
+      "ttft_ms": 156855.01,
+      "decode_speedup": 1.0,
+      "first_token_speedup": 1.0
+    },
+    "swapmoe": {
+      "run_id": "a100-main-swapmoe-20261104",
+      "source_sha256": "f6a584302103d68d55849df89e53e0b99694c2b9833c637dec3727431f7d32b9",
+      "tpot_ms": 21751.65,
+      "ttft_ms": 174193.53,
+      "decode_speedup": 0.59961382239968,
+      "first_token_speedup": 0.9004640413452785
+    },
+    "fiddler": {
+      "run_id": "a100-main-fiddler-20261104",
+      "source_sha256": "3674a084ea3db352f50190e441ec330eaaa9ff8d1be745a21f944050961c4ccd",
+      "tpot_ms": 8258.99,
+      "ttft_ms": 398445.74,
+      "decode_speedup": 1.5791991514700952,
+      "first_token_speedup": 0.3936671778696894
+    },
+    "flashmoe_rf_adaptation": {
+      "run_id": "a100-main-flashmoe_rf_adaptation-20261104",
+      "source_sha256": "e935bf37c6f8207a501d4a7095732fd6ca5020e4f18bb116c197698ede64d668",
+      "tpot_ms": 7194.97,
+      "ttft_ms": 101760.57,
+      "decode_speedup": 1.812737231704927,
+      "first_token_speedup": 1.5414124547454873
+    },
+    "ours_io": {
+      "run_id": "a100-main-ours_io-20261105-retry1",
+      "source_sha256": "e079ed366a87dd900a623b688ebddc9f17dba7229f3bbeb98ef93dc6cbf93383",
+      "tpot_ms": 7780.96,
+      "ttft_ms": 139797.01,
+      "decode_speedup": 1.6762186156978058,
+      "first_token_speedup": 1.1220197771039595
+    },
+    "ours": {
+      "run_id": "a100-main-ours-20261104",
+      "source_sha256": "03d4e4b2a28663823724966e20769673a2ae876e80022e73c6a3525e497844e9",
+      "tpot_ms": 7381.98,
+      "ttft_ms": 139140.26,
+      "decode_speedup": 1.7668145944583975,
+      "first_token_speedup": 1.1273157747441322
+    }
+  },
+  "independent": {
+    "run_id": "a100-e06-independent-20261105",
+    "source_sha256": "b4a15f25500cd2ded37905dd1a2deea1165fc78ec05ecc96ed0b1a4641534c78",
+    "tpot_ms": 32941.89,
+    "streaming_relative_speedup": 0.39592719179136354,
+    "mecc_speedup": 4.462473482724147
+  },
+  "mecc_HDD_demand_reduction_vs_independent_pct": 73.90396659707724,
+  "budget_mecc_speedup_vs_streaming": {
+    "30": 1.4230957782453482,
+    "60": 5.1663606462095295
+  },
+  "original_runs_modified": false,
+  "related_system_evidence": {
+    "swapmoe": "completed local FP16 mechanism adapter",
+    "fiddler": "completed local CPU-compute mechanism adapter",
+    "flashmoe": "completed deterministic RF adapter, not trained original predictor",
+    "moe_core": "no completed run found",
+    "moe_infinity": "benchmark entry exists; no completed result found"
+  }
+}

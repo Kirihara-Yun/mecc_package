@@ -1,0 +1,45 @@
+{
+  "main_figure_policies": [
+    "naive",
+    "swapmoe",
+    "fiddler",
+    "ours_io",
+    "ours"
+  ],
+  "main_figure_display_names": [
+    "Streaming",
+    "Swap-style",
+    "Fiddler-style",
+    "MECC I/O",
+    "MECC"
+  ],
+  "additional_measured_adapter_location": "Appendix A, Measured Protocols; complete RATIO_AUDIT.json",
+  "data_modified": false,
+  "framework_label": "Expert routing",
+  "cross_model_series": [
+    "Unoptimized streaming",
+    "MECC"
+  ],
+  "main_figure_values": {
+    "naive": {
+      "decode": 1.0,
+      "first_token": 1.0
+    },
+    "swapmoe": {
+      "decode": 0.59961382239968,
+      "first_token": 0.9004640413452785
+    },
+    "fiddler": {
+      "decode": 1.5791991514700952,
+      "first_token": 0.3936671778696894
+    },
+    "ours_io": {
+      "decode": 1.6762186156978058,
+      "first_token": 1.1220197771039595
+    },
+    "ours": {
+      "decode": 1.7668145944583975,
+      "first_token": 1.1273157747441322
+    }
+  }
+}
