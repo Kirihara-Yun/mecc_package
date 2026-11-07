@@ -12,6 +12,7 @@
 | R05 | 11 月 7 日：直接陈述、删除自我辩护、配置与数据说明移至第八页 | [最新表达修订稿](./r05_direct/manuscript.pdf) | [修改记录](./r05_direct/CHANGELOG.md) | 本轮不评分 |
 | R06 | 前七页逐段重写：句间逻辑、去重、图文对应与结果解读 | [逐段修订稿](./r06_editorial/manuscript.pdf) | [编辑记录](./r06_editorial/EDITORIAL_REVIEW.md) | 本轮不评分 |
 | R07 | 逐段重写后的语义终校与图文复核 | [最新英文审阅稿](./r07_proof/manuscript.pdf) | [终校记录](./r07_proof/EDITORIAL_REVIEW.md) | 本轮不评分 |
+| R08 | 修正图 1 顶部位置、图 2 标题样式、Overview 标题、方法栏底和段尾孤词 | [最新排版修订稿](./r08_layout/manuscript.pdf) | [逐页检查记录](./r08_layout/LAYOUT_REVIEW.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 
@@ -19,6 +20,6 @@
 
 R00 的冻结 SHA-256：`fe021a5c17de8588fb76a25f4411255764a31e885a98ab0b50eb57be59caf89a`。
 
-R01–R04 均为六页正文加一页参考文献。R05–R07 按最新要求另加第八页附录，配置、数据来源和黄色高亮含义集中在该页。各版保留 44 篇引用、15 张图和 Introduction 的四个部分。R06/R07 对段落逻辑和用词重新审阅，未改动配图、数据或附录。各轮详情见 `VALIDATION.json` 和语言／版式检查记录。
+R01–R04 均为六页正文加一页参考文献。R05–R08 按最新要求另加第八页附录，配置、数据来源和黄色高亮含义集中在该页。各版保留 44 篇引用、15 张图和 Introduction 的四个部分。R06/R07 对段落逻辑和用词重新审阅，未改动配图、数据或附录。R08 修订浮动位置、标题格式、断行及图形尺寸，数值和附录保留。各轮详情见 `VALIDATION.json` 和语言／版式检查记录。
 
 重建某一轮：在其目录运行 `latexmk -pdf -interaction=nonstopmode -halt-on-error manuscript.tex`。快照只读；需要继续修改时，先创建下一编号目录，避免覆盖。

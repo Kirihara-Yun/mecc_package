@@ -1,0 +1,121 @@
+{
+  "pages": 8,
+  "body_pages": 6,
+  "reference_pages": [
+    7
+  ],
+  "appendix_pages": [
+    8
+  ],
+  "issues": [],
+  "figures": {
+    "fig:intro": {
+      "number": 1,
+      "page": 1,
+      "references": [
+        1
+      ]
+    },
+    "fig:insights": {
+      "number": 2,
+      "page": 2,
+      "references": [
+        2
+      ]
+    },
+    "fig:overview": {
+      "number": 3,
+      "page": 3,
+      "references": [
+        3
+      ]
+    },
+    "fig:compile": {
+      "number": 4,
+      "page": 3,
+      "references": [
+        3
+      ]
+    },
+    "fig:retention": {
+      "number": 5,
+      "page": 4,
+      "references": [
+        4
+      ]
+    },
+    "fig:delivery": {
+      "number": 6,
+      "page": 4,
+      "references": [
+        4
+      ]
+    },
+    "fig:performance": {
+      "number": 7,
+      "page": 4,
+      "references": [
+        4
+      ]
+    },
+    "fig:target_mechanisms": {
+      "number": 8,
+      "page": 5,
+      "references": [
+        5
+      ]
+    },
+    "fig:target_ablation": {
+      "number": 9,
+      "page": 5,
+      "references": [
+        5
+      ]
+    },
+    "fig:target_traffic": {
+      "number": 10,
+      "page": 5,
+      "references": [
+        5
+      ]
+    },
+    "fig:target_models": {
+      "number": 11,
+      "page": 5,
+      "references": [
+        5
+      ]
+    },
+    "fig:target_gpu": {
+      "number": 12,
+      "page": 5,
+      "references": [
+        5
+      ]
+    },
+    "fig:target_sensitivity": {
+      "number": 13,
+      "page": 6,
+      "references": [
+        6
+      ]
+    },
+    "fig:target_quota": {
+      "number": 14,
+      "page": 6,
+      "references": [
+        6
+      ]
+    },
+    "fig:target_mismatch": {
+      "number": 15,
+      "page": 6,
+      "references": [
+        6
+      ]
+    }
+  },
+  "references": 44,
+  "no_banner": true,
+  "sha256": "1da2c91f41687a29f6566e15ac879f739b649be83f27266ced7e37ff121c879e"
+}

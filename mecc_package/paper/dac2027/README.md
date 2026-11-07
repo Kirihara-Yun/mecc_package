@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 7 日图文排版修订稿**：[R08 PDF](./reviews/hpca_20261106/r08_layout/manuscript.pdf) / [逐页检查记录](./reviews/hpca_20261106/r08_layout/LAYOUT_REVIEW.md)。修正图 1 顶部位置、图 2 两排标题样式、Overview 章标题位置和方法栏底断行，复核前七页并处理段尾孤词及跨页说明；保留六页正文、第七页引用和第八页附录。既有数值、数组、引用及旧版均保留。
+
 - **11 月 7 日逐段英文审阅与终校稿**：[R07 PDF](./reviews/hpca_20261106/r07_proof/manuscript.pdf) / [终校记录](./reviews/hpca_20261106/r07_proof/EDITORIAL_REVIEW.md)。R06 重写机械串联和重复解释，R07 继续核对主语、动作、术语和图文关系；保留四段引言、六页正文、第七页引用和第八页附录。冻结稿、配图、数据和附录均未覆盖。
 
 - **11 月 7 日表达修订版**：[R05 PDF](./reviews/hpca_20261106/r05_direct/manuscript.pdf) / [修改记录](./reviews/hpca_20261106/r05_direct/CHANGELOG.md)。保留四段引言，正文直接说明问题、方法和结果；配置、计时、数据来源与黄色高亮含义统一移至第八页附录。仍为六页正文，第七页参考文献，图形和数值来源保持不变，冻结版未覆盖。
