@@ -17,6 +17,7 @@
 | R10 | 主结果改用相对加速比，恢复相关工作适配名称，改写防御性表述 | [最新相对收益稿](./r10_relative/manuscript.pdf) | [修改及证据记录](./r10_relative/REVISION_REVIEW.md) | 本轮不评分 |
 | R11 | 正文改为机制动作叙述，主图聚焦五个策略，完整已测结果集中于附录 | [最新正文修订稿](./r11_positive/manuscript.pdf) | [逐段编辑记录](./r11_positive/EDITORIAL_REVIEW.md) | 本轮不评分 |
 | R12 | 配置与指标定义、协议编号、连续状态图、字节与比例复算、标黄基线目标 | [最新协议修订稿](./r12_protocols/manuscript.pdf) | [逐条审稿核对](./r12_protocols/REVIEW_RESPONSE.md) | 本轮不评分 |
+| R13 | 实验冲突复核、三模型两任务、候选基线、切换与摊销口径 | [实验核对稿](./r13_experiment_audit/manuscript.pdf) | [覆盖与修改记录](./r13_experiment_audit/EXPERIMENT_AUDIT.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 

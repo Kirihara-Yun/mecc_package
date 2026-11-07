@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 7 日实验一致性核对稿**：[R13 PDF](./reviews/hpca_20261106/r13_experiment_audit/manuscript.pdf) / [修改记录](./reviews/hpca_20261106/r13_experiment_audit/EXPERIMENT_AUDIT.md)。明确任务切换，补三模型两任务和候选策略目标，修正初始化摊销口径。实测保持不变，新增目标标黄，数据身份集中于第八页附录。
+
 - **11 月 7 日实验分析修订稿**：[R09 PDF](./reviews/hpca_20261106/r09_analysis/manuscript.pdf) / [修改与检查记录](./reviews/hpca_20261106/r09_analysis/ANALYSIS_REVIEW.md)。移除第六页独立相关工作，必要引用并入前文；深化关键路径分量、画像迁移、容量增量、批处理及初始化摊销分析。逐段删去重复说明，保留 44 个引用、15 幅图、既有数组和六加一加一页结构。配置及数据性质说明集中于第八页，黄色高亮保留。
 
 - **11 月 7 日图文排版修订稿**：[R08 PDF](./reviews/hpca_20261106/r08_layout/manuscript.pdf) / [逐页检查记录](./reviews/hpca_20261106/r08_layout/LAYOUT_REVIEW.md)。修正图 1 顶部位置、图 2 两排标题样式、Overview 章标题位置和方法栏底断行，复核前七页并处理段尾孤词及跨页说明；保留六页正文、第七页引用和第八页附录。既有数值、数组、引用及旧版均保留。

@@ -246,6 +246,10 @@
 
 ## 6. 复现台账（数字 → 命令）
 
+### R13 审阅目标补充（2026-11-07）
+
+`mecc_package/paper/dac2027/reviews/hpca_20261106/r13_experiment_audit/EXPERIMENT_TARGETS.json` 是作者设定的未实测目标，不属于 D2/D1 实验或 D0 理论证明，禁止登记为 verified 性能结论。补充 Qwen2 跨模型点、MoEpic/Diff-MoE 候选路径及 HumanEval 对照；旧测量和数组保持不变。论文通过黄色和第八页附录说明身份。同目录独立检查核对原始哈希、完整策略、比值和目标交点；verify_claims.py 本身不证明目标已完成。详见同目录 EXPERIMENT_AUDIT.md。
+
 > 让每个 D2 数字可一键回溯到产生它的命令。**新增实测必须补一行**。
 
 | 证据文件 | 产生命令（在 `mecc_package/` 下） | 级别 | 备注 |

@@ -1,0 +1,141 @@
+--- r12_protocols
++++ r13_experiment_audit
+@@ -221,10 +221,10 @@
+ ID & Input group & Prompts; tokens & H/C \\
+ \midrule
+ E1 & WikiText-2 & 8; 64/64 & 50/40 \\
+-\pending{E2} & GSM8K & 8; 128/128 & per model$^{a}$ \\
+-\pending{E3} & GSM8K, HumanEval & 8; 128/128 & $50/\{40,64\}^{a}$ \\
++\pending{E2} & GSM8K $\to$ HumanEval & 8+8; 128/128 & per model$^{a}$ \\
++\pending{E3} & GSM8K, HumanEval & 8/task; 128/128 & per model$^{a}$ \\
+ E4 & WikiText-2 & 4; 64/16 & 50/30 or 60 \\
+-\pending{E5} & GSM8K & 8; 128/128 & 30/20 \\
++\pending{E5} & GSM8K, HumanEval & 8/task; 128/128 & 30/20 \\
+ \bottomrule
+ \end{tabular}
+ \par\smallskip
+@@ -257,12 +257,12 @@
+ \subsection{Mechanism Attribution}
+ \label{sec:mechanisms}
+ 
+-E2 uses smaller resident allowances than E1 for Mixtral-8x7B. Figure~\ref{fig:target_mechanisms}(a) compares equal budgets, global hotness, and layer profiles. Their TPOT values are \pending{18.6, 16.7, and 14.2 s/token}. Panel (b) compares fixed CPU, independent LRU, and joint LRU at \pending{22.8, 18.3, and 14.2}. Panel (c) follows a task switch; joint admission changes post-switch TPOT from \pending{25.1 to 16.0}.
++E2 uses smaller resident allowances than E1 for Mixtral-8x7B. Figure~\ref{fig:target_mechanisms}(a) compares equal quotas, count allocation, and the rank-model plan. Their TPOT values are \pending{18.6, 16.7, and 14.2 s/token}. Panel (b) compares fixed CPU, independent LRU, and joint LRU at \pending{22.8, 18.3, and 14.2}. Panel (c) switches from eight GSM8K prompts to eight HumanEval prompts; joint admission changes post-switch TPOT from \pending{25.1 to 16.0}.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/ablation_startup.pdf}
+ \par\nointerlineskip
+-\caption{E3 ablation and initialization amortization. (a) Components under the GSM8K protocol. (b) Online initialization versus compiled initialization; curves include initial placement and decode cost.}
++\caption{E3 ablation and initialization amortization. (a) Components under the GSM8K protocol. (b) Uniform versus compiled plans; curves sum amortized placement and decode time.}
+ \label{fig:target_ablation}
+ \end{figure}
+ For E3 Mixtral-8x7B/GSM8K, adding placement, joint retention, and delivery scheduling gives the TPOT sequence \pending{24, 18, 11, and 8 s/token} in Figure~\ref{fig:target_ablation}(a). The successive reductions are \pending{6, 7, and 3 s/token}. Joint retention provides the largest step by keeping GPU victims available on the host. Scheduling then shortens the delivery path at \pending{20 percent} HDD demand. Panel (b) includes the initial placement cost, connecting this decode gain to the response length.
+@@ -282,21 +282,21 @@
+ \caption{E3 model/workload comparison. GSM8K and HumanEval use 128 input and 128 output tokens, calibrated initialization, and the model-specific allowances in Table~\ref{tab:protocols}. }
+ \label{fig:target_models}
+ \end{figure}
+-Under E3 calibrated initialization, Figure~\ref{fig:target_models} gives streaming-to-MECC ratios of \pending{3.00--3.26}$\times$ across the four model/workload groups. The absolute TPOT difference grows from \pending{16 seconds} on 8x7B/GSM8K to \pending{43 seconds} on 8x22B/HumanEval. Moving from 8x7B to 8x22B \pending{doubles} MECC TPOT; the corresponding streaming increase is \pending{2.00--2.04}$\times$. E3 measures calibrated serving on these tasks. E1 evaluates uniform initialization on WikiText-2; its 1.77$\times$ ratio belongs to that configuration.
++Under E3 calibrated initialization, Figure~\ref{fig:target_models} gives streaming-to-MECC ratios of \pending{3.00--3.26}$\times$ across six model/workload groups. The absolute TPOT difference grows from \pending{16 seconds} on 8x7B/GSM8K to \pending{43 seconds} on 8x22B/HumanEval. Qwen2-57B-A14B gives \pending{3.17}$\times$ on GSM8K and \pending{3.21}$\times$ on HumanEval. E3 measures calibrated serving on these tasks. E1 evaluates uniform initialization on WikiText-2; its 1.77$\times$ ratio belongs to that configuration.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/matched_baselines.pdf}
+ \par\nointerlineskip
+-\caption{E5 matched FP16 policy paths. Latency is normalized to MECC within each phase. Lower values are better.}
++\caption{E5 candidate FP16 policy paths. Geometric means combine task-local latency ratios on GSM8K and HumanEval. MECC is 1.0; lower is better.}
+ \label{fig:matched}
+ \end{figure}
+-E5 compares profile-based placement, victim retention, and history-based caching through the paths in Figure~\ref{fig:matched}. All paths use routed experts in FP16. Substitution and compression are disabled in this protocol. The comparison asks how the retention decision changes under a shared expert-store format and allowance. MoE-CORE, MoE-Infinity, and SSD-LLaMA supply the corresponding policy designs~\cite{core,moeinfinity,ssdllama}. Appendix~\ref{app:setup} records each path and the full E1 adapter results.
++E5 compares profile-based placement, victim retention, and history-based caching through the paths in Figure~\ref{fig:matched}. All paths use routed experts in FP16. Substitution and compression are disabled in this protocol. The comparison asks how the retention decision changes under a shared expert-store format and allowance. The candidates cover MoE-CORE, MoE-Infinity, SSD-LLaMA, FlashMoE-RF, MoEpic, and Diff-MoE~\cite{core,moeinfinity,ssdllama,flashmoe,moepic,diffmoe}. Appendix~\ref{app:setup} records each path and the full E1 adapter results.
+ 
+ \twocolumn[{
+ \begin{minipage}{\textwidth}
+ \centering\includegraphics[width=\textwidth]{completion_figures/workload_sensitivity.pdf}
+ \par\nointerlineskip
+-\captionof{figure}{Profile, input-length, and batch sensitivity. Profile size changes initialization quality, input length changes first-token work, and batch size changes aggregate throughput. The panels vary one workload parameter at a time.}
++\captionof{figure}{E7--E9 profile, input-length, and batch sensitivity. Profile size changes initialization quality, input length changes first-token work, and batch size changes aggregate throughput. The panels vary one workload parameter at a time.}
+ \label{fig:target_sensitivity}
+ \vspace{5pt}
+ \end{minipage}
+@@ -309,7 +309,7 @@
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/quota_targets.pdf}
+ \par\nointerlineskip
+-\caption{Decode latency across host-memory allowances.}
++\caption{E6 decode latency across primary host allowances; HBM allowance is 50 GiB.}
+ \label{fig:target_quota}
+ \end{figure}
+ Figure~\ref{fig:target_quota} sweeps primary host allowances from \pending{16 to 48 GiB}. MECC TPOT changes from \pending{16 to 7 s/token}, versus \pending{27 to 12} for three-tier LRU. Its first increment saves \pending{4 s/token}; the last saves \pending{1}. Earlier slots cover shorter reuse distances. E4 separately reaches complete expert coverage at 42~GiB HBM plus 42~GiB CPU residency.
+@@ -317,7 +317,7 @@
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/profile_mismatch.pdf}
+ \par\nointerlineskip
+-\caption{Profile transfer across tasks. Rows select the calibration task and columns the inference task. Cells are TPOT in s/token; the two panels share a color scale.}
++\caption{E10 profile transfer across tasks. Rows select the calibration task and columns the inference task. Cells are TPOT in s/token; the two panels share a color scale.}
+ \label{fig:target_mismatch}
+ \end{figure}
+ Across Figure~\ref{fig:target_mismatch}'s six off-diagonal task pairs, fixed and online residency average \pending{14.00 and 9.38 s/token}, respectively. This gives a \pending{33.0 percent} reduction. Their diagonal means are both \pending{8.50 s/token}. Online admission adjusts the cached expert set to the serving task. Calibration size controls the initial profile.
+@@ -332,9 +332,9 @@
+ 
+ \subsection{Amortizing Initial Placement}
+ \label{sec:amortization}
+-Let $\Delta I$ be the extra initialization time and $\Delta D$ the per-token decode saving. The E3 startup control crosses at $n^\star=\Delta I/\Delta D$. Figure~\ref{fig:target_ablation}(b) uses \pending{18 seconds} of extra initialization and \pending{2 seconds} of saving, giving \pending{9 output tokens}.
+-
+-At \pending{64 tokens}, total average costs are \pending{8.47 s/token} for compiled initialization and \pending{10.19} for online initialization. For requests $j=1,\ldots,J$ sharing the cache, placement contributes $T_{\mathrm{init}}/\sum_j n_j$ per output token. Here $n_j$ is the output count of request $j$. Reusing the resident state pools these outputs into one amortization horizon. Reinitialization begins a new cache lifetime.
++Let $\Delta I$ be the extra initialization time and $\Delta D$ the per-token decode saving. The uniform/compiled plan control crosses at $n^\star=\Delta I/\Delta D$. Figure~\ref{fig:target_ablation}(b) uses \pending{18 seconds} of extra placement and \pending{4 seconds} of decode saving. The crossover is \pending{4.5 tokens}, so compiled placement pays off from the \pending{fifth token}.
++
++At \pending{64 tokens}, placement-plus-decode averages are \pending{8.47 s/token} for the compiled plan and \pending{12.19} for uniform placement. For requests $j=1,\ldots,J$ sharing the cache, placement contributes $T_{\mathrm{init}}/\sum_j n_j$ per output token. Here $n_j$ is the output count of request $j$. Reusing the resident state pools these outputs into one amortization horizon. Reinitialization begins a new cache lifetime.
+ 
+ \section{Conclusion}
+ MECC compiles initial residency and carries expert reuse through joint HBM/CPU retention. The plan specifies capacities and expert IDs; runtime requests drive promotion, demotion, and delivery. State reuse amortizes initial placement across requests. E1 gives 1.77$\times$ decode speedup over streaming on one A100.
+@@ -349,31 +349,35 @@
+ \section{Experimental Configuration and Figure Data}
+ \label{app:setup}
+ \subsection{Platform and Physical Accounting}
+-The A100 exposes 80~GB HBM. The host has about 1~TB of physical RAM. The backing volume is local ext4 on RAID device /dev/sdb, reporting ROTA=1. Physical-drive inventory and isolated disk bandwidth were not recorded. HDD names this backing path throughout the draft. Cold reads use the expert store; the medium label does not imply an SSD benchmark.
+-
+-Each expert contains 352,321,536 bytes (336~MiB). The 256 experts occupy 84~GiB (90.19 decimal GB). Dense weights add to full-model size. The main plan holds 128 HBM experts (42~GiB) and 96 CPU experts (31.5~GiB). Host mirrors add 42~GiB. At E4's 60~GiB CPU-slot allowance, 128 CPU experts add 42~GiB of primary CPU residency; mirrors bring host weight storage to 84~GiB before staging. The allowance is a planner input for primary slots, not a physical host-memory cap. Legacy config fields named GB use GiB-sized slots.
++The A100 exposes 80~GB HBM; the host has about 1~TB RAM. The backing volume is ext4 on RAID device /dev/sdb, reporting ROTA=1. Physical-drive inventory and isolated bandwidth were not recorded. HDD names this backing path throughout the draft.
++
++Each expert occupies 352,321,536 bytes (336~MiB); the 256 experts total 84~GiB (90.19 decimal GB). Dense weights add to full-model size. E1 holds 128 HBM experts (42~GiB) and 96 CPU experts (31.5~GiB), plus 42~GiB of host mirrors. E4's 60~GiB CPU-slot allowance holds 128 CPU experts (42~GiB); mirrors bring host weights to 84~GiB before staging. Planner allowances constrain primary slots, not physical host usage. Legacy GB fields use GiB-sized slots.
+ 
+ \subsection{Protocol Map and Data Identity}
+-E1 and E4 use committed single A100 runs, one per policy and setting. E1 uses uniform initialization, eight WikiText-2 prompts at 64/64 input/output tokens, and 1024 tokens for PPL. E4 uses four prompts and 16 output tokens. Thus E1's 1.77$\times$ and E4's 1.42$\times$/5.17$\times$ refer to distinct protocols.
+-
+-Yellow-highlighted values and panel titles identify authored, unmeasured design targets. E2/E3/E5 and the calibration, quota, transfer, batch, and deployment scenarios are target arrays, not completed benchmark measurements. E2 uses GSM8K with 128/128 tokens, eight prompts, and calibrated initialization. Its model-specific H/C allowances are 30/20~GiB for Mixtral-8x7B, 30/16 for Qwen2-57B-A14B, and 50/64 for Mixtral-8x22B. E3 uses 50/40 for 8x7B and 50/64 for 8x22B, on GSM8K/HumanEval, with 2048 calibration samples. Its 24/8 example and 3.00--3.26$\times$ ratios do not describe E1. These workload assignments specify planned executions; the Code arrays map to HumanEval. All target-side configurations still require implementation and hardware checks. E3's I/O step specifies a scheduling target; the current decode path delivers experts on demand.
+-
+-E5 is a matched FP16 policy-path design at 30/20~GiB on Mixtral-8x7B/GSM8K, eight 128/128-token prompts. The MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF entries are authored latency targets for local path adaptations. They are not executions of the authors' systems or observed improvements over them. The target ordering does not replace the E1 RF observation. Their raw targets, assumptions, and status are in BASELINE\_TARGETS.json. Substitution, quantization, and compression are outside this comparison.
++E1/E4 use committed single-A100 runs, one per policy/setting. E1 uses uniform initialization, eight WikiText-2 prompts at 64/64 tokens, and 1024-token PPL. E4 uses four prompts and 16 output tokens. Their 1.77$\times$ and 1.42$\times$/5.17$\times$ ratios describe distinct protocols.
++
++Yellow values and panel titles identify authored, unmeasured design targets. E2/E3/E5 and secondary sweeps are not completed benchmark measurements. E2(a,b) use eight GSM8K prompts at 128/128 tokens; (c) adds eight HumanEval prompts after that window. Calibration uses 512 GSM8K samples. H/C allowances are 30/20~GiB for Mixtral-8x7B, 30/16 for Qwen2-57B-A14B, and 50/64 for Mixtral-8x22B. Allocation controls use equal quotas, empirical counts, or Zipf-smoothed ranks under the same runtime. Retention/adaptation share initial membership and capacities.
++
++E3 uses the same token lengths, eight prompts per task, and 2048 calibration samples. H/C allowances are 50/40, 30/16, and 50/64~GiB for those three models. Its 3.00--3.26$\times$ ratios differ from E1's configuration. E3's scheduling step is a target extension; current decode delivers experts on demand.
++
++E5 uses Mixtral-8x7B at 30/20~GiB, eight 128/128-token prompts per task, and 512 calibration samples. Task-local phase ratios on GSM8K/HumanEval are combined geometrically. All six baseline entries are authored targets for candidate local adaptations, not executions of the authors' systems or observed wins. They do not replace the E1 RF observation. MoEpic's entry is a whole-expert allocation control, excluding its split-expert system. Diff-MoE still requires full-text and implementation checks. Substitution, quantization, and compression are excluded. EXPERIMENT\_TARGETS.json stores task ratios and new Qwen2 points; original arrays remain archived.
++
++E6--E10 inherit E3 8x7B/GSM8K defaults: 50/40~GiB, eight 128/128-token prompts, 2048 profile samples, and batch one. They vary host allowance, profile size, input length, batch, and calibration/serving task, respectively. E10 covers WikiText-2/GSM8K/HumanEval. All target configurations require implementation and hardware checks.
+ 
+ \subsection{Complete E1 Results and Controls}
+-E1 TPOT in seconds is 13.04259 for streaming, 21.75165 for SwapMoE-style, 8.25899 for Fiddler-style, 7.19497 for FlashMoE-RF, 7.78096 for MECC I/O, and 7.38198 for MECC. Independent caching gives 32.94189. Streaming/MECC TTFT is 156.85501/139.14026 seconds; Fiddler-style TTFT is 398.446. Full-precision division gives 4.46247$\times$ for independent/MECC TPOT and 2.86363$\times$ for Fiddler/MECC TTFT. Ratios in the figures are rounded independently. E1 FlashMoE-RF gives 1.81$\times$ decode and 1.54$\times$ first-token speedup over streaming; MECC gives 1.77$\times$/1.13$\times$.
+-
+-Streaming retains the initialized GPU set. SwapMoE-style retains a fixed CPU set and uses GPU LRU. Fiddler-style computes non-HBM experts on CPU. RF uses equal-weight inverse-recency/frequency host scoring and GPU LRU; it does not contain the original trained predictor. These are local mechanism adapters. Main GPU PPL is 3.427; CPU-compute gives 3.432. The reported speedups have one run each and no estimated sampling variance.
++E1 TPOT in seconds is 13.04259 (streaming), 21.75165 (SwapMoE-style), 8.25899 (Fiddler-style), 7.19497 (FlashMoE-RF), 7.78096 (MECC I/O), 7.38198 (MECC), and 32.94189 (independent). Streaming/MECC TTFT is 156.85501/139.14026 seconds; Fiddler-style TTFT is 398.446. Unrounded ratios give 4.46247$\times$ independent/MECC decode and 2.86363$\times$ Fiddler/MECC TTFT. FlashMoE-RF gives 1.81$\times$/1.54$\times$ decode/first-token speedup over streaming; MECC gives 1.77$\times$/1.13$\times$.
++
++Streaming retains initialized GPU residents. SwapMoE-style fixes CPU residents and uses GPU LRU. Fiddler-style executes non-HBM experts on CPU. RF uses equal-weight inverse-recency/frequency scoring and GPU LRU, without the original trained predictor. These are local mechanism adapters. GPU PPL is 3.427; CPU-compute PPL is 3.432. Each point has one run and no variance estimate. Original run hashes remain in RATIO\_AUDIT.json.
+ 
+ \subsection{Counters, Calibration, and Correctness}
+-Main HDD shares aggregate classified expert accesses across warmup, prefill, decode, and PPL. MECC's counts are 29,558 HBM, 3,820 CPU, and 4,764 HDD, totaling 38,142. Prefetched experts are classified by residency at consumption. Physical reads and H2D have separate byte counters. Initialization reads are outside this demand denominator. Target stacks describe their specified protocols and sum to 100\%.
+-
+-The rank allocator consumes supplied skew parameters and count-ranked IDs. Profiling utilities regress positive log-counts on log-ranks; fit residuals for Mixtral are not available. E1 uses the uniform CLI branch; the non-uniform CLI generates skew unless an explicit compiler input supplies it. The plan is serialized configuration data, not generated GPU kernel code.
+-
+-G1 compares the streaming and MECC paths through their shared dispatch on two 21/22-token fixture inputs, three greedy output tokens each, plus 128-token diagnostic PPL. Its per-case route/token equality is true; gate/logits maximum absolute errors are 0.0. This is short-window numerical equality between those paths, not an independent full-resident equivalence proof. No GSM8K or HumanEval task accuracy has been measured. G1\_EVIDENCE.json records the source Git object and fixture hashes.
++Main HDD shares aggregate expert accesses across warmup, prefill, decode, and PPL. MECC counts are 29,558 HBM, 3,820 CPU, and 4,764 HDD: 38,142 total. Prefetch is classified at consumption; initialization is excluded. Physical read/H2D bytes use separate counters. Target stacks sum to 100\%.
++
++The allocator consumes skew parameters and count-ranked IDs. Profiling regresses positive log-counts on log-ranks; Mixtral fit residuals are unavailable. E1 uses uniform initialization; the non-uniform CLI generates skew unless explicit compiler input supplies it. The plan is serialized configuration, not GPU kernel code.
++
++G1 compares streaming/MECC through shared dispatch on two 21/22-token inputs, three greedy outputs each, and 128-token PPL. Route/token equality is true; gate/logits maximum errors are 0.0. This is short-window path equality, not independent full-resident equivalence. GSM8K/HumanEval task accuracy remains unmeasured. G1\_EVIDENCE.json identifies the source Git object and hashes.
+ 
+ \subsection{Arithmetic and Deployment Scenario}
+-The transfer matrix's six fixed off-diagonal cells sum to 84, giving 14.00. Adaptive cells sum to 56.3, giving 9.3833 and a 32.976\% reduction. The startup control uses 12/30-second initialization and 10/8-second decode. Its crossing is 9 tokens; 64 tokens is an amortization example. The resident-reference scenario in Figure~\ref{fig:target_gpu} uses authored single/multiple-GPU values.
++Fixed off-diagonal transfer cells sum to 84 (mean 14.00); online cells sum to 56.3 (mean 9.3833), a 32.976\% reduction. Uniform/compiled startup uses 12/30-second placement and 12/8-second decode, crossing at 4.5 tokens. Curves exclude prefill. Compiled decode matches E3 GSM8K, E6 at 40~GiB, E7 at 2048 samples, and E9 at batch one. Figure~\ref{fig:target_gpu} contains authored deployment targets.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/gpu_tradeoff.pdf}

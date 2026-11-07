@@ -1,0 +1,30 @@
+\subsection{Platform and Physical Accounting}
+The A100 exposes 80~GB HBM; the host has about 1~TB RAM. The backing volume is ext4 on RAID device /dev/sdb, reporting ROTA=1. Physical-drive inventory and isolated bandwidth were not recorded. HDD names this backing path throughout the draft.
+
+Each expert occupies 352,321,536 bytes (336~MiB); the 256 experts total 84~GiB (90.19 decimal GB). Dense weights add to full-model size. E1 holds 128 HBM experts (42~GiB) and 96 CPU experts (31.5~GiB), plus 42~GiB of host mirrors. E4's 60~GiB CPU-slot allowance holds 128 CPU experts (42~GiB); mirrors bring host weights to 84~GiB before staging. Planner allowances constrain primary slots, not physical host usage. Legacy GB fields use GiB-sized slots.
+
+\subsection{Protocol Map and Data Identity}
+E1/E4 use committed single-A100 runs, one per policy/setting. E1 uses uniform initialization, eight WikiText-2 prompts at 64/64 tokens, and 1024-token PPL. E4 uses four prompts and 16 output tokens. Their 1.77$\times$ and 1.42$\times$/5.17$\times$ ratios describe distinct protocols.
+
+Yellow values and panel titles identify authored, unmeasured design targets. E2/E3/E5 and secondary sweeps are not completed benchmark measurements. E2(a,b) use eight GSM8K prompts at 128/128 tokens; (c) adds eight HumanEval prompts after that window. Calibration uses 512 GSM8K samples. H/C allowances are 30/20~GiB for Mixtral-8x7B, 30/16 for Qwen2-57B-A14B, and 50/64 for Mixtral-8x22B. Allocation controls use equal quotas, empirical counts, or Zipf-smoothed ranks under the same runtime. Retention/adaptation share initial membership and capacities.
+
+E3 uses the same token lengths, eight prompts per task, and 2048 calibration samples. H/C allowances are 50/40, 30/16, and 50/64~GiB for those three models. Its 3.00--3.26$\times$ ratios differ from E1's configuration. E3's scheduling step is a target extension; current decode delivers experts on demand.
+
+E5 uses Mixtral-8x7B at 30/20~GiB, eight 128/128-token prompts per task, and 512 calibration samples. Task-local phase ratios on GSM8K/HumanEval are combined geometrically. All six baseline entries are authored targets for candidate local adaptations, not executions of the authors' systems or observed wins. They do not replace the E1 RF observation. MoEpic's entry is a whole-expert allocation control, excluding its split-expert system. Diff-MoE still requires full-text and implementation checks. Substitution, quantization, and compression are excluded. EXPERIMENT\_TARGETS.json stores task ratios and new Qwen2 points; original arrays remain archived.
+
+E6--E10 inherit E3 8x7B/GSM8K defaults: 50/40~GiB, eight 128/128-token prompts, 2048 profile samples, and batch one. They vary host allowance, profile size, input length, batch, and calibration/serving task, respectively. E10 covers WikiText-2/GSM8K/HumanEval. All target configurations require implementation and hardware checks.
+
+\subsection{Complete E1 Results and Controls}
+E1 TPOT in seconds is 13.04259 (streaming), 21.75165 (SwapMoE-style), 8.25899 (Fiddler-style), 7.19497 (FlashMoE-RF), 7.78096 (MECC I/O), 7.38198 (MECC), and 32.94189 (independent). Streaming/MECC TTFT is 156.85501/139.14026 seconds; Fiddler-style TTFT is 398.446. Unrounded ratios give 4.46247$\times$ independent/MECC decode and 2.86363$\times$ Fiddler/MECC TTFT. FlashMoE-RF gives 1.81$\times$/1.54$\times$ decode/first-token speedup over streaming; MECC gives 1.77$\times$/1.13$\times$.
+
+Streaming retains initialized GPU residents. SwapMoE-style fixes CPU residents and uses GPU LRU. Fiddler-style executes non-HBM experts on CPU. RF uses equal-weight inverse-recency/frequency scoring and GPU LRU, without the original trained predictor. These are local mechanism adapters. GPU PPL is 3.427; CPU-compute PPL is 3.432. Each point has one run and no variance estimate. Original run hashes remain in RATIO\_AUDIT.json.
+
+\subsection{Counters, Calibration, and Correctness}
+Main HDD shares aggregate expert accesses across warmup, prefill, decode, and PPL. MECC counts are 29,558 HBM, 3,820 CPU, and 4,764 HDD: 38,142 total. Prefetch is classified at consumption; initialization is excluded. Physical read/H2D bytes use separate counters. Target stacks sum to 100\%.
+
+The allocator consumes skew parameters and count-ranked IDs. Profiling regresses positive log-counts on log-ranks; Mixtral fit residuals are unavailable. E1 uses uniform initialization; the non-uniform CLI generates skew unless explicit compiler input supplies it. The plan is serialized configuration, not GPU kernel code.
+
+G1 compares streaming/MECC through shared dispatch on two 21/22-token inputs, three greedy outputs each, and 128-token PPL. Route/token equality is true; gate/logits maximum errors are 0.0. This is short-window path equality, not independent full-resident equivalence. GSM8K/HumanEval task accuracy remains unmeasured. G1\_EVIDENCE.json identifies the source Git object and hashes.
+
+\subsection{Arithmetic and Deployment Scenario}
+Fixed off-diagonal transfer cells sum to 84 (mean 14.00); online cells sum to 56.3 (mean 9.3833), a 32.976\% reduction. Uniform/compiled startup uses 12/30-second placement and 12/8-second decode, crossing at 4.5 tokens. Curves exclude prefill. Compiled decode matches E3 GSM8K, E6 at 40~GiB, E7 at 2048 samples, and E9 at batch one. Figure~\ref{fig:target_gpu} contains authored deployment targets.
