@@ -16,6 +16,7 @@
 | R09 | 独立相关工作改为实验分析，清理重复语义，复核派生值与说明位置 | [最新实验分析稿](./r09_analysis/manuscript.pdf) | [修改记录](./r09_analysis/ANALYSIS_REVIEW.md) | 本轮不评分 |
 | R10 | 主结果改用相对加速比，恢复相关工作适配名称，改写防御性表述 | [最新相对收益稿](./r10_relative/manuscript.pdf) | [修改及证据记录](./r10_relative/REVISION_REVIEW.md) | 本轮不评分 |
 | R11 | 正文改为机制动作叙述，主图聚焦五个策略，完整已测结果集中于附录 | [最新正文修订稿](./r11_positive/manuscript.pdf) | [逐段编辑记录](./r11_positive/EDITORIAL_REVIEW.md) | 本轮不评分 |
+| R12 | 配置与指标定义、协议编号、连续状态图、字节与比例复算、标黄基线目标 | [最新协议修订稿](./r12_protocols/manuscript.pdf) | [逐条审稿核对](./r12_protocols/REVIEW_RESPONSE.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 
@@ -28,3 +29,5 @@ R01–R04 均为六页正文加一页参考文献。R05–R10 按最新要求另
 重建某一轮：在其目录运行 `latexmk -pdf -interaction=nonstopmode -halt-on-error manuscript.tex`。快照只读；需要继续修改时，先创建下一编号目录，避免覆盖。
 
 R11 重写请求处理、运行期缓存更新和交付链条，框架标签使用 “Expert routing”。主图展示 streaming、SwapMoE-style、Fiddler-style、MECC I/O、MECC；跨模型设计图展示 streaming/MECC。完整六策略测量仍见第八页与 `RATIO_AUDIT.json`，原始数据和黄色高亮说明保留。图与正文的范围由 `FIGURE_SCOPE.json` 记录。
+
+R12 的 E1/E4 保留已测单次记录；E2/E3/E5 及其他黄色面板使用未实测目标数组，性质集中写在第八页。配置表和 `PROTOCOLS.json` 对应各组输入、容量、初始化与图。Fig.5 改为连续请求，状态由原缓存方法在符号权重上执行生成。`REVIEW_FACT_AUDIT.json` 保存均值、比例、字节与 G1 证据核对。正文十五张图、附录一张部署图，共十六张图；仍为六页正文、一页引用、一页附录。基线目标不等于已经完成原系统复现。

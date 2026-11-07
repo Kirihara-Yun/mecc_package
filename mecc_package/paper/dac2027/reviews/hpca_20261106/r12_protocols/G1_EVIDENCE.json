@@ -1,0 +1,39 @@
+{
+  "git_commit": "02cc4f6279f662ccf27e67eaee7961267d5b5ac0",
+  "source_path": "mecc_package/results/reports/a100-g1-correctness-20261103/partial_result.json",
+  "source_sha256": "85d3d73c0852b21342f18d84dd3cbd6dfa5ced82dedc821b28887c690f4653ac",
+  "platform": "a100-80g",
+  "run_time": "2026-11-03T16:42:43.011369+08:00",
+  "mode": "diagnostic_correctness",
+  "fixture": {
+    "source": "repository_diagnostic_not_benchmark",
+    "file_sha256": "913c816407bfd5fa9aacb8476f34648238dd749ff384c1bd96876f8fef6fa3f6",
+    "prompts_sha256": "97b17e92cf83e6f8b47d6a5ee1a13fa44ca48e4e1d62cbb85ff063a7aca17eda",
+    "ppl_text_sha256": "f1fb591f14d55de30d72c69db05b8e3bc22346fa60c838fb04561812cbcc5fc5",
+    "prompt_input_tokens": [
+      21,
+      22
+    ],
+    "prompt_token_sha256": [
+      "5547e1b99f592f0e67b637d9750bb71861ac4b7e34414d2a98fe74a5554591cd",
+      "59146108b04fda85714597502b92d568d4ac4edf9dc5614d0ca0acace1af03aa"
+    ],
+    "ppl_input_tokens": 128,
+    "ppl_token_sha256": "fadd0d381efe79235f217f339ea0efb89b4a9801a719bfb47e557eb38a9c2538"
+  },
+  "case_metrics": [
+    {
+      "route_equal": true,
+      "max_logit_abs_error": 0.0,
+      "max_gate_abs_error": 0.0,
+      "tokens_equal": true
+    },
+    {
+      "route_equal": true,
+      "max_logit_abs_error": 0.0,
+      "max_gate_abs_error": 0.0,
+      "tokens_equal": true
+    }
+  ],
+  "scope": "two short inputs, three greedy outputs; shared dispatch; not independent full-resident equivalence"
+}

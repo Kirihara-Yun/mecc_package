@@ -1,0 +1,24 @@
+{
+  "E1": [
+    "intro_evidence",
+    "main",
+    "motivation panel b"
+  ],
+  "E2": [
+    "mechanism_sweeps"
+  ],
+  "E3": [
+    "ablation_startup",
+    "cross_model",
+    "traffic_exposure"
+  ],
+  "E4": [
+    "measured capacity paragraph"
+  ],
+  "E5": [
+    "matched_baselines"
+  ],
+  "E3_startup_reference": "online initialization, 10 s/token; separate from the 24 s/token streaming base",
+  "target_arrays_modified": false,
+  "baseline_targets": "BASELINE_TARGETS.json; authored, not measured"
+}

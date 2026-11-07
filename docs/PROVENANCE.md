@@ -148,10 +148,14 @@
 | MAIN-9 | MECC 首 token 加速比（vs streaming / Fiddler-style） | **1.127× / 2.864×** | D2 派生比值 | `runs/a100-main-{naive,fiddler,ours}-20261104/result.json` : `results.*.ttft_ms`，参照 TTFT 除以 ours TTFT | `verified`（2026-11-07 重算；策略为共享 harness 的机制适配，不是原作者系统整体复现） |
 | MAIN-10 | 主图六策略相对 streaming 的 decode / 首 token 加速比 | decode：**1.000 / 0.600 / 1.579 / 1.813 / 1.676 / 1.767×**；首 token：**1.000 / 0.900 / 0.394 / 1.541 / 1.122 / 1.127×** | D2 派生比值 | 按 naive、swapmoe、fiddler、flashmoe_rf_adaptation、ours_io、ours 顺序；`paper/dac2027/reviews/hpca_20261106/r10_relative/RATIO_AUDIT.json` 保存原始 JSON 哈希及分子分母 | `verified`（2026-11-07；与 MAIN-1–7 相同单次运行，未新增实验或改变原数值） |
 | MAIN-11 | MECC vs independent 的 decode 加速及合并阶段 HDD 需求降幅 | **4.462× / 73.9%** | D2 派生比值 | MAIN-8 同源；`TPOT_independent / TPOT_ours`，`1 − 12.5/47.9` | `verified`（2026-11-07；需求降幅来自全阶段分类计数，不能当作 decode 物理字节降幅） |
+| MPOOL-1 | Mixtral expert块与主驻留容量 | **336 MiB/块；256块=84 GiB；4+4 slots/层对应42 GiB HBM+42 GiB CPU** | D2 数据字段及字节算术 | `runs/a100-main-ours-20261104/result.json` : `compiled_plan.expert_mb`、`results.ours.io_bytes.ssd_read`、`results.ours.phase_hits`；总SSD读取字节 / 分阶段SSD访问次数 = 352321536 B；`a100-p2-cpu60-ours-20261104` 的 `k_h/k_c=4/4` | `verified`（2026-11-07；GiB；规划CPU allowance不等于实际host cap，另有42 GiB HBM镜像和staging；不支持“60 GiB CPU独自装满全模型”） |
+| COR-1 | G1 streaming/MECC短窗路由、token、logits/gate一致性 | **2个输入，各3 token；路由/token相等；max logits/gate绝对误差均0.0** | D2 正确性诊断 | Git `gpu/a100-g1-correctness-20261103` 的 `results/reports/a100-g1-correctness-20261103/partial_result.json`；固定commit及SHA在R12 `G1_EVIDENCE.json` | `verified`（A100，2026-11-03；同仓共享dispatch短窗，不是独立全驻留完整无损证明） |
 >
 > **运行备注**：swapmoe 单次 wall time ≈ 4h07m，超 `main_driver.sh` 的 `MAX_WALL_SECONDS=14400`，driver 在 08:51 记 `STOP_TIMEOUT` 退出，但 systemd unit 继续跑至 08:58 写完 `result.json`（phase=complete，数据完整）。后续若重跑 swapmoe 需放宽该上限（建议 ≥5h）或单独续跑。
 >
 > **ours_io 补跑备注**：首次 run `a100-main-ours_io-20261105` 因 `OursIOPolicy` 数据结构过时（`gpu[uid]` 存单个对象，未跟上引擎「零拷贝淘汰」的 `(gpu_ws, cpu_ws)` 元组）触发 `TypeError: cannot unpack non-iterable ExpertWeights object`，phase=failed。修复为对齐 `OursPolicy` 的 `gpu[uid][0]` + `gpu[uid]=(g, ws_cpu)`（`e2e/policy_plugin.py`），以 `a100-main-ours_io-20261105-retry1` 重跑完成。
+
+**R12草稿目标（非证据）**：`paper/dac2027/reviews/hpca_20261106/r12_protocols/BASELINE_TARGETS.json` 的E5 MoE-CORE/MoE-Infinity/SSD-LLaMA/FlashMoE-RF匹配路径数值是作者指定、未实测的规划目标，不授予D2/D1级别或verified性能状态。图中标黄，第八页明确来源；不得作为已观测系统胜负引用，也不得替换E1原始RF结果。
 
 ### 3.2 对照场景 — DeepSeek-V2-Lite（CPU 装得下，不落 SSD，非主战场）
 

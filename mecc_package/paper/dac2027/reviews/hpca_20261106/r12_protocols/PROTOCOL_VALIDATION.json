@@ -1,0 +1,192 @@
+{
+  "artifact": {
+    "pages": 8,
+    "body_pages": 6,
+    "reference_pages": [
+      7
+    ],
+    "appendix_pages": [
+      8
+    ],
+    "issues": [],
+    "figures": {
+      "fig:intro": {
+        "number": 1,
+        "page": 1,
+        "references": [
+          1,
+          4
+        ]
+      },
+      "fig:insights": {
+        "number": 2,
+        "page": 2,
+        "references": [
+          2
+        ]
+      },
+      "fig:overview": {
+        "number": 3,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:compile": {
+        "number": 4,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:retention": {
+        "number": 5,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:delivery": {
+        "number": 6,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:performance": {
+        "number": 7,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:target_mechanisms": {
+        "number": 8,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_ablation": {
+        "number": 9,
+        "page": 5,
+        "references": [
+          5,
+          6
+        ]
+      },
+      "fig:target_traffic": {
+        "number": 10,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_models": {
+        "number": 11,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:matched": {
+        "number": 12,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_sensitivity": {
+        "number": 13,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_quota": {
+        "number": 14,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_mismatch": {
+        "number": 15,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_gpu": {
+        "number": 16,
+        "page": 8,
+        "references": [
+          8
+        ]
+      }
+    },
+    "references": 44,
+    "no_banner": true,
+    "sha256": "cb823bf57125fb21f48530aa05bfe4c54be3280ca0b8438e7404cc97974a7596"
+  },
+  "column_bottoms_pt": [
+    {
+      "page": 1,
+      "left": 719.84,
+      "right": 686.41
+    },
+    {
+      "page": 2,
+      "left": 675.0,
+      "right": 672.48
+    },
+    {
+      "page": 3,
+      "left": 719.84,
+      "right": 719.84
+    },
+    {
+      "page": 4,
+      "left": 719.85,
+      "right": 719.84
+    },
+    {
+      "page": 5,
+      "left": 697.64,
+      "right": 696.92
+    },
+    {
+      "page": 6,
+      "left": 685.75,
+      "right": 680.68
+    },
+    {
+      "page": 7,
+      "left": 653.64,
+      "right": 649.35
+    },
+    {
+      "page": 8,
+      "left": 644.57,
+      "right": 624.85
+    }
+  ],
+  "single_word_paragraph_tails": [],
+  "citation_keys": 44,
+  "configuration_table": true,
+  "protocol_identifiers": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5"
+  ],
+  "full_appendix_in_delivered_pdf": true,
+  "prior_measurements_and_design_arrays_unchanged": true,
+  "new_baselines_status": "authored unmeasured E5 targets; appendix disclosure retained",
+  "arithmetic_and_raw_source_hashes_verified": true,
+  "actual_cache_methods_executed_on_symbolic_weights": true,
+  "old_independent_cases_were_valid": true,
+  "old_archives_unchanged": true,
+  "no_new_A100_runs": true
+}

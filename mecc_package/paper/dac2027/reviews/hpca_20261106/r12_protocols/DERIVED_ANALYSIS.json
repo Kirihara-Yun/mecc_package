@@ -1,0 +1,77 @@
+{
+  "status": "Arithmetic from authored unmeasured design arrays; no additional experimental runs",
+  "inputs": {
+    "ideal_assumptions.json": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
+    "narrative_targets.json": "e96cb5a7d0a2f54d570754449c55c1f8b87f22facbff3d8cbe8a0ddec22d4836"
+  },
+  "transfer": {
+    "off_diagonal_means": {
+      "transfer_fixed": 14.0,
+      "transfer_adaptive": 9.383333333333333
+    },
+    "reduction_pct": 32.97619047619048,
+    "diagonal_means": {
+      "transfer_fixed": 8.5,
+      "transfer_adaptive": 8.5
+    }
+  },
+  "component_savings": [
+    6,
+    7,
+    3
+  ],
+  "io_exposed_savings": {
+    "exposed_hdd": 2,
+    "exposed_h2d": 1
+  },
+  "cross_model_speedups": [
+    3.0,
+    3.263157894736842,
+    3.0625,
+    3.263157894736842
+  ],
+  "cross_model_absolute_savings": [
+    16,
+    21.5,
+    33,
+    43
+  ],
+  "mecc_size_growth": [
+    2.0,
+    2.0
+  ],
+  "streaming_size_growth": [
+    2.0416666666666665,
+    2.0
+  ],
+  "host_increment_savings": [
+    4,
+    2.5,
+    1.5,
+    1
+  ],
+  "ttft_speedups": [
+    1.6071428571428572,
+    1.7391304347826086,
+    1.7714285714285714,
+    1.7941176470588236
+  ],
+  "batch": {
+    "throughput_growth": 4.04,
+    "step_seconds_B1": 8.0,
+    "step_seconds_B8": 15.841584158415841
+  },
+  "startup": {
+    "initial_premium": 18,
+    "decode_saving": 2,
+    "crossing_tokens": 9.0,
+    "initial_per_token_n64": {
+      "reference": 0.1875,
+      "MECC": 0.46875
+    },
+    "total_per_token_n64": {
+      "reference": 10.1875,
+      "MECC": 8.46875
+    }
+  }
+}

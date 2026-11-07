@@ -1,0 +1,77 @@
+{
+  "motivation_evidence": {
+    "target_fields": [
+      "motivation.ssd_misses_*",
+      "motivation.*_windows"
+    ],
+    "measured": "DATA_AUDIT.json: independent, main.swapmoe, main.ours; all-phase hit_pct.ssd"
+  },
+  "mechanism_sweeps": {
+    "target_fields": [
+      "insight_ablation_targets.placement_same_runtime",
+      "insight_ablation_targets.retention_same_initial_plan",
+      "insight_ablation_targets.adaptation_same_initial_plan"
+    ]
+  },
+  "cross_model": {
+    "target_fields": [
+      "groups",
+      "tpot_seconds.Unoptimized streaming",
+      "tpot_seconds.MECC"
+    ],
+    "scope": "Two-policy design comparison. Source arrays retained unchanged."
+  },
+  "ablation_startup": {
+    "target_fields": [
+      "ablation_tpot_seconds",
+      "ablation_ssd_percent",
+      "startup_cost_seconds",
+      "startup_decode_tpot_seconds"
+    ],
+    "derived": "amortized = startup_cost / output_tokens + decode_tpot; fixed illustrative costs"
+  },
+  "gpu_tradeoff": {
+    "target_fields": [
+      "gpus",
+      "resident_gpu_tpot_seconds",
+      "mecc_gpu_tpot_seconds[0]"
+    ],
+    "excluded": "No multi-GPU MECC values. No attribution to published FlashMoE."
+  },
+  "quota_targets": {
+    "target_fields": [
+      "cpu_budget_gb",
+      "budget_tpot_seconds"
+    ],
+    "scope": "Authored dense-quota sweep; not merged with the measured four-prompt protocol."
+  },
+  "traffic_exposure": {
+    "source": "narrative_targets.json",
+    "target_fields": [
+      "demand_*",
+      "exposed_*"
+    ],
+    "checks": "Demand sums to 100%; exposed components sum to 24/18/11/8 s/token. Not physical byte measurements."
+  },
+  "workload_sensitivity": {
+    "source": "narrative_targets.json",
+    "target_fields": [
+      "profile_*",
+      "input_*",
+      "batch_*"
+    ],
+    "scope": "Independent illustrative protocols per panel; aggregate throughput in panel c."
+  },
+  "profile_mismatch": {
+    "source": "narrative_targets.json",
+    "target_fields": [
+      "transfer_tasks",
+      "transfer_fixed",
+      "transfer_adaptive"
+    ],
+    "scope": "Authored transfer matrix; identical color limits. Not real benchmark results."
+  },
+  "_source_sha256": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
+  "_narrative_targets_sha256": "e96cb5a7d0a2f54d570754449c55c1f8b87f22facbff3d8cbe8a0ddec22d4836",
+  "_status": "Yellow panel titles mark authored illustrative targets; the Evaluation section states their identity."
+}

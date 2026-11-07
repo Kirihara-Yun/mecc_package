@@ -1,0 +1,117 @@
+{
+  "E1": {
+    "status": "measured single runs",
+    "model": "Mixtral-8x7B",
+    "dataset": "WikiText-2",
+    "prompts": 8,
+    "input_tokens": 64,
+    "output_tokens": 64,
+    "hbm_allowance_gib": 50,
+    "cpu_allowance_gib": 40,
+    "init": "uniform",
+    "figures": [
+      "intro",
+      "performance",
+      "motivation:b"
+    ]
+  },
+  "E2": {
+    "status": "authored unmeasured design",
+    "dataset": "GSM8K",
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "init": "profile",
+    "model_hc_gib": {
+      "Mixtral-8x7B": [
+        30,
+        20
+      ],
+      "Qwen2-57B-A14B": [
+        30,
+        16
+      ],
+      "Mixtral-8x22B": [
+        50,
+        64
+      ]
+    },
+    "figures": [
+      "mechanisms"
+    ]
+  },
+  "E3": {
+    "status": "authored unmeasured design",
+    "datasets": [
+      "GSM8K",
+      "HumanEval"
+    ],
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "init": "profile",
+    "calibration_samples": 2048,
+    "model_hc_gib": {
+      "Mixtral-8x7B": [
+        50,
+        40
+      ],
+      "Mixtral-8x22B": [
+        50,
+        64
+      ]
+    },
+    "figures": [
+      "ablation",
+      "cross_model",
+      "startup",
+      "traffic/exposure"
+    ],
+    "startup_reference": "online initialization at 10 s/token; not 24 s/token streaming"
+  },
+  "E4": {
+    "status": "measured single runs",
+    "model": "Mixtral-8x7B",
+    "dataset": "WikiText-2",
+    "prompts": 4,
+    "input_tokens": 64,
+    "output_tokens": 16,
+    "hbm_allowance_gib": 50,
+    "cpu_allowances_gib": [
+      30,
+      60
+    ],
+    "init": "uniform",
+    "figures": [
+      "capacity paragraph"
+    ]
+  },
+  "E5": {
+    "status": "authored unmeasured baseline targets",
+    "source": "BASELINE_TARGETS.json",
+    "figures": [
+      "matched_baselines"
+    ]
+  },
+  "metrics": {
+    "speedup": "unrounded reference phase latency / unrounded policy phase latency",
+    "hdd_share": "n_hdd / sum of hbm,cpu,hdd,cpu_compute classified accesses",
+    "main_count_windows": [
+      "warmup",
+      "prefill",
+      "decode",
+      "ppl"
+    ],
+    "initialization_in_demand_denominator": false,
+    "prefill_access_unit": "expert group consumed by a batch of rows"
+  },
+  "secondary_designs": {
+    "status": "unmeasured arrays",
+    "calibration": "narrative_targets.json:profile_*",
+    "prompt_sweep": "narrative_targets.json:input_*",
+    "batch": "narrative_targets.json:batch_*",
+    "transfer": "narrative_targets.json:transfer_*",
+    "quota": "ideal_assumptions.json:budget_tpot_seconds",
+    "deployment": "ideal_assumptions.json:gpus/resident_gpu_tpot_seconds/mecc_gpu_tpot_seconds[0]"
+  }
+}

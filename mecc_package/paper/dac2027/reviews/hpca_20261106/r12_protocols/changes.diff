@@ -1,0 +1,316 @@
+--- r11_positive
++++ r12_protocols
+@@ -60,7 +60,7 @@
+ \begin{document}
+ \maketitle\flushbottom
+ \begin{abstract}
+-Expert offloading enables single-GPU inference for mixture-of-experts (MoE) models. Repeated HDD reads make expert residency a source of inference latency. We present MECC, the MoE Expert Cache Compiler, for profile-guided placement and joint HBM/CPU caching. Its compiler allocates slots by layer and emits the expert IDs used for initialization. The runtime promotes router-selected experts and retains displaced GPU weights in the host cache. The delivery path orders HDD reads and H2D copies before GPU consumption. On one A100, MECC gives 1.77$\times$ decode speedup over streaming on FP16 Mixtral-8x7B. First-token speedup reaches 2.86$\times$ over a Fiddler-style adapter. The evaluated Mixtral perplexity is 3.427. Joint retention reduces HDD demand by 73.9\% relative to independent caches.
++Expert offloading enables single-GPU inference for mixture-of-experts (MoE) models. Repeated HDD reads make expert residency a source of inference latency. We present MECC, the MoE Expert Cache Compiler, for profile-guided placement and joint HBM/CPU caching. Its compiler allocates slots by layer and emits the expert IDs used for initialization. The runtime promotes router-selected experts and retains displaced GPU weights in the host cache. The delivery path orders HDD reads and H2D copies before GPU consumption. On one A100, MECC gives 1.77$\times$ decode speedup over streaming on FP16 Mixtral-8x7B. The evaluated Mixtral perplexity is 3.427. The emitted residency plan connects initial expert placement to request-driven promotion and demotion. Joint retention reduces HDD demand by 73.9\% relative to independent caches.
+ \end{abstract}
+ 
+ \begin{IEEEkeywords}
+@@ -87,7 +87,7 @@
+ 
+ This paper makes three contributions.
+ \begin{list}{}{\setlength{\leftmargin}{16pt}\setlength{\labelwidth}{14pt}\setlength{\labelsep}{2pt}\setlength{\itemsep}{3pt}\setlength{\topsep}{3pt}}
+-\item[(1)] \textbf{Compiling initial residency.} We map layer profiles and expert allowances to per-layer capacities and ranked expert IDs. A marginal-coverage scan determines how each additional slot extends the initial resident set.
++\item[(1)] \textbf{Compiling initial residency.} We emit a model-specific residency plan containing per-layer capacities and ranked expert IDs. A marginal-coverage scan maps each additional slot to the demand it covers.
+ \item[(2)] \textbf{Updating cross-tier residency.} We connect the compiled state to joint promotion and victim demotion. Host retention preserves GPU evictions for later reuse, while read/copy ordering prepares selected weights for consumption.
+ \item[(3)] \textbf{Evaluating weight delivery.} We compare placement, retention, and scheduling through decode latency, first-token time, source-tier demand, and sample perplexity. Workload and capacity sweeps examine calibration, task transfer, prompt length, batch size, and host allocation. Deployment comparisons report latency and accelerator occupancy.
+ \end{list}
+@@ -157,16 +157,15 @@
+ \label{fig:compile}
+ \end{figure}
+ 
+-Consider $L$ MoE layers with $N_\ell$ experts per layer. Within each model, experts have equal size $s$ and layers use the same top-$k$.
++Consider $L$ MoE layers with $N_\ell$ experts per layer. For the routed pools considered here, experts have equal size $s$ and layers use the same top-$k$.
+ 
+ Expert allowances $B_{\mathrm H}$ and $B_{\mathrm C}$ provide $S_{\mathrm H}=\lfloor B_{\mathrm H}/s\rfloor$ HBM slots and $S_{\mathrm C}=\lfloor B_{\mathrm C}/s\rfloor$ CPU slots.
+ 
+-For each layer, the compiler receives an expert order and a skew parameter $\alpha_\ell$. Profile counts determine the order. A discrete Zipf model gives the probability associated with each rank:
++Calibration orders experts by selection counts. A log-count versus log-rank regression supplies $\alpha_\ell$ as the negative slope over positive counts. The rank model smooths this profile for allocation scoring:
+ \begin{equation}
+-q_{\ell,r}=\frac{r^{-\alpha_\ell}}{\sum_{j=1}^{N_\ell}j^{-\alpha_\ell}},
+-\qquad p_{\ell,r}=q_{\ell,r}/L.
++q_{\ell,r}=\frac{r^{-\alpha_\ell}}{\sum_{j=1}^{N_\ell}j^{-\alpha_\ell}}.
+ \end{equation}
+-Here $q_{\ell,r}$ is conditional on an access to layer $\ell$. Equal top-$k$ gives equal selection mass across layers. Each rank stores the layer-local ID of its expert weight block.
++Here $q_{\ell,r}$ is conditional selection mass within layer $\ell$, with unit sum. Equal top-$k$ makes this mass comparable across layers. The expert IDs retain the count-derived order. E1 uses uniform allocation; E2 varies the profile and allocation inputs.
+ 
+ Figure~\ref{fig:compile} shows the HBM and CPU cuts in those lists. Capacities satisfy $\sum_\ell K_{\mathrm H,\ell}\le S_{\mathrm H}$, $\sum_\ell K_{\mathrm C,\ell}\le S_{\mathrm C}$, and $K_{\mathrm H,\ell}+K_{\mathrm C,\ell}\le N_\ell$. The adaptive scan reserves one slot per layer in each fast tier, then distributes the remaining slots by marginal coverage.
+ 
+@@ -174,9 +173,9 @@
+ \begin{equation}
+ \Delta_\ell=q_{\ell,K_{\mathrm H,\ell}+1}.
+ \end{equation}
+-CPU allocation continues from the first ranks beyond each HBM cut. Every allocation exposes a new next-rank candidate in that layer. Layer ID breaks score ties, and expert ID breaks count ties. The direct scan takes $O(L(S_{\mathrm H}+S_{\mathrm C}))$ time after sorting. Its score is the request probability covered by the next slot.
+-
+-The emitted plan contains the final capacities and ordered expert IDs. Initialization places each layer's first HBM ranks on the GPU and its next CPU ranks on the host. Natural ID order initializes the uniform control. During execution, admission changes membership within the compiled capacities.
++CPU allocation continues from the first ranks beyond each HBM cut. Every allocation exposes a new next-rank candidate in that layer. Layer ID breaks score ties, and expert ID breaks count ties. The direct scan takes $O(L(S_{\mathrm H}+S_{\mathrm C}))$ time after sorting. Its score is the additional within-layer selection mass covered by the next slot.
++
++The compiler serializes a residency plan: model dimensions, expert size, capacity arrays, and ranked layer-local IDs. Initialization loads each HBM prefix and the following CPU prefix. The JSON plan is the deployment artifact consumed by the loader. Admission subsequently updates membership within its capacities.
+ 
+ \subsection{Retaining Victims across the Tier Boundary}
+ Each layer maintains two ordered sets, from most-recently used (MRU) to least-recently used (LRU). Their concatenation places HBM residents before CPU residents. An HBM hit moves its expert to HBM MRU. A CPU hit removes its host entry and promotes it to HBM MRU. The GPU LRU victim then becomes CPU MRU. A cold admission follows the same GPU insertion and can remove the CPU LRU. HDD retains the backing weights for every expert.
+@@ -184,10 +183,10 @@
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{method_redesign/residency_cases.pdf}
+ \par\nointerlineskip
+-\caption{Residency transitions for three requests. An HBM hit refreshes recency; a CPU hit promotes the requested expert and demotes a GPU victim; cold admission also removes a CPU victim. Rows give the resulting MRU-to-LRU order.}
++\caption{A continuous request sequence, read from top to bottom. Each row starts from the preceding row's state. Request $a_2$ refreshes HBM recency; $a_3$ promotes from CPU; cold $a_5$ demotes $a_2$ and evicts $a_4$. All lists run MRU to LRU.}
+ \label{fig:retention}
+ \end{figure}
+-Each row in Figure~\ref{fig:retention} starts from HBM $[a_1,a_2]$ and CPU $[a_3,a_4]$. An $a_2$ hit changes the GPU order. Promoting $a_3$ releases its CPU position, which receives the HBM victim $a_2$. A cold $a_5$ request first enters HBM and pushes its GPU victim into the full host cache. The host LRU $a_4$ then leaves the resident set. Promotion recycles the requested expert's CPU position; cold admission obtains a position through host eviction.
++Figure~\ref{fig:retention} starts with HBM $[a_1,a_2]$ and CPU $[a_3,a_4]$. Request $a_2$ gives HBM $[a_2,a_1]$. Request $a_3$ then promotes $a_3$ and demotes $a_1$, producing HBM $[a_3,a_2]$ and CPU $[a_1,a_4]$. Finally, $a_5$ enters HBM, $a_2$ becomes CPU MRU, and $a_4$ leaves CPU LRU. The final lists are $[a_5,a_3]$ and $[a_2,a_1]$.
+ 
+ The resulting order extends from HBM MRU through CPU LRU. Requests enter at its front, and capacity pressure removes experts at its tail. During batch preparation, the loader can prepare several active experts. Temporary references hold their weights until each expert processes its token rows.
+ 
+@@ -206,13 +205,33 @@
+ 
+ Prefetchers use profiles or lookahead to anticipate expert demand~\cite{pregated,fate,expertflow}. Batch and request schedulers expose work from concurrent inputs~\cite{klotski,bevy}; distributed edge schemes add network delivery~\cite{odmoe}. MECC schedules the expert work already selected at the current gate. Retention removes repeated reads and copies. Overlap shortens the exposed part of the remaining delivery.
+ 
+-\subsection{Resolving Requests to Expert Execution}
+-The execution interface accepts a layer/expert ID and its assigned token rows. Lookup resolves the ID to resident tensors or a backing-store block. Delivery prepares GPU weights for the expert projections. Gate weights combine their outputs before execution advances to the next layer.
+-
+ \section{Evaluation}
+ \label{sec:evaluation}
+-\subsection{Evaluation Overview}
+-We evaluate decode and first-token speedup, source-tier demand, and workload sensitivity. Phase speedup divides the streaming latency by the policy latency. The main comparison includes SwapMoE-style retention and Fiddler-style CPU computation~\cite{swapmoe,fiddler}. Component studies examine allocation, victim retention, and delivery scheduling. Workload sweeps vary calibration, task transfer, input length, and batching. Appendix~\ref{app:setup} provides configuration details and the complete measured policy results.
++\subsection{Platform, Protocols, and Metrics}
++The testbed has one A100 80~GB PCIe and a local HDD-backed RAID volume. FP16 Mixtral experts occupy 336~MiB each. Table~\ref{tab:protocols} defines the input and residency settings used throughout the evaluation. E1 uses uniform initialization; E2/E3 use calibrated initialization. E4 changes the host-slot allowance.
++
++\begin{table}[H]
++\centering
++\caption{Execution protocols. Input/output are tokens per prompt. H/C are primary HBM/CPU allowances in GiB. E1/E4 use one run per point.}
++\label{tab:protocols}
++\setlength{\tabcolsep}{3pt}
++\renewcommand{\arraystretch}{1.10}
++\begin{tabular}{@{}lp{0.94in}p{0.70in}p{0.72in}@{}}
++\toprule
++ID & Input group & Prompts; tokens & H/C \\
++\midrule
++E1 & WikiText-2 & 8; 64/64 & 50/40 \\
++\pending{E2} & GSM8K & 8; 128/128 & per model$^{a}$ \\
++\pending{E3} & GSM8K, HumanEval & 8; 128/128 & $50/\{40,64\}^{a}$ \\
++E4 & WikiText-2 & 4; 64/16 & 50/30 or 60 \\
++\pending{E5} & GSM8K & 8; 128/128 & 30/20 \\
++\bottomrule
++\end{tabular}
++\par\smallskip
++\raggedright $^{a}$Model-specific settings and figure-to-protocol mappings appear in Appendix~\ref{app:setup}.
++\end{table}
++
++TPOT measures decode time per output token; TTFT measures time to the first token. Phase speedup divides reference latency by policy latency, using full-precision run values. HDD-demand share is $n_D/(n_H+n_C+n_D+n_{\mathrm{CPUexec}})$. The main access counters aggregate warmup, prefill, decode, and PPL. Their denominator counts expert accesses, including batch-grouped accesses during prefill.
+ 
+ \subsection{Single-GPU Performance}
+ \begin{figure}[H]
+@@ -221,66 +240,71 @@
+ \caption{Decode and first-token speedup on one A100, relative to streaming (1.0). Swap-style and Fiddler-style denote the corresponding mechanism adapters. MECC I/O varies the weight-delivery path. Higher is better.}
+ \label{fig:performance}
+ \end{figure}
+-Figure~\ref{fig:performance} reports 1.77$\times$ decode and 1.13$\times$ first-token speedup for MECC over streaming. Against Fiddler-style CPU computation, the gains are 1.12$\times$ and 2.86$\times$, respectively. GPU execution reuses each fetched expert across its selected prompt rows. This reuse has more work to cover during prefill, accounting for the different phase tradeoffs. Response length determines how these initial and recurring costs contribute to completion time.
+-
+-MECC serves 77.5\% of classified expert accesses from HBM and 10.0\% from the host cache. The remaining 12.5\% reach HDD. Each host hit replaces a storage read with an H2D copy; each HBM hit directly supplies GPU computation. Promoting a host resident creates room for the displaced GPU expert, extending its retention into the next tier. Later requests can reuse this host copy after its GPU slot has been reassigned. The access distribution captures the resulting use of the three delivery paths.
+-
+-Joint retention gives 2.95$\times$ decode speedup over the SwapMoE-style adapter. Against independent replacement, the gain is 4.46$\times$, accompanied by 73.9\% lower HDD demand in Figure~\ref{fig:intro}. These results link cross-tier retention to the cost of repeated weight delivery. Component studies next examine allocation, retention, and scheduling.
++E1 gives 1.77$\times$ decode and 1.13$\times$ first-token speedup over streaming in Figure~\ref{fig:performance}. Relative to Fiddler-style CPU computation, these ratios are 1.12$\times$ and 2.86$\times$. The phase-specific results distinguish first-token work from recurring expert delivery during generation.
++
++E1 classifies 77.5\% of MECC accesses as HBM hits, 10.0\% as CPU hits, and 12.5\% as HDD accesses. Joint retention gives 2.95$\times$ decode speedup over the SwapMoE-style adapter and 4.46$\times$ over independent replacement. The independent-cache HDD share is 47.9\%. Figure~\ref{fig:intro} uses these aggregate counters.
++
++On two short correctness inputs, MECC and streaming produce equal expert selections and greedy tokens. Maximum absolute logits and gate errors are zero across three output tokens per input. Appendix~\ref{app:setup} identifies the fixture and shared dispatch path.
+ 
+ \begin{figure*}[!t]
+ \centering\includegraphics[width=\textwidth]{completion_figures/mechanism_sweeps.pdf}
+ \par\nointerlineskip
+-\caption{Component comparisons on three models. (a) Placement with runtime fixed. (b) Retention with initialization fixed. (c) Adaptation after a task switch. }
++\caption{E2 allocation, retention, and adaptation across three models. Runtime policy is fixed in (a); initialization is fixed in (b,c). Bars report TPOT. }
+ \label{fig:target_mechanisms}
+ \end{figure*}
+ \Needspace*{12\baselineskip}
++\balance
+ \subsection{Mechanism Attribution}
+ \label{sec:mechanisms}
+ 
+-Figure~\ref{fig:target_mechanisms} varies one decision in each panel. The placement comparison keeps the runtime rule fixed; retention keeps initialization fixed; adaptation follows a task switch. For Mixtral-8x7B, per-layer placement changes TPOT from \pending{18.6 to 14.2 s/token}. Joint retention changes it from \pending{18.3 to 14.2}, and online adaptation changes the post-switch value from \pending{25.1 to 16.0}. The same comparisons span three models, relating each mechanism to its allocation or request sequence.
++E2 uses smaller resident allowances than E1 for Mixtral-8x7B. Figure~\ref{fig:target_mechanisms}(a) compares equal budgets, global hotness, and layer profiles. Their TPOT values are \pending{18.6, 16.7, and 14.2 s/token}. Panel (b) compares fixed CPU, independent LRU, and joint LRU at \pending{22.8, 18.3, and 14.2}. Panel (c) follows a task switch; joint admission changes post-switch TPOT from \pending{25.1 to 16.0}.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/ablation_startup.pdf}
+ \par\nointerlineskip
+-\caption{Ablation and startup. The right panel reports initialization cost per output token plus decode cost.}
++\caption{E3 ablation and initialization amortization. (a) Components under the GSM8K protocol. (b) Online initialization versus compiled initialization; curves include initial placement and decode cost.}
+ \label{fig:target_ablation}
+ \end{figure}
+-Adding placement, joint retention, and I/O scheduling gives the TPOT sequence \pending{24, 18, 11, and 8 s/token} in Figure~\ref{fig:target_ablation}(a). The successive reductions are \pending{6, 7, and 3 s/token}. Joint retention provides the largest step by keeping GPU victims available on the host. Scheduling then shortens the delivery path at \pending{20 percent} HDD demand. Panel (b) includes the initial placement cost, connecting this decode gain to the response length.
++For E3 Mixtral-8x7B/GSM8K, adding placement, joint retention, and delivery scheduling gives the TPOT sequence \pending{24, 18, 11, and 8 s/token} in Figure~\ref{fig:target_ablation}(a). The successive reductions are \pending{6, 7, and 3 s/token}. Joint retention provides the largest step by keeping GPU victims available on the host. Scheduling then shortens the delivery path at \pending{20 percent} HDD demand. Panel (b) includes the initial placement cost, connecting this decode gain to the response length.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/traffic_exposure.pdf}
+ \par\nointerlineskip
+-\caption{Source demand and exposed time. The I/O step shortens exposed read/copy time at the final request-source distribution.}
++\caption{E3 request sources and exposed delivery time. The final scheduling step changes exposed time at a fixed source distribution.}
+ \label{fig:target_traffic}
+ \end{figure}
+-Figure~\ref{fig:target_traffic} separates changes in demand from changes in exposed time. Placement and joint retention lower HDD demand from \pending{46 to 20 percent}. The final I/O configuration has an HBM/CPU/HDD mix of \pending{65/15/20 percent}. Its TPOT reduction from \pending{11 to 8 s/token} comprises \pending{2 seconds} less exposed HDD time and \pending{1 second} less exposed H2D time. The compute component remains at \pending{2 seconds}. Scheduling brings transfer completion closer to ready computation. Retention and overlap therefore act on two parts of delivery cost: the number of transfers and their exposed duration.
++Figure~\ref{fig:target_traffic} resolves the E3 component costs. HDD demand falls from \pending{46 to 20 percent}. The final scheduling step keeps the \pending{65/15/20 percent} HBM/CPU/HDD mix and changes TPOT from \pending{11 to 8 s/token}. Exposed HDD time falls by \pending{2 seconds} and H2D by \pending{1 second}. Retention removes transfers; scheduling shortens their exposed duration.
+ 
+ \subsection{Model and Deployment Scaling}
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/cross_model.pdf}
+ \par\nointerlineskip
+-\caption{Model and workload comparison. Mixtral-8x7B and 8x22B with QA/code inputs. Each policy uses the same model and workload within a group. }
++\caption{E3 model/workload comparison. GSM8K and HumanEval use 128 input and 128 output tokens, calibrated initialization, and the model-specific allowances in Table~\ref{tab:protocols}. }
+ \label{fig:target_models}
+ \end{figure}
+-In Figure~\ref{fig:target_models}, MECC's speedup over streaming spans \pending{3.00--3.26}$\times$ across the four model/workload groups. The absolute TPOT difference grows from \pending{16 seconds} on 8x7B QA to \pending{43 seconds} on 8x22B Code. Moving from 8x7B to 8x22B \pending{doubles} MECC TPOT; the corresponding streaming increase is \pending{2.00--2.04}$\times$. The larger model therefore saves more delivery time per token at a comparable speedup.
+-
+-\begin{figure}[H]
+-\centering\includegraphics[width=\columnwidth]{completion_figures/gpu_tradeoff.pdf}
+-\par\nointerlineskip
+-\caption{One-GPU/resident-reference tradeoff. The panels compare single-GPU MECC with resident configurations and report latency alongside GPU occupancy.}
+-\label{fig:target_gpu}
+-\end{figure}
+-The endpoints in Figure~\ref{fig:target_gpu} pair \pending{one GPU at 8 s/token with eight GPUs at 1 s/token}. Both use \pending{8 GPU-s/token}, with different response times. The \pending{two-GPU resident point uses 5.6 GPU-s/token}. Plotting the intermediate configurations shows how accelerator provisioning changes both latency and occupancy. The single-GPU point quantifies the latency of supplying weights through the memory hierarchy.
+-
+-\begin{figure*}[!t]
++Under E3 calibrated initialization, Figure~\ref{fig:target_models} gives streaming-to-MECC ratios of \pending{3.00--3.26}$\times$ across the four model/workload groups. The absolute TPOT difference grows from \pending{16 seconds} on 8x7B/GSM8K to \pending{43 seconds} on 8x22B/HumanEval. Moving from 8x7B to 8x22B \pending{doubles} MECC TPOT; the corresponding streaming increase is \pending{2.00--2.04}$\times$. E3 measures calibrated serving on these tasks. E1 evaluates uniform initialization on WikiText-2; its 1.77$\times$ ratio belongs to that configuration.
++
++\begin{figure}[H]
++\centering\includegraphics[width=\columnwidth]{completion_figures/matched_baselines.pdf}
++\par\nointerlineskip
++\caption{E5 matched FP16 policy paths. Latency is normalized to MECC within each phase. Lower values are better.}
++\label{fig:matched}
++\end{figure}
++E5 compares profile-based placement, victim retention, and history-based caching through the paths in Figure~\ref{fig:matched}. All paths use routed experts in FP16. Substitution and compression are disabled in this protocol. The comparison asks how the retention decision changes under a shared expert-store format and allowance. MoE-CORE, MoE-Infinity, and SSD-LLaMA supply the corresponding policy designs~\cite{core,moeinfinity,ssdllama}. Appendix~\ref{app:setup} records each path and the full E1 adapter results.
++
++\twocolumn[{
++\begin{minipage}{\textwidth}
+ \centering\includegraphics[width=\textwidth]{completion_figures/workload_sensitivity.pdf}
+ \par\nointerlineskip
+-\caption{Profile, input-length, and batch sensitivity. Profile size changes initialization quality, input length changes first-token work, and batch size changes aggregate throughput. The panels vary one workload parameter at a time.}
++\captionof{figure}{Profile, input-length, and batch sensitivity. Profile size changes initialization quality, input length changes first-token work, and batch size changes aggregate throughput. The panels vary one workload parameter at a time.}
+ \label{fig:target_sensitivity}
+-\end{figure*}
++\vspace{5pt}
++\end{minipage}
++}]
++\balance
+ \subsection{Capacity and Workload Sensitivity}
+ 
+-MECC gives 1.42$\times$ and 5.17$\times$ decode speedup over streaming at 30 and 60~GB. HDD demand falls from 32.2\% to zero as resident capacity covers all eight experts per layer.
++E4 gives 1.42$\times$ and 5.17$\times$ speedup at 30 and 60~GiB CPU-slot allowances. Its four-prompt, 16-output-token protocol differs from E1. At 60~GiB, primary residency is 42~GiB in HBM plus 42~GiB on CPU: all 84~GiB of expert weights. Host mirrors add 42~GiB beyond the primary CPU pool. HDD demand falls from 32.2\% to zero. For a homogeneous pool, primary coverage is $L(K_H+K_C)s$. Physical host storage adds primary CPU weights, HBM mirrors, and staging. This accounts for the expert set and the copies that support demotion.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/quota_targets.pdf}
+@@ -288,7 +312,7 @@
+ \caption{Decode latency across host-memory allowances.}
+ \label{fig:target_quota}
+ \end{figure}
+-Figure~\ref{fig:target_quota} resolves the capacity range between sparse and broader host retention. MECC changes from \pending{16 to 7 s/token} across \pending{16--48 GB}; three-tier LRU changes from \pending{27 to 12}. The first host increment saves \pending{4 seconds/token} for MECC, while the final increment saves \pending{1 second/token}. Earlier slots can retain victims with shorter reuse distances. Additional slots then cover less frequent returns. This diminishing latency reduction complements the coverage transition at 60~GB, where the primary resident sets contain every expert.
++Figure~\ref{fig:target_quota} sweeps primary host allowances from \pending{16 to 48 GiB}. MECC TPOT changes from \pending{16 to 7 s/token}, versus \pending{27 to 12} for three-tier LRU. Its first increment saves \pending{4 s/token}; the last saves \pending{1}. Earlier slots cover shorter reuse distances. E4 separately reaches complete expert coverage at 42~GiB HBM plus 42~GiB CPU residency.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/profile_mismatch.pdf}
+@@ -296,27 +320,24 @@
+ \caption{Profile transfer across tasks. Rows select the calibration task and columns the inference task. Cells are TPOT in s/token; the two panels share a color scale.}
+ \label{fig:target_mismatch}
+ \end{figure}
+-Figure~\ref{fig:target_mismatch} separates within-task calibration from transfer to another task. The mean diagonal TPOT is \pending{8.50 s/token} under both fixed and online residency. Across the six off-diagonal pairs, the mean changes from \pending{14.00 to 9.38 s/token}, a \pending{33.0 percent} reduction. Request-driven admission brings the cross-task resident set toward the experts selected by the serving workload. The response to calibration size in Figure~\ref{fig:target_sensitivity}(a) addresses a different effect: how much profile information is available before the first request.
+-
+-\balance
++Across Figure~\ref{fig:target_mismatch}'s six off-diagonal task pairs, fixed and online residency average \pending{14.00 and 9.38 s/token}, respectively. This gives a \pending{33.0 percent} reduction. Their diagonal means are both \pending{8.50 s/token}. Online admission adjusts the cached expert set to the serving task. Calibration size controls the initial profile.
++
+ \subsection{Calibration Coverage and Input Length}
+ Increasing calibration from \pending{32 to 2048 samples} changes TPOT from \pending{10.8 to 8.0 s/token} in Figure~\ref{fig:target_sensitivity}(a). The final expansion yields a smaller reduction than the first. Once the ranked hot set stabilizes, additional samples affect fewer initial placements.
+ 
+-Figure~\ref{fig:target_sensitivity}(b) scales the prompt from \pending{32 to 2048 tokens}. MECC's TTFT changes from \pending{28 to 1360 seconds}, compared with \pending{45 to 2440} for streaming. Their endpoint speedups are \pending{1.61}$\times$ and \pending{1.79}$\times$. Prompt rows selected for the same expert can share one fetched weight block. Increasing input length thus exposes more opportunities to amortize delivery within prefill, alongside the increase in prompt computation.
++Figure~\ref{fig:target_sensitivity}(b) varies input length from \pending{32 to 2048 tokens}. Endpoint first-token speedups are \pending{1.61}$\times$ and \pending{1.79}$\times$. At the longer input, TTFT is \pending{1360 seconds} for MECC and \pending{2440} for streaming. Prefill rows assigned to one expert share fetched weights and amortize delivery. Cache residency also reuses those weights across prompts.
+ 
+ \subsection{Batch Throughput and Sequence Progress}
+-Figure~\ref{fig:target_sensitivity}(c) reports aggregate output rate. Moving from \pending{one to eight sequences} increases MECC throughput from \pending{0.125 to 0.505 tokens/s}, or \pending{4.04}$\times$. The additional sequences share fetched expert weights and introduce more active rows at each gate.
+-
+-For a synchronous batch of $B$ sequences with aggregate rate $R(B)$, the interval between batch steps is $B/R(B)$. The plotted MECC rates give \pending{8.00 seconds} at batch one and \pending{15.84 seconds} at batch eight. Batching therefore processes more tokens per unit time while increasing the interval between successive tokens of one sequence.
++Increasing batch size from \pending{one to eight} raises MECC's aggregate rate from \pending{0.125 to 0.505 tokens/s}, or \pending{4.04}$\times$, in Figure~\ref{fig:target_sensitivity}(c). For synchronous batches, the step interval is $B/R(B)$. These rates give \pending{8.00 and 15.84 seconds} at batches one and eight. The batch-step interval grows by \pending{1.98} times as the batch grows by \pending{8} times. Each step processes more rows and exposes more active expert work. Reporting both aggregate rate and step interval connects shared weight delivery to the progress of an individual sequence.
+ 
+ \subsection{Amortizing Initial Placement}
+ \label{sec:amortization}
+-Let $\Delta I$ denote the extra initialization time and $\Delta D$ the per-token decode saving. Equating the amortized per-token times gives the crossing $n^\star=\Delta I/\Delta D$. Figure~\ref{fig:target_ablation}(b) uses \pending{18 seconds} of extra initialization and \pending{2 seconds} of decode saving, yielding \pending{9 output tokens}. Longer responses recover the placement cost and retain part of the decode gain.
+-
+-At \pending{64 output tokens}, initialization contributes \pending{0.47 s/token} for MECC and \pending{0.19} for the reference. Their total averages become \pending{8.47 and 10.19 s/token}, respectively. When requests share a resident cache, their output tokens amortize the same initialization. The cache lifetime determines the amortization horizon.
++Let $\Delta I$ be the extra initialization time and $\Delta D$ the per-token decode saving. The E3 startup control crosses at $n^\star=\Delta I/\Delta D$. Figure~\ref{fig:target_ablation}(b) uses \pending{18 seconds} of extra initialization and \pending{2 seconds} of saving, giving \pending{9 output tokens}.
++
++At \pending{64 tokens}, total average costs are \pending{8.47 s/token} for compiled initialization and \pending{10.19} for online initialization. For requests $j=1,\ldots,J$ sharing the cache, placement contributes $T_{\mathrm{init}}/\sum_j n_j$ per output token. Here $n_j$ is the output count of request $j$. Reusing the resident state pools these outputs into one amortization horizon. Reinitialization begins a new cache lifetime.
+ 
+ \section{Conclusion}
+-MECC combines profile-guided initial placement with joint HBM/CPU retention for single-GPU MoE inference. Its allocation and admission rules reduce repeated weight delivery, while scheduling overlaps the remaining read/copy work with ready expert computation. On one A100, MECC gives 1.77$\times$ decode speedup over streaming and 1.12$\times$ over the Fiddler-style adapter.
++MECC compiles initial residency and carries expert reuse through joint HBM/CPU retention. The plan specifies capacities and expert IDs; runtime requests drive promotion, demotion, and delivery. State reuse amortizes initial placement across requests. E1 gives 1.77$\times$ decode speedup over streaming on one A100.
+ 
+ \clearpage
+ \balance
+@@ -327,33 +348,37 @@
+ \balance
+ \section{Experimental Configuration and Figure Data}
+ \label{app:setup}
+-\subsection{Hardware and Weight Representation}
+-The testbed uses one NVIDIA A100 80~GB PCIe with FP16 expert weights. Dense layers and the router execute on the GPU. The expert store is a RAID logical volume reporting ROTA=1, called HDD in this paper. The controller's physical-drive inventory remains unverified. Each expert block contains gate, up, and down tensors identified by layer and expert ID. HDD retains the complete expert pool.
+-
+-\subsection{Measured Protocols}
+-The main comparison uses Mixtral-8x7B-Instruct-v0.1 with uniform initialization, four HBM slots and three CPU slots per layer. Planner allowances are 50/40~GB. Each policy runs once on eight WikiText-2 prompts with 64 input and 64 output tokens. PPL uses a 1024-token WikiText-2 sample. The loader and model graph are shared.
+-
+-Raw TPOT in seconds is 13.04 for streaming, 21.75 for SwapMoE-style, 8.26 for Fiddler-style, 7.19 for FlashMoE-RF, 7.78 for MECC I/O, and 7.38 for MECC. Independent caching gives 32.94. TTFT is 156.86 seconds for streaming, 139.14 for MECC, 398.45 for Fiddler-style, and 101.76 for FlashMoE-RF. Plotted speedup divides the streaming phase latency by policy latency using unrounded JSON fields. The additional FlashMoE-RF adapter gives 1.81$\times$ decode and 1.54$\times$ first-token speedup over streaming. These complete policy results supplement the five-policy main figure.
+-
+-The separate 30/60~GB host comparison uses four WikiText-2 prompts, 16 output tokens, and four HBM slots per layer. At 60~GB, four HBM and four CPU slots cover all eight experts per layer.
+-
+-\subsection{Policy Definitions}
+-Streaming retains the initialized HBM set and fetches misses without GPU admission. The SwapMoE-style FP16 adapter uses a fixed CPU set and GPU LRU replacement. Fiddler-style computes non-HBM experts on the CPU. Both are local mechanism implementations. Independent caching updates HBM/CPU recency separately; MECC couples GPU promotion to victim demotion. MECC I/O is a separate delivery control.
+-
+-FlashMoE-RF combines public inverse-recency and frequency features with equal weights, using HBM LRU. Its host score is $0.5/d_e+0.5f_e/f_{\max}$, with request distance $d_e$ and count $f_e$. The lowest score is evicted; ID breaks ties. The original trained predictor is absent. The main figure abbreviates SwapMoE-style as Swap-style. MoE-CORE and MoE-Infinity have no completed run in this repository.
+-
+-\subsection{Timing and Demand Counters}
+-TTFT is time to first token; TPOT is time per output token during decode. Accelerator occupancy is GPU count times TPOT, in GPU-s/token. Measured HDD-demand shares aggregate classified accesses across instrumented phases. Prefetched experts are classified by residency at consumption. These shares are separate from physical read/copy byte counters and decode-only demand. The short-window diagnostic compares streaming and MECC routing, logits, gates, and tokens through their shared dispatch; it is not independent full-model equivalence evidence.
+-
+-\subsection{Figure Data Annotations}
+-Yellow-highlighted values and panel titles identify authored design targets: unmeasured values specifying the illustrated comparisons. Introduction and main-runtime plots use committed A100 measurements. Motivation panel (b) uses measured aggregate demand; panels (a,c) use design arrays. Panels (d--f), the framework, and method figures are mechanism examples.
+-
+-Component, startup, traffic/exposure, cross-model, GPU-occupancy, quota, sensitivity, and profile-transfer plots use design targets. Model names, QA/Code groups, and WikiText-2/GSM8K labels specify intended comparisons, not additional completed benchmark runs. Startup uses $T_{\mathrm{avg}}(n)=T_{\mathrm{init}}/n+T_{\mathrm{decode}}$. Demand stacks sum to 100\%; exposed-time stacks sum to component TPOT. Derived differences, speedups, off-diagonal means, and batch-step intervals use the same unmeasured arrays. They are arithmetic summaries, not additional runs.
+-
+-\subsection{Memory and Execution Accounting}
+-Planner allowances count primary slots. GPU host mirrors and staging add physical host allocations; equal slot counts do not establish equal peak host bytes. The compiler library accepts per-layer skew and ranked IDs. The non-uniform e2e CLI generates skew; calibration is a separate compiler input. The measured main run uses uniform initialization. Prefill submits selected-batch read futures; decode uses demand delivery. Copy-stream synchronization orders CUDA consumption, and consuming-stream tracking preserves tensor lifetime.
+-
+-\subsection{Source Records}
+-Committed run JSONs supply measurements. The measured-figure and ratio audits record run IDs, fields, raw latencies, and SHA-256 hashes. The two design-array files supply highlighted figures and retain their source hashes. Each archived manuscript includes its source and artifact hash record.
+-
++\subsection{Platform and Physical Accounting}
++The A100 exposes 80~GB HBM. The host has about 1~TB of physical RAM. The backing volume is local ext4 on RAID device /dev/sdb, reporting ROTA=1. Physical-drive inventory and isolated disk bandwidth were not recorded. HDD names this backing path throughout the draft. Cold reads use the expert store; the medium label does not imply an SSD benchmark.
++
++Each expert contains 352,321,536 bytes (336~MiB). The 256 experts occupy 84~GiB (90.19 decimal GB). Dense weights add to full-model size. The main plan holds 128 HBM experts (42~GiB) and 96 CPU experts (31.5~GiB). Host mirrors add 42~GiB. At E4's 60~GiB CPU-slot allowance, 128 CPU experts add 42~GiB of primary CPU residency; mirrors bring host weight storage to 84~GiB before staging. The allowance is a planner input for primary slots, not a physical host-memory cap. Legacy config fields named GB use GiB-sized slots.
++
++\subsection{Protocol Map and Data Identity}
++E1 and E4 use committed single A100 runs, one per policy and setting. E1 uses uniform initialization, eight WikiText-2 prompts at 64/64 input/output tokens, and 1024 tokens for PPL. E4 uses four prompts and 16 output tokens. Thus E1's 1.77$\times$ and E4's 1.42$\times$/5.17$\times$ refer to distinct protocols.
++
++Yellow-highlighted values and panel titles identify authored, unmeasured design targets. E2/E3/E5 and the calibration, quota, transfer, batch, and deployment scenarios are target arrays, not completed benchmark measurements. E2 uses GSM8K with 128/128 tokens, eight prompts, and calibrated initialization. Its model-specific H/C allowances are 30/20~GiB for Mixtral-8x7B, 30/16 for Qwen2-57B-A14B, and 50/64 for Mixtral-8x22B. E3 uses 50/40 for 8x7B and 50/64 for 8x22B, on GSM8K/HumanEval, with 2048 calibration samples. Its 24/8 example and 3.00--3.26$\times$ ratios do not describe E1. These workload assignments specify planned executions; the Code arrays map to HumanEval. All target-side configurations still require implementation and hardware checks. E3's I/O step specifies a scheduling target; the current decode path delivers experts on demand.
++
++E5 is a matched FP16 policy-path design at 30/20~GiB on Mixtral-8x7B/GSM8K, eight 128/128-token prompts. The MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF entries are authored latency targets for local path adaptations. They are not executions of the authors' systems or observed improvements over them. The target ordering does not replace the E1 RF observation. Their raw targets, assumptions, and status are in BASELINE\_TARGETS.json. Substitution, quantization, and compression are outside this comparison.
++
++\subsection{Complete E1 Results and Controls}
++E1 TPOT in seconds is 13.04259 for streaming, 21.75165 for SwapMoE-style, 8.25899 for Fiddler-style, 7.19497 for FlashMoE-RF, 7.78096 for MECC I/O, and 7.38198 for MECC. Independent caching gives 32.94189. Streaming/MECC TTFT is 156.85501/139.14026 seconds; Fiddler-style TTFT is 398.446. Full-precision division gives 4.46247$\times$ for independent/MECC TPOT and 2.86363$\times$ for Fiddler/MECC TTFT. Ratios in the figures are rounded independently. E1 FlashMoE-RF gives 1.81$\times$ decode and 1.54$\times$ first-token speedup over streaming; MECC gives 1.77$\times$/1.13$\times$.
++
++Streaming retains the initialized GPU set. SwapMoE-style retains a fixed CPU set and uses GPU LRU. Fiddler-style computes non-HBM experts on CPU. RF uses equal-weight inverse-recency/frequency host scoring and GPU LRU; it does not contain the original trained predictor. These are local mechanism adapters. Main GPU PPL is 3.427; CPU-compute gives 3.432. The reported speedups have one run each and no estimated sampling variance.
++
++\subsection{Counters, Calibration, and Correctness}
++Main HDD shares aggregate classified expert accesses across warmup, prefill, decode, and PPL. MECC's counts are 29,558 HBM, 3,820 CPU, and 4,764 HDD, totaling 38,142. Prefetched experts are classified by residency at consumption. Physical reads and H2D have separate byte counters. Initialization reads are outside this demand denominator. Target stacks describe their specified protocols and sum to 100\%.
++
++The rank allocator consumes supplied skew parameters and count-ranked IDs. Profiling utilities regress positive log-counts on log-ranks; fit residuals for Mixtral are not available. E1 uses the uniform CLI branch; the non-uniform CLI generates skew unless an explicit compiler input supplies it. The plan is serialized configuration data, not generated GPU kernel code.
++
++G1 compares the streaming and MECC paths through their shared dispatch on two 21/22-token fixture inputs, three greedy output tokens each, plus 128-token diagnostic PPL. Its per-case route/token equality is true; gate/logits maximum absolute errors are 0.0. This is short-window numerical equality between those paths, not an independent full-resident equivalence proof. No GSM8K or HumanEval task accuracy has been measured. G1\_EVIDENCE.json records the source Git object and fixture hashes.
++
++\subsection{Arithmetic and Deployment Scenario}
++The transfer matrix's six fixed off-diagonal cells sum to 84, giving 14.00. Adaptive cells sum to 56.3, giving 9.3833 and a 32.976\% reduction. The startup control uses 12/30-second initialization and 10/8-second decode. Its crossing is 9 tokens; 64 tokens is an amortization example. The resident-reference scenario in Figure~\ref{fig:target_gpu} uses authored single/multiple-GPU values.
++
++\begin{figure}[H]
++\centering\includegraphics[width=\columnwidth]{completion_figures/gpu_tradeoff.pdf}
++\par\nointerlineskip
++\caption{Deployment scenario: latency and accelerator occupancy for one-GPU MECC and resident references. Yellow titles follow the target-array convention above.}
++\label{fig:target_gpu}
++\end{figure}
+ \end{document}
