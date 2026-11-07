@@ -1,0 +1,89 @@
+{
+  "method_source_sha256": {
+    "e2e\\policy_plugin.py": "e1dc67e951bd7044d21e55e72ac3de9939dbb8356fa12b914c0886b4747f2350",
+    "e2e\\tiered_engine.py": "e16916657ca962e5cff0dedba78f2f9ae3c1e4c16a26ae866ba2ad3983842183"
+  },
+  "execution": "actual access/eviction AST methods on symbolic weights; CPU logic only",
+  "continuous_trace": [
+    {
+      "request": "initial",
+      "hbm_mru_to_lru": [
+        "a1",
+        "a2"
+      ],
+      "cpu_mru_to_lru": [
+        "a3",
+        "a4"
+      ]
+    },
+    {
+      "request": "a2",
+      "hbm_mru_to_lru": [
+        "a2",
+        "a1"
+      ],
+      "cpu_mru_to_lru": [
+        "a3",
+        "a4"
+      ]
+    },
+    {
+      "request": "a3",
+      "hbm_mru_to_lru": [
+        "a3",
+        "a2"
+      ],
+      "cpu_mru_to_lru": [
+        "a1",
+        "a4"
+      ]
+    },
+    {
+      "request": "a5",
+      "hbm_mru_to_lru": [
+        "a5",
+        "a3"
+      ],
+      "cpu_mru_to_lru": [
+        "a2",
+        "a1"
+      ]
+    }
+  ],
+  "previous_independent_cases": [
+    {
+      "request": "a2",
+      "hbm_mru_to_lru": [
+        "a2",
+        "a1"
+      ],
+      "cpu_mru_to_lru": [
+        "a3",
+        "a4"
+      ]
+    },
+    {
+      "request": "a3",
+      "hbm_mru_to_lru": [
+        "a3",
+        "a1"
+      ],
+      "cpu_mru_to_lru": [
+        "a2",
+        "a4"
+      ]
+    },
+    {
+      "request": "a5",
+      "hbm_mru_to_lru": [
+        "a5",
+        "a1"
+      ],
+      "cpu_mru_to_lru": [
+        "a2",
+        "a3"
+      ]
+    }
+  ],
+  "case_exclusion_verified": true
+}
