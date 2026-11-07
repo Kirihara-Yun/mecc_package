@@ -14,6 +14,7 @@
 | R07 | 逐段重写后的语义终校与图文复核 | [最新英文审阅稿](./r07_proof/manuscript.pdf) | [终校记录](./r07_proof/EDITORIAL_REVIEW.md) | 本轮不评分 |
 | R08 | 修正图 1 顶部位置、图 2 标题样式、Overview 标题、方法栏底和段尾孤词 | [最新排版修订稿](./r08_layout/manuscript.pdf) | [逐页检查记录](./r08_layout/LAYOUT_REVIEW.md) | 本轮不评分 |
 | R09 | 独立相关工作改为实验分析，清理重复语义，复核派生值与说明位置 | [最新实验分析稿](./r09_analysis/manuscript.pdf) | [修改记录](./r09_analysis/ANALYSIS_REVIEW.md) | 本轮不评分 |
+| R10 | 主结果改用相对加速比，恢复相关工作适配名称，改写防御性表述 | [最新相对收益稿](./r10_relative/manuscript.pdf) | [修改及证据记录](./r10_relative/REVISION_REVIEW.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 
@@ -21,6 +22,6 @@
 
 R00 的冻结 SHA-256：`fe021a5c17de8588fb76a25f4411255764a31e885a98ab0b50eb57be59caf89a`。
 
-R01–R04 均为六页正文加一页参考文献。R05–R09 按最新要求另加第八页附录，配置、数据来源和黄色高亮含义集中在该页。各版保留 44 篇引用、15 张图和 Introduction 的四个部分。R06/R07 对段落逻辑和用词重新审阅，未改动配图、数据或附录。R08 修订浮动位置、标题格式、断行及图形尺寸。R09 将独立相关工作替换为实验分析，图与输入数组保留；新增算术汇总列在 `DERIVED_ANALYSIS.json`，性质说明保留于附录。各轮详情见 `VALIDATION.json` 和语言／版式检查记录。
+R01–R04 均为六页正文加一页参考文献。R05–R10 按最新要求另加第八页附录，配置、数据来源和黄色高亮含义集中在该页。各版保留 44 篇引用、15 张图和 Introduction 的四个部分。R06/R07 对段落逻辑和用词重新审阅，未改动配图、数据或附录。R08 修订浮动位置、标题格式、断行及图形尺寸。R09 将独立相关工作替换为实验分析，图与输入数组保留；新增算术汇总列在 `DERIVED_ANALYSIS.json`，性质说明保留于附录。R10 将图 1、图 7 的主结果延迟转换为相对 streaming 的加速比，保留全部完成策略，并明确 SwapMoE/Fiddler/FlashMoE-RF 的本地适配身份。`RATIO_AUDIT.json` 保存原始分子分母与哈希；绝对值保留于第八页。各轮详情见 `VALIDATION.json` 和语言／版式检查记录。
 
 重建某一轮：在其目录运行 `latexmk -pdf -interaction=nonstopmode -halt-on-error manuscript.tex`。快照只读；需要继续修改时，先创建下一编号目录，避免覆盖。

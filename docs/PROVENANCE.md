@@ -145,6 +145,9 @@
 > **主对比口径小结**：ours 主战场优势明显——vs swapmoe **2.95×**（长 decode 放大 SSD 冷读差异）、vs naive **1.77×**、vs fiddler **1.12×**；但 flashmoe 略快于 ours（2.6%，CPU 命中更高压住冷读）。**ours_io 不占优**（比 ours 慢 5.4%，见 MAIN-7）。主对比 k_c=3、SSD 命中仅 ~12%，是「落 SSD 但接近装得下」的过渡区（对照 P2 cpu20 的 41.5%）。全部 N=1 单次（正式采信）。
 
 | MAIN-8 | 独立缓存与 MECC 联合缓存（相同 50/40 GB、8×64 输入规模） | TPOT **32.94 vs 7.38 s/token**；全阶段冷存储需求 **47.9% vs 12.5%** | D2 | `runs/a100-e06-independent-20261105/result.json` 与 `runs/a100-main-ours-20261104/result.json` : `results.*.{tpot_ms,hit_pct.ssd}` | `verified`（单次本地机制对照；物理主存峰值公平性仍待核） |
+| MAIN-9 | MECC 首 token 加速比（vs streaming / Fiddler-style） | **1.127× / 2.864×** | D2 派生比值 | `runs/a100-main-{naive,fiddler,ours}-20261104/result.json` : `results.*.ttft_ms`，参照 TTFT 除以 ours TTFT | `verified`（2026-11-07 重算；策略为共享 harness 的机制适配，不是原作者系统整体复现） |
+| MAIN-10 | 主图六策略相对 streaming 的 decode / 首 token 加速比 | decode：**1.000 / 0.600 / 1.579 / 1.813 / 1.676 / 1.767×**；首 token：**1.000 / 0.900 / 0.394 / 1.541 / 1.122 / 1.127×** | D2 派生比值 | 按 naive、swapmoe、fiddler、flashmoe_rf_adaptation、ours_io、ours 顺序；`paper/dac2027/reviews/hpca_20261106/r10_relative/RATIO_AUDIT.json` 保存原始 JSON 哈希及分子分母 | `verified`（2026-11-07；与 MAIN-1–7 相同单次运行，未新增实验或改变原数值） |
+| MAIN-11 | MECC vs independent 的 decode 加速及合并阶段 HDD 需求降幅 | **4.462× / 73.9%** | D2 派生比值 | MAIN-8 同源；`TPOT_independent / TPOT_ours`，`1 − 12.5/47.9` | `verified`（2026-11-07；需求降幅来自全阶段分类计数，不能当作 decode 物理字节降幅） |
 >
 > **运行备注**：swapmoe 单次 wall time ≈ 4h07m，超 `main_driver.sh` 的 `MAX_WALL_SECONDS=14400`，driver 在 08:51 记 `STOP_TIMEOUT` 退出，但 systemd unit 继续跑至 08:58 写完 `result.json`（phase=complete，数据完整）。后续若重跑 swapmoe 需放宽该上限（建议 ≥5h）或单独续跑。
 >
