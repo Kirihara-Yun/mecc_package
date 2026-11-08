@@ -1,0 +1,95 @@
+\documentclass[tikz,border=0pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{xcolor}
+\usetikzlibrary{arrows.meta}
+\definecolor{ink}{HTML}{203244}
+\definecolor{a1}{HTML}{6D7F99}
+\definecolor{a2}{HTML}{2C6D9E}
+\definecolor{a3}{HTML}{398E86}
+\definecolor{a4}{HTML}{A6B0BA}
+\definecolor{a5}{HTML}{C58A46}
+\begin{document}
+\begin{tikzpicture}[x=1bp,y=-1bp,every node/.style={inner sep=0pt,outer sep=0pt,text=ink,font=\fontsize{7.2}{8.4}\selectfont}]
+\path[use as bounding box] (0,0) rectangle (252,130);
+\fill[a2!6] (30,21) rectangle (245,61);
+\fill[a3!6] (30,69) rectangle (245,109);
+\draw[ink!25,densely dashed,line width=.4bp] (30,65)--(245,65);
+\node[rotate=90,text=a2,font=\fontsize{7.5}{8.5}\selectfont\bfseries] at (7,41) {HBM};
+\node[rotate=90,text=a3,font=\fontsize{7.5}{8.5}\selectfont\bfseries] at (7,89) {CPU};
+\node[font=\fontsize{6}{7}\selectfont] at (21,31) {MRU};
+\node[font=\fontsize{6}{7}\selectfont] at (21,51) {LRU};
+\node[font=\fontsize{6}{7}\selectfont] at (21,79) {MRU};
+\node[font=\fontsize{6}{7}\selectfont] at (21,99) {LRU};
+\node at (44,8) {Initial};
+\node at (106,8) {Request $a_2$};
+\node at (168,8) {Request $a_3$};
+\node at (230,8) {Request $a_5$};
+\draw[white,line width=3.5bp] (44,31) .. controls (71.9,31) and (78.1,51) .. (106,51);
+\draw[a1,line width=1.8bp,line cap=round] (44,31) .. controls (71.9,31) and (78.1,51) .. (106,51);
+\draw[white,line width=3.5bp] (44,51) .. controls (71.9,51) and (78.1,31) .. (106,31);
+\draw[a2,line width=1.8bp,line cap=round] (44,51) .. controls (71.9,51) and (78.1,31) .. (106,31);
+\draw[white,line width=3.5bp] (44,79) .. controls (71.9,79) and (78.1,79) .. (106,79);
+\draw[a3,line width=1.8bp,line cap=round] (44,79) .. controls (71.9,79) and (78.1,79) .. (106,79);
+\draw[white,line width=3.5bp] (44,99) .. controls (71.9,99) and (78.1,99) .. (106,99);
+\draw[a4,line width=1.8bp,line cap=round] (44,99) .. controls (71.9,99) and (78.1,99) .. (106,99);
+\draw[white,line width=3.5bp] (106,31) .. controls (133.9,31) and (140.1,51) .. (168,51);
+\draw[a2,line width=1.8bp,line cap=round] (106,31) .. controls (133.9,31) and (140.1,51) .. (168,51);
+\draw[white,line width=3.5bp] (106,51) .. controls (133.9,51) and (140.1,79) .. (168,79);
+\draw[a1,line width=1.8bp,line cap=round] (106,51) .. controls (133.9,51) and (140.1,79) .. (168,79);
+\draw[white,line width=3.5bp] (106,79) .. controls (133.9,79) and (140.1,31) .. (168,31);
+\draw[a3,line width=1.8bp,line cap=round] (106,79) .. controls (133.9,79) and (140.1,31) .. (168,31);
+\draw[white,line width=3.5bp] (106,99) .. controls (133.9,99) and (140.1,99) .. (168,99);
+\draw[a4,line width=1.8bp,line cap=round] (106,99) .. controls (133.9,99) and (140.1,99) .. (168,99);
+\draw[white,line width=3.5bp] (168,31) .. controls (195.9,31) and (202.1,51) .. (230,51);
+\draw[a3,line width=1.8bp,line cap=round] (168,31) .. controls (195.9,31) and (202.1,51) .. (230,51);
+\draw[white,line width=3.5bp] (168,51) .. controls (195.9,51) and (202.1,79) .. (230,79);
+\draw[a2,line width=1.8bp,line cap=round] (168,51) .. controls (195.9,51) and (202.1,79) .. (230,79);
+\draw[white,line width=3.5bp] (168,79) .. controls (195.9,79) and (202.1,99) .. (230,99);
+\draw[a1,line width=1.8bp,line cap=round] (168,79) .. controls (195.9,79) and (202.1,99) .. (230,99);
+\draw[white,line width=3.5bp,densely dashed] (168,99) .. controls (195.9,99) and (202.1,119) .. (230,119);
+\draw[a4,line width=1.8bp,line cap=round,densely dashed] (168,99) .. controls (195.9,99) and (202.1,119) .. (230,119);
+\draw[white,line width=3.5bp] (181,119) .. controls (203.05,119) and (207.95,31) .. (230,31);
+\draw[a5,line width=1.8bp,line cap=round] (181,119) .. controls (203.05,119) and (207.95,31) .. (230,31);
+\filldraw[fill=a1,draw=white,line width=.8bp] (44,31) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (44,31) {$a_1$};
+\filldraw[fill=a2,draw=white,line width=.8bp] (44,51) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (44,51) {$a_2$};
+\filldraw[fill=a3,draw=white,line width=.8bp] (44,79) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (44,79) {$a_3$};
+\filldraw[fill=a4,draw=white,line width=.8bp] (44,99) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (44,99) {$a_4$};
+\filldraw[fill=a2,draw=white,line width=.8bp] (106,31) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (106,31) {$a_2$};
+\filldraw[fill=a1,draw=white,line width=.8bp] (106,51) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (106,51) {$a_1$};
+\filldraw[fill=a3,draw=white,line width=.8bp] (106,79) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (106,79) {$a_3$};
+\filldraw[fill=a4,draw=white,line width=.8bp] (106,99) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (106,99) {$a_4$};
+\filldraw[fill=a3,draw=white,line width=.8bp] (168,31) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (168,31) {$a_3$};
+\filldraw[fill=a2,draw=white,line width=.8bp] (168,51) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (168,51) {$a_2$};
+\filldraw[fill=a1,draw=white,line width=.8bp] (168,79) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (168,79) {$a_1$};
+\filldraw[fill=a4,draw=white,line width=.8bp] (168,99) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (168,99) {$a_4$};
+\filldraw[fill=a5,draw=white,line width=.8bp] (230,31) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (230,31) {$a_5$};
+\filldraw[fill=a3,draw=white,line width=.8bp] (230,51) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (230,51) {$a_3$};
+\filldraw[fill=a2,draw=white,line width=.8bp] (230,79) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (230,79) {$a_2$};
+\filldraw[fill=a1,draw=white,line width=.8bp] (230,99) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (230,99) {$a_1$};
+
+\filldraw[fill=a5,draw=white,line width=.8bp] (181,119) circle[radius=7.7bp];
+\node[text=white,font=\fontsize{7.8}{8}\selectfont] at (181,119) {$a_5$};
+\node[anchor=east,text=a5,font=\fontsize{6.4}{7}\selectfont] at (169,119) {HDD read};
+\filldraw[fill=white,draw=a4,line width=.8bp] (230,119) circle[radius=7.7bp];
+\node[text=a4,font=\fontsize{7.8}{8}\selectfont] at (230,119) {$a_4$};
+\draw[-{Stealth[length=3bp,width=3bp]},ink!55,line width=.4bp] (36,119)--(84,119);
+\node[anchor=west,font=\fontsize{6.4}{7}\selectfont] at (90,119) {Time};
+\end{tikzpicture}
+\end{document}

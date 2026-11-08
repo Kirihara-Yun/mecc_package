@@ -1,0 +1,90 @@
+\documentclass[tikz,border=0pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{xcolor}
+\definecolor{blue}{HTML}{326C9B}
+\definecolor{gray}{HTML}{75818D}
+\definecolor{ink}{HTML}{203244}
+\definecolor{grid}{HTML}{E6EAF0}
+\definecolor{yellow}{HTML}{FFF19A}
+\begin{document}
+\begin{tikzpicture}[x=1bp,y=-1bp,every node/.style={inner sep=0pt,outer sep=0pt,text=ink,font=\fontsize{7.2}{8.2}\selectfont}]
+\path[use as bounding box] (0,0) rectangle (252,124);
+\draw[blue,line width=1.15bp] (37.000,7.000)--(50.000,7.000);
+\filldraw[fill=blue,draw=white,line width=.5bp] (43.500,7.000) circle[radius=2.5bp];
+\node[anchor=west,text=ink,font=\fontsize{7}{8}\selectfont] at (56.000,7.000) {MECC};
+\draw[gray,line width=1bp,dashed] (118.000,7.000)--(131.000,7.000);
+\filldraw[fill=white,draw=gray,line width=.8bp] (122.500,5.000) rectangle (126.500,9.000);
+\node[anchor=west,text=ink,font=\fontsize{7}{8}\selectfont] at (137.000,7.000) {Three-tier LRU};
+\fill[blue!9] (27.000,29.000)--(54.750,41.000)--(82.500,49.000)--(110.250,55.000)--(138.000,59.000)--(138.000,69.000)--(110.250,67.000)--(82.500,64.000)--(54.750,59.000)--(27.000,51.000)--cycle;
+\draw[grid,line width=0.35bp] (27.000,83.000)--(138.000,83.000);
+\draw[ink,line width=0.45bp] (25.000,83.000)--(27.000,83.000);
+\node[anchor=east,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (22.000,83.000) {0};
+\draw[grid,line width=0.35bp] (27.000,53.000)--(138.000,53.000);
+\draw[ink,line width=0.45bp] (25.000,53.000)--(27.000,53.000);
+\node[anchor=east,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (22.000,53.000) {15};
+\draw[grid,line width=0.35bp] (27.000,23.000)--(138.000,23.000);
+\draw[ink,line width=0.45bp] (25.000,23.000)--(27.000,23.000);
+\node[anchor=east,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (22.000,23.000) {30};
+\draw[ink!55,line width=0.4bp] (27.000,23.000)--(138.000,23.000);
+\draw[ink!55,line width=0.4bp] (138.000,23.000)--(138.000,83.000);
+\draw[ink,line width=0.5bp] (27.000,23.000)--(27.000,83.000);
+\draw[ink,line width=0.5bp] (27.000,83.000)--(138.000,83.000);
+\draw[gray,line width=1bp,dashed] (27.000,29.000)--(54.750,41.000);
+\draw[gray,line width=1bp,dashed] (54.750,41.000)--(82.500,49.000);
+\draw[gray,line width=1bp,dashed] (82.500,49.000)--(110.250,55.000);
+\draw[gray,line width=1bp,dashed] (110.250,55.000)--(138.000,59.000);
+\filldraw[fill=white,draw=gray,line width=.8bp] (25.000,27.000) rectangle (29.000,31.000);
+\filldraw[fill=white,draw=gray,line width=.8bp] (52.750,39.000) rectangle (56.750,43.000);
+\filldraw[fill=white,draw=gray,line width=.8bp] (80.500,47.000) rectangle (84.500,51.000);
+\filldraw[fill=white,draw=gray,line width=.8bp] (108.250,53.000) rectangle (112.250,57.000);
+\filldraw[fill=white,draw=gray,line width=.8bp] (136.000,57.000) rectangle (140.000,61.000);
+\draw[blue,line width=1.25bp] (27.000,51.000)--(54.750,59.000);
+\draw[blue,line width=1.25bp] (54.750,59.000)--(82.500,64.000);
+\draw[blue,line width=1.25bp] (82.500,64.000)--(110.250,67.000);
+\draw[blue,line width=1.25bp] (110.250,67.000)--(138.000,69.000);
+\filldraw[fill=blue,draw=white,line width=.5bp] (27.000,51.000) circle[radius=2.5bp];
+\filldraw[fill=blue,draw=white,line width=.5bp] (54.750,59.000) circle[radius=2.5bp];
+\filldraw[fill=blue,draw=white,line width=.5bp] (82.500,64.000) circle[radius=2.5bp];
+\filldraw[fill=blue,draw=white,line width=.5bp] (110.250,67.000) circle[radius=2.5bp];
+\filldraw[fill=blue,draw=white,line width=.5bp] (138.000,69.000) circle[radius=2.5bp];
+\draw[ink,line width=0.45bp] (27.000,83.000)--(27.000,86.000);
+\node[anchor=center,text=ink,font=\fontsize{6.6}{7.6}\selectfont] at (27.000,92.000) {16};
+\draw[ink,line width=0.45bp] (82.500,83.000)--(82.500,86.000);
+\node[anchor=center,text=ink,font=\fontsize{6.6}{7.6}\selectfont] at (82.500,92.000) {32};
+\draw[ink,line width=0.45bp] (138.000,83.000)--(138.000,86.000);
+\node[anchor=center,text=ink,font=\fontsize{6.6}{7.6}\selectfont] at (138.000,92.000) {48};
+\node[anchor=center,text=ink,font=\fontsize{7}{8}\selectfont,rotate=90] at (7.000,53.000) {TPOT (s/token)};
+\node[anchor=center,text=ink,font=\fontsize{7.8}{8.8}\selectfont,fill=yellow,inner xsep=1.4bp,inner ysep=1.0bp] at (82.500,118.000) {(a) Decode latency};
+\node[anchor=west,text=gray,font=\fontsize{6.5}{7.5}\selectfont] at (143.000,57.000) {12};
+\node[anchor=west,text=blue,font=\fontsize{6.5}{7.5}\selectfont] at (143.000,71.000) {7};
+\draw[grid,line width=0.35bp] (184.000,83.000)--(249.000,83.000);
+\draw[ink,line width=0.45bp] (182.000,83.000)--(184.000,83.000);
+\node[anchor=east,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (179.000,83.000) {0};
+\draw[grid,line width=0.35bp] (184.000,58.000)--(249.000,58.000);
+\draw[ink,line width=0.45bp] (182.000,58.000)--(184.000,58.000);
+\node[anchor=east,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (179.000,58.000) {2};
+\draw[grid,line width=0.35bp] (184.000,33.000)--(249.000,33.000);
+\draw[ink,line width=0.45bp] (182.000,33.000)--(184.000,33.000);
+\node[anchor=east,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (179.000,33.000) {4};
+\draw[ink!55,line width=0.4bp] (184.000,23.000)--(249.000,23.000);
+\draw[ink!55,line width=0.4bp] (249.000,23.000)--(249.000,83.000);
+\draw[ink,line width=0.5bp] (184.000,23.000)--(184.000,83.000);
+\draw[ink,line width=0.5bp] (184.000,83.000)--(249.000,83.000);
+\filldraw[fill=blue!83,draw=blue,line width=.35bp] (188.000,33.000) rectangle (196.000,83);
+\node[anchor=center,text=blue,font=\fontsize{6.4}{7.4}\selectfont] at (192.000,27.000) {4};
+\node[anchor=center,text=ink,font=\fontsize{6.5}{7.5}\selectfont] at (192.000,92.000) {24};
+\filldraw[fill=blue!83,draw=blue,line width=.35bp] (204.000,51.750) rectangle (212.000,83);
+\node[anchor=center,text=blue,font=\fontsize{6.4}{7.4}\selectfont] at (208.000,45.750) {2.5};
+\node[anchor=center,text=ink,font=\fontsize{6.5}{7.5}\selectfont] at (208.000,92.000) {32};
+\filldraw[fill=blue!83,draw=blue,line width=.35bp] (220.000,64.250) rectangle (228.000,83);
+\node[anchor=center,text=blue,font=\fontsize{6.4}{7.4}\selectfont] at (224.000,58.250) {1.5};
+\node[anchor=center,text=ink,font=\fontsize{6.5}{7.5}\selectfont] at (224.000,92.000) {40};
+\filldraw[fill=blue!83,draw=blue,line width=.35bp] (236.000,70.500) rectangle (244.000,83);
+\node[anchor=center,text=blue,font=\fontsize{6.4}{7.4}\selectfont] at (240.000,64.500) {1};
+\node[anchor=center,text=ink,font=\fontsize{6.5}{7.5}\selectfont] at (240.000,92.000) {48};
+\node[anchor=center,text=ink,font=\fontsize{6.9}{7.9}\selectfont,rotate=90] at (163.000,53.000) {TPOT saved (s)};
+\node[anchor=center,text=ink,font=\fontsize{6.9}{7.9}\selectfont] at (138.000,104.000) {Primary host allowance (GiB)};
+\node[anchor=center,text=ink,font=\fontsize{7.8}{8.8}\selectfont,fill=yellow,inner xsep=1.4bp,inner ysep=1.0bp] at (216.500,118.000) {(b) Per +8 GiB};
+\end{tikzpicture}
+\end{document}
