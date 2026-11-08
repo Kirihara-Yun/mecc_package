@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日图 5 字体与对齐修订**：[R21 PDF](./reviews/hpca_20261106/r21_state_figure/manuscript.pdf) / [图 5 预览](./reviews/hpca_20261106/r21_state_figure/method_redesign/residency_cases.png)。使用与正文相同的文字和数学字体，将淘汰 a4 写入第三行请求说明，三行均为两个 HBM 槽位和两个 CPU 槽位。正文、图 1 三列及其余配图保持不变。
+
 - **11 月 8 日首图增加一列数据**：[R20 PDF](./reviews/hpca_20261106/r20_three_columns/manuscript.pdf) / [首图预览](./reviews/hpca_20261106/r20_three_columns/measured_figures/intro_evidence.png)。保留 R17 调整字号后的横向柱图配色、纹理、字体及柱高，增加同组实测的首 token 加速比；三列依次为解码、首 token、HDD 访问比例。
 
 - **11 月 8 日引言柱图比例修订**：[R19 PDF](./reviews/hpca_20261106/r19_intro_bars/manuscript.pdf) / [图 1 预览](./reviews/hpca_20261106/r19_intro_bars/measured_figures/intro_evidence.png)。恢复原来的配色、纹理和双横向柱状图，调整柱宽、间距及坐标范围；原始数值保留，第一页右栏仍填充至距左栏底部不到一行。

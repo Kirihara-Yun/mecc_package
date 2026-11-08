@@ -1,0 +1,17 @@
+{
+  "Layer dependencies expose these reads on the inference critical path.": "Each selected expert executes once its weights are available in HBM.",
+  "SSD-LLaMA retains GPU victims in RAM": "SSD-LLaMA retains evicted expert weights in RAM",
+  "GPU turnover then determines which of those weights survive on the host.": "GPU replacement then determines which weights remain on the host.",
+  "Promoting a CPU expert vacates a host position just as an HBM victim loses its GPU position. Using that position for the victim preserves its place in the reuse order.": "Promoting a CPU expert frees a host slot for the expert evicted from HBM. Using that slot maintains the evicted expert's position in the reuse order.",
+  "demotes the GPU victim": "demotes the GPU LRU expert",
+  "joint promotion and victim demotion": "promotion and GPU-to-host demotion",
+  "joint victim retention": "retention after GPU eviction",
+  "A GPU victim is also a candidate for host admission.": "An expert evicted from the GPU can remain on the host.",
+  "shows a CPU promotion vacating a host position as the GPU selects its victim. Joint retention admits that victim into the vacated position, carrying recency across the tier boundary.": "shows a CPU promotion freeing a host slot for the GPU LRU expert. Joint retention fills that slot with the evicted expert and maintains its recency.",
+  "frees a host position for an HBM victim.": "frees a host slot for an expert evicted from HBM.",
+  "Retaining Victims across the Tier Boundary": "Retaining Evicted Experts on the Host",
+  "The GPU LRU victim then becomes CPU MRU.": "The evicted GPU LRU expert then becomes CPU MRU.",
+  "keeping GPU victims available on the host.": "keeping evicted experts available on the host.",
+  "profile-based placement, victim retention, and history-based caching": "profile-based placement, host retention, and history-based caching",
+  "This key connects a profiled rank to its initial location, later cache updates, and FP16 execution.": "This key links profiled experts to placement, cache updates, and FP16~execution."
+}
