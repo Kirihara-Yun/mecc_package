@@ -1,0 +1,33 @@
+{
+  "assumptions_sha256": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
+  "measured": [
+    {
+      "run_id": "a100-e06-independent-20261105",
+      "sha256": "b4a15f25500cd2ded37905dd1a2deea1165fc78ec05ecc96ed0b1a4641534c78"
+    },
+    {
+      "run_id": "a100-main-swapmoe-20261104",
+      "sha256": "f6a584302103d68d55849df89e53e0b99694c2b9833c637dec3727431f7d32b9"
+    },
+    {
+      "run_id": "a100-main-ours-20261104",
+      "sha256": "03d4e4b2a28663823724966e20769673a2ae876e80022e73c6a3525e497844e9"
+    }
+  ],
+  "measured_values": [
+    47.9,
+    31.5,
+    12.5
+  ],
+  "style": {
+    "panel_title_pt": 8,
+    "panel_title_weight": "normal"
+  },
+  "targets_preserved": [
+    "motivation.ssd_misses_uniform",
+    "motivation.ssd_misses_planned",
+    "motivation.fixed_windows",
+    "motivation.online_windows",
+    "motivation.mecc_windows"
+  ]
+}

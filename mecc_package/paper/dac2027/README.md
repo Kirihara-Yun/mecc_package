@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日直接措辞修订**：[R15 PDF](./reviews/hpca_20261106/r15_direct_terms/manuscript.pdf)。正文和嵌入配图移除 victim、critical 等措辞，改为专家淘汰及权重到达后执行的具体描述；数值和图 11 配色保留。
+
 - **11 月 8 日图 11 配色修订**：[R14 PDF](./reviews/hpca_20261106/r14_model_colors/manuscript.pdf)。三个模型使用蓝、青绿、橙三色与不同纹理，两个任务保持相同编码；数据和正文保持 R13 原样。
 
 - **11 月 7 日实验一致性核对稿**：[R13 PDF](./reviews/hpca_20261106/r13_experiment_audit/manuscript.pdf) / [修改记录](./reviews/hpca_20261106/r13_experiment_audit/EXPERIMENT_AUDIT.md)。明确任务切换，补三模型两任务和候选策略目标，修正初始化摊销口径。实测保持不变，新增目标标黄，数据身份集中于第八页附录。

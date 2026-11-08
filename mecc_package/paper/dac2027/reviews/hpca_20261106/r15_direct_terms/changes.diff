@@ -1,0 +1,90 @@
+--- r14_model_colors
++++ r15_direct_terms
+@@ -68,11 +68,11 @@
+ \end{IEEEkeywords}
+ 
+ \section{Introduction}
+-Mixture-of-experts (MoE) models scale parameter capacity through sparse expert activation~\cite{shazeer,switch,mixtral,deepseekmoe}. For example, Mixtral selects two of eight experts in each layer. A single-GPU deployment can use high-bandwidth memory (HBM), host memory, and a hard disk drive (HDD) to hold that pool. The selected expert's location determines its delivery path. HBM residents are ready for GPU execution; host residents require a host-to-device (H2D) copy; cold experts require an HDD read followed by H2D. Layer dependencies expose these reads on the inference critical path. Prefill can reuse fetched weights across prompt rows, and decoding can reuse them across output tokens. On shared servers, a serving task manages its expert allocation alongside other jobs and model instances. We study how to distribute that allocation across layers and retain weights for recurring requests. All MoE layers share the HBM and host allowances. Increasing one layer's allocation leaves fewer slots for others. The value of another slot depends on the demand already covered in that layer. Placement therefore couples the layers' local request distributions to a shared storage allocation.
+-
+-
+-
+-Expert parallelism places experts across GPUs~\cite{deepspeedmoe,tutel,flashmoedist}. Single-GPU systems combine expert paging and caching~\cite{offloading,swapmoe,moeinfinity,promoe} with CPU/GPU execution~\cite{fiddler,daop,lightning}. MoE-CORE combines layer-wise allocation, profile initialization, and online replacement with cross-layer prefetching~\cite{core}. It also supports substitution for eligible expert misses. SSD-LLaMA retains GPU victims in RAM and pipelines storage delivery alongside lossless compression and CPU/GPU work partitioning~\cite{ssdllama}. Edge FlashMoE studies cache replacement for storage-backed expert access~\cite{flashmoe}. Within such a hierarchy, initial placement and later admission affect different requests. A profile determines which weights are available when serving begins. GPU turnover then determines which of those weights survive on the host. Promoting a CPU expert vacates a host position just as an HBM victim loses its GPU position. Using that position for the victim preserves its place in the reuse order. Figure~\ref{fig:intro} compares this joint rule with independent HBM/CPU caches on an A100. Joint retention gives 4.46$\times$ decode speedup over independent replacement and reduces HDD demand by 73.9\%. MECC also gives 1.77$\times$ speedup over streaming. These comparisons motivate retaining reusable expert weights across both memory tiers throughout serving.
++Mixture-of-experts (MoE) models scale parameter capacity through sparse expert activation~\cite{shazeer,switch,mixtral,deepseekmoe}. For example, Mixtral selects two of eight experts in each layer. A single-GPU deployment can use high-bandwidth memory (HBM), host memory, and a hard disk drive (HDD) to hold that pool. The selected expert's location determines its delivery path. HBM residents are ready for GPU execution; host residents require a host-to-device (H2D) copy; cold experts require an HDD read followed by H2D. Each selected expert executes once its weights are available in HBM. Prefill can reuse fetched weights across prompt rows, and decoding can reuse them across output tokens. On shared servers, a serving task manages its expert allocation alongside other jobs and model instances. We study how to distribute that allocation across layers and retain weights for recurring requests. All MoE layers share the HBM and host allowances. Increasing one layer's allocation leaves fewer slots for others. The value of another slot depends on the demand already covered in that layer. Placement therefore couples the layers' local request distributions to a shared storage allocation.
++
++
++
++Expert parallelism places experts across GPUs~\cite{deepspeedmoe,tutel,flashmoedist}. Single-GPU systems combine expert paging and caching~\cite{offloading,swapmoe,moeinfinity,promoe} with CPU/GPU execution~\cite{fiddler,daop,lightning}. MoE-CORE combines layer-wise allocation, profile initialization, and online replacement with cross-layer prefetching~\cite{core}. It also supports substitution for eligible expert misses. SSD-LLaMA retains evicted expert weights in RAM and pipelines storage delivery alongside lossless compression and CPU/GPU work partitioning~\cite{ssdllama}. Edge FlashMoE studies cache replacement for storage-backed expert access~\cite{flashmoe}. Within such a hierarchy, initial placement and later admission affect different requests. A profile determines which weights are available when serving begins. GPU replacement then determines which weights remain on the host. Promoting a CPU expert frees a host slot for the expert evicted from HBM. Using that slot maintains the evicted expert's position in the reuse order. Figure~\ref{fig:intro} compares this joint rule with independent HBM/CPU caches on an A100. Joint retention gives 4.46$\times$ decode speedup over independent replacement and reduces HDD demand by 73.9\%. MECC also gives 1.77$\times$ speedup over streaming. These comparisons motivate retaining reusable expert weights across both memory tiers throughout serving.
+ 
+ 
+ 
+@@ -83,12 +83,12 @@
+ \label{fig:intro}
+ \end{figure}
+ 
+-We present \mecc{}, the MoE Expert Cache Compiler, to connect these two stages. Compilation ranks experts within each layer and allocates slots by marginal covered demand. The resulting plan specifies both per-layer capacities and the IDs loaded into HBM and CPU. The runtime maintains a joint recency order across those tiers. A CPU hit promotes the selected expert and demotes the GPU victim; a cold admission can also evict a host resident. A host mirror supplies the weights of each demoted GPU resident. Host admission reuses this copy through a metadata update. Stream tracking keeps tensor storage live through kernel execution. Runtime requests update membership within the compiled capacities. Weight delivery follows the selected experts' read and copy dependencies before GPU execution. Prefill submits cold reads for the active expert batch, while decode loads selected experts on demand. The compiler and runtime address each weight block by its layer/expert ID. This key connects a profiled rank to its initial location, later cache updates, and FP16 execution.
++We present \mecc{}, the MoE Expert Cache Compiler, to connect these two stages. Compilation ranks experts within each layer and allocates slots by marginal covered demand. The resulting plan specifies both per-layer capacities and the IDs loaded into HBM and CPU. The runtime maintains a joint recency order across those tiers. A CPU hit promotes the selected expert and demotes the GPU LRU expert; a cold admission can also evict a host resident. A host mirror supplies the weights of each demoted GPU resident. Host admission reuses this copy through a metadata update. Stream tracking keeps tensor storage live through kernel execution. Runtime requests update membership within the compiled capacities. Weight delivery follows the selected experts' read and copy dependencies before GPU execution. Prefill submits cold reads for the active expert batch, while decode loads selected experts on demand. The compiler and runtime address each weight block by its layer/expert ID. This key links profiled experts to placement, cache updates, and FP16~execution.
+ 
+ This paper makes three contributions.
+ \begin{list}{}{\setlength{\leftmargin}{16pt}\setlength{\labelwidth}{14pt}\setlength{\labelsep}{2pt}\setlength{\itemsep}{3pt}\setlength{\topsep}{3pt}}
+ \item[(1)] \textbf{Compiling initial residency.} We emit a model-specific residency plan containing per-layer capacities and ranked expert IDs. A marginal-coverage scan maps each additional slot to the demand it covers.
+-\item[(2)] \textbf{Updating cross-tier residency.} We connect the compiled state to joint promotion and victim demotion. Host retention preserves GPU evictions for later reuse, while read/copy ordering prepares selected weights for consumption.
++\item[(2)] \textbf{Updating cross-tier residency.} We connect the compiled state to promotion and GPU-to-host demotion. Host retention preserves GPU evictions for later reuse, while read/copy ordering prepares selected weights for consumption.
+ \item[(3)] \textbf{Evaluating weight delivery.} We compare placement, retention, and scheduling through decode latency, first-token time, source-tier demand, and sample perplexity. Workload and capacity sweeps examine calibration, task transfer, prompt length, batch size, and host allocation. Deployment comparisons report latency and accelerator occupancy.
+ \end{list}
+ \twocolumn[{
+@@ -96,7 +96,7 @@
+ \centering
+ \includegraphics[width=\textwidth]{figures/fig02_motivation_insights.pdf}
+ \par\nointerlineskip
+-\captionof{figure}{Expert-cache behavior and MECC's three design choices. (a--c) compare layer pressure, cross-tier reuse, and workload change; (b) counts A100 demand across all phases. (d--f) show layer-specific capacity cuts, joint victim retention, and online membership updates.}
++\captionof{figure}{Expert-cache behavior and MECC's three design choices. (a--c) compare layer pressure, cross-tier reuse, and workload change; (b) counts A100 demand across all phases. (d--f) show layer-specific capacity cuts, retention after GPU eviction, and online membership updates.}
+ \label{fig:insights}
+ \vspace{5pt}
+ \end{minipage}
+@@ -122,7 +122,7 @@
+ Expert demand varies across layers. Some layers concentrate requests in a few ranks; others spread requests across more experts. Figure~\ref{fig:insights}(a,d) illustrates the resulting allocation choice. Its profile-guided plan shifts slots toward the layer groups with more cold demand. The compiler makes this choice by comparing each layer's next uncovered rank. Allocating a slot exposes that layer's following rank as a new candidate. This process distributes a shared allowance across layers and retains the IDs that fill each allocation. Routing locality across models has also been studied independently~\cite{routingconsistency}.
+ 
+ \subsection{Preserving Reuse after GPU Eviction}
+-A GPU victim is also a candidate for host admission. Figure~\ref{fig:insights}(b,e) shows a CPU promotion vacating a host position as the GPU selects its victim. Joint retention admits that victim into the vacated position, carrying recency across the tier boundary. Starting from the same allocation and expert order, joint retention reduces HDD demand from 47.9\% to 12.5\%. A demoted expert enters CPU MRU and remains available until subsequent admissions evict it from CPU LRU. A later selection promotes this host copy through H2D, turning the earlier GPU eviction into a host-cache hit.
++An expert evicted from the GPU can remain on the host. Figure~\ref{fig:insights}(b,e) shows a CPU promotion freeing a host slot for the GPU LRU expert. Joint retention fills that slot with the evicted expert and maintains its recency. Starting from the same allocation and expert order, joint retention reduces HDD demand from 47.9\% to 12.5\%. A demoted expert enters CPU MRU and remains available until subsequent admissions evict it from CPU LRU. A later selection promotes this host copy through H2D, turning the earlier GPU eviction into a host-cache hit.
+ 
+ \subsection{Updating Residency beyond Calibration}
+ Calibration and serving inputs can select different expert sets. In Figure~\ref{fig:insights}(c,f), a task switch moves requests toward a new expert set. MECC initializes the resident set from calibration and then admits experts requested during serving. Each admission updates recency and brings the cache closer to the active task. Repeated requests keep the new experts near MRU; their unused predecessors advance toward eviction. The profile supplies an initial hot set, and request-driven replacement tracks its evolution. The compiled capacities assign each layer the space used for this adaptation.
+@@ -143,7 +143,7 @@
+ \label{sec:overview}
+ Figure~\ref{fig:overview} follows the plan from profiling to GPU execution. The compiler receives layer/expert counts, skew parameters, model metadata, and expert allowances. It emits capacities and ranked IDs for each layer. Initialization loads the corresponding HBM and CPU residents; the complete expert pool remains on HDD. The runtime subsequently consumes this plan as an initial cache state.
+ 
+-Consider the selected experts $e_2$ and $e_6$ in the framework. The residency lookup finds $e_2$ on the host and $e_6$ in the backing store. Promoting $e_2$ frees a host position for an HBM victim. Loading $e_6$ then admits another GPU resident and updates the same tier order. The delivery path resolves each weight's read and copy before its consumer executes. The model combines the expert outputs using the gate weights and continues to the next layer.
++Consider the selected experts $e_2$ and $e_6$ in the framework. The residency lookup finds $e_2$ on the host and $e_6$ in the backing store. Promoting $e_2$ frees a host slot for an expert evicted from HBM. Loading $e_6$ then admits another GPU resident and updates the same tier order. The delivery path resolves each weight's read and copy before its consumer executes. The model combines the expert outputs using the gate weights and continues to the next layer.
+ 
+ Residency persists across tokens. Each layer updates its own membership within the compiled capacities. Per-layer recency carries request history from one token to the next. Promotions refresh the active experts, and demotions extend their reuse through host residency. Section~\ref{sec:method} specifies these transitions; Section~\ref{sec:evaluation} examines the resulting delivery cost.
+ 
+@@ -177,8 +177,8 @@
+ 
+ The compiler serializes a residency plan: model dimensions, expert size, capacity arrays, and ranked layer-local IDs. Initialization loads each HBM prefix and the following CPU prefix. The JSON plan is the deployment artifact consumed by the loader. Admission subsequently updates membership within its capacities.
+ 
+-\subsection{Retaining Victims across the Tier Boundary}
+-Each layer maintains two ordered sets, from most-recently used (MRU) to least-recently used (LRU). Their concatenation places HBM residents before CPU residents. An HBM hit moves its expert to HBM MRU. A CPU hit removes its host entry and promotes it to HBM MRU. The GPU LRU victim then becomes CPU MRU. A cold admission follows the same GPU insertion and can remove the CPU LRU. HDD retains the backing weights for every expert.
++\subsection{Retaining Evicted Experts on the Host}
++Each layer maintains two ordered sets, from most-recently used (MRU) to least-recently used (LRU). Their concatenation places HBM residents before CPU residents. An HBM hit moves its expert to HBM MRU. A CPU hit removes its host entry and promotes it to HBM MRU. The evicted GPU LRU expert then becomes CPU MRU. A cold admission follows the same GPU insertion and can remove the CPU LRU. HDD retains the backing weights for every expert.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{method_redesign/residency_cases.pdf}
+@@ -265,7 +265,7 @@
+ \caption{E3 ablation and initialization amortization. (a) Components under the GSM8K protocol. (b) Uniform versus compiled plans; curves sum amortized placement and decode time.}
+ \label{fig:target_ablation}
+ \end{figure}
+-For E3 Mixtral-8x7B/GSM8K, adding placement, joint retention, and delivery scheduling gives the TPOT sequence \pending{24, 18, 11, and 8 s/token} in Figure~\ref{fig:target_ablation}(a). The successive reductions are \pending{6, 7, and 3 s/token}. Joint retention provides the largest step by keeping GPU victims available on the host. Scheduling then shortens the delivery path at \pending{20 percent} HDD demand. Panel (b) includes the initial placement cost, connecting this decode gain to the response length.
++For E3 Mixtral-8x7B/GSM8K, adding placement, joint retention, and delivery scheduling gives the TPOT sequence \pending{24, 18, 11, and 8 s/token} in Figure~\ref{fig:target_ablation}(a). The successive reductions are \pending{6, 7, and 3 s/token}. Joint retention provides the largest step by keeping evicted experts available on the host. Scheduling then shortens the delivery path at \pending{20 percent} HDD demand. Panel (b) includes the initial placement cost, connecting this decode gain to the response length.
+ 
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/traffic_exposure.pdf}
+@@ -290,7 +290,7 @@
+ \caption{E5 candidate FP16 policy paths. Geometric means combine task-local latency ratios on GSM8K and HumanEval. MECC is 1.0; lower is better.}
+ \label{fig:matched}
+ \end{figure}
+-E5 compares profile-based placement, victim retention, and history-based caching through the paths in Figure~\ref{fig:matched}. All paths use routed experts in FP16. Substitution and compression are disabled in this protocol. The comparison asks how the retention decision changes under a shared expert-store format and allowance. The candidates cover MoE-CORE, MoE-Infinity, SSD-LLaMA, FlashMoE-RF, MoEpic, and Diff-MoE~\cite{core,moeinfinity,ssdllama,flashmoe,moepic,diffmoe}. Appendix~\ref{app:setup} records each path and the full E1 adapter results.
++E5 compares profile-based placement, host retention, and history-based caching through the paths in Figure~\ref{fig:matched}. All paths use routed experts in FP16. Substitution and compression are disabled in this protocol. The comparison asks how the retention decision changes under a shared expert-store format and allowance. The candidates cover MoE-CORE, MoE-Infinity, SSD-LLaMA, FlashMoE-RF, MoEpic, and Diff-MoE~\cite{core,moeinfinity,ssdllama,flashmoe,moepic,diffmoe}. Appendix~\ref{app:setup} records each path and the full E1 adapter results.
+ 
+ \twocolumn[{
+ \begin{minipage}{\textwidth}
