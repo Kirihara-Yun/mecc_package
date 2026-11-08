@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日四组敏感性对照稿**：[R25 PDF](./reviews/hpca_20261106/r25_method_comparison/manuscript.pdf) / [图 13](./reviews/hpca_20261106/r25_method_comparison/completion_figures/workload_sensitivity.png) / [图 14](./reviews/hpca_20261106/r25_method_comparison/completion_figures/quota_targets.png)。增加 Fixed CPU 与 Three-tier LRU 机制控制，使用颜色、线型及标记共同区分。新增未实测扫参目标单独存入 SENSITIVITY_COMPARISON_TARGETS.json，黄色与附录说明保留；原数组及其他十四幅图保持不变。
+
 - **11 月 8 日实验图视觉统一**：[R24 PDF](./reviews/hpca_20261106/r24_publication_style/manuscript.pdf) / [第六页预览](./reviews/hpca_20261106/r24_publication_style/page_6.png)。图 13 统一折线、标记、坐标框、共享图例和差值区域；图 14 增加由原数组复算的每 8 GiB 边际收益面板。保留黄色标记与原数组，已检查端点文字位置及八页版式。
 
 - **11 月 8 日图 13/14 设计修订**：[R23 PDF](./reviews/hpca_20261106/r23_sensitivity_design/manuscript.pdf) / [第六页预览](./reviews/hpca_20261106/r23_sensitivity_design/page_6.png)。图 13 分别采用校准规模成对点图、输入长度双对数曲线和批量吞吐分组柱图；图 14 改用逐档容量的成对延迟端点。数据数组与黄色标记保留，字体与正文一致，已检查八页版式。
