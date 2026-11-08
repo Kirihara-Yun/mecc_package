@@ -1,0 +1,11 @@
+--- r21_state_figure
++++ r22_recency_tracks
+@@ -183,7 +183,7 @@
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{method_redesign/residency_cases.pdf}
+ \par\nointerlineskip
+-\caption{A continuous request sequence, read from top to bottom. Each row starts from the preceding row's state. Request $a_2$ refreshes HBM recency; $a_3$ promotes from CPU; cold $a_5$ demotes $a_2$ and evicts $a_4$. All lists run MRU to LRU.}
++\caption{Expert recency over three requests. Colored tracks follow the same experts from left to right. Within each tier, the upper position is MRU and the lower position is LRU. A CPU hit promotes $a_3$ and retains $a_1$ on the host. Loading $a_5$ from HDD retains $a_2$ and removes $a_4$ from CPU.}
+ \label{fig:retention}
+ \end{figure}
+ Figure~\ref{fig:retention} starts with HBM $[a_1,a_2]$ and CPU $[a_3,a_4]$. Request $a_2$ gives HBM $[a_2,a_1]$. Request $a_3$ then promotes $a_3$ and demotes $a_1$, producing HBM $[a_3,a_2]$ and CPU $[a_1,a_4]$. Finally, $a_5$ enters HBM, $a_2$ becomes CPU MRU, and $a_4$ leaves CPU LRU. The final lists are $[a_5,a_3]$ and $[a_2,a_1]$.

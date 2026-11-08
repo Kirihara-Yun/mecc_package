@@ -26,6 +26,7 @@
 | R19 | 恢复原来的双横向柱状图，调整柱宽、间距和面板比例 | [柱图修订稿](./r19_intro_bars/manuscript.pdf) | [设计记录](./r19_intro_bars/INTRO_BAR_REVIEW.md) | 本轮不评分 |
 | R20 | 保留 R17 调整字号后的样式，增加首 token 加速比一列 | [三列柱图稿](./r20_three_columns/manuscript.pdf) | [修改记录](./r20_three_columns/THREE_COLUMN_REVIEW.md) | 本轮不评分 |
 | R21 | 图 5 改用正文文字及数学字体，移除右侧孤立方块并对齐三行 | [状态图修订稿](./r21_state_figure/manuscript.pdf) | [修改记录](./r21_state_figure/STATE_FIGURE_REVIEW.md) | 本轮不评分 |
+| R22 | 图 5 用专家轨迹表达驻留层级与最近使用次序，取消方框表格 | [轨迹图修订稿](./r22_recency_tracks/manuscript.pdf) | [修改记录](./r22_recency_tracks/RECENCY_TRACK_REVIEW.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 

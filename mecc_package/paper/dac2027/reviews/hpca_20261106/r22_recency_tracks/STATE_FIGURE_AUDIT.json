@@ -1,0 +1,69 @@
+{
+  "source_trace_sha256": "b773098cbb4f52da3d39e981757f6dfbceda4b981a4b18c8466125a9fdef3403",
+  "continuous_states": [
+    {
+      "request": "initial",
+      "hbm_mru_to_lru": [
+        "a1",
+        "a2"
+      ],
+      "cpu_mru_to_lru": [
+        "a3",
+        "a4"
+      ]
+    },
+    {
+      "request": "a2",
+      "hbm_mru_to_lru": [
+        "a2",
+        "a1"
+      ],
+      "cpu_mru_to_lru": [
+        "a3",
+        "a4"
+      ]
+    },
+    {
+      "request": "a3",
+      "hbm_mru_to_lru": [
+        "a3",
+        "a2"
+      ],
+      "cpu_mru_to_lru": [
+        "a1",
+        "a4"
+      ]
+    },
+    {
+      "request": "a5",
+      "hbm_mru_to_lru": [
+        "a5",
+        "a3"
+      ],
+      "cpu_mru_to_lru": [
+        "a2",
+        "a1"
+      ]
+    }
+  ],
+  "removed_experts_by_step": [
+    [],
+    [],
+    [
+      "a4"
+    ]
+  ],
+  "font_packages": [
+    "newtxtext",
+    "newtxmath"
+  ],
+  "same_font_packages_as_manuscript": true,
+  "expert_blocks_per_row": 4,
+  "standalone_eviction_block": false,
+  "eviction_note_location": "request column, third row",
+  "diagram_extent_bp": [
+    252,
+    115.92
+  ],
+  "no_policy_or_measurement_changes": true
+}
