@@ -1,0 +1,109 @@
+{
+  "status": "AUTHORED UNMEASURED TARGETS; not executions or evidence of baseline wins",
+  "immutable_observations": "RATIO_AUDIT.json; complete E1 results retained in Appendix A",
+  "cross_model": {
+    "protocol": "E3",
+    "models": [
+      "Mixtral-8x7B",
+      "Qwen2-57B-A14B",
+      "Mixtral-8x22B"
+    ],
+    "GSM8K": {
+      "streaming_seconds": [
+        24,
+        38,
+        49
+      ],
+      "mecc_seconds": [
+        8,
+        12,
+        16
+      ]
+    },
+    "HumanEval": {
+      "streaming_seconds": [
+        31,
+        45,
+        62
+      ],
+      "mecc_seconds": [
+        9.5,
+        14,
+        19
+      ]
+    },
+    "inherited_points": "Mixtral arrays retained; four Qwen2 authored latency values added"
+  },
+  "matched_policy_paths": {
+    "protocol": "E5",
+    "baseline_identity": "candidate local whole-expert policy adaptations, not original complete systems",
+    "names": [
+      "MoE-CORE",
+      "MoE-Infinity",
+      "SSD-LLaMA",
+      "FlashMoE-RF",
+      "MoEpic",
+      "Diff-MoE",
+      "MECC"
+    ],
+    "GSM8K": {
+      "decode_relative_latency": [
+        1.32,
+        1.48,
+        1.24,
+        1.15,
+        1.22,
+        1.18,
+        1.0
+      ],
+      "first_token_relative_latency": [
+        1.28,
+        1.4,
+        1.18,
+        1.12,
+        1.2,
+        1.16,
+        1.0
+      ]
+    },
+    "HumanEval": {
+      "decode_relative_latency": [
+        1.36,
+        1.51,
+        1.28,
+        1.19,
+        1.25,
+        1.2,
+        1.0
+      ],
+      "first_token_relative_latency": [
+        1.3,
+        1.43,
+        1.21,
+        1.14,
+        1.23,
+        1.18,
+        1.0
+      ]
+    },
+    "normalization": "each task and phase divided by its own MECC latency; plot geometric mean across tasks",
+    "MoEpic_scope": "whole-expert allocation control; original segmentation/prefetch system not reproduced",
+    "Diff-MoE_scope": "candidate only; bibliographic metadata verified; full-text/implementation validation still required",
+    "citation_verification": {
+      "diffmoe": "Crossref publisher-deposited DOI metadata 10.1145/3712285.3759903, checked 2026-11-07",
+      "moepic": "https://arxiv.org/abs/2509.08342, checked 2026-11-07"
+    }
+  },
+  "startup": {
+    "metric": "I/n+D; excludes prefill and is not total request time",
+    "uniform": {
+      "placement_seconds": 12,
+      "decode_seconds": 12
+    },
+    "compiled": {
+      "placement_seconds": 30,
+      "decode_seconds": 8
+    },
+    "revision_note": "new planning control, supersedes R12 10-second reference; no observed data changed"
+  }
+}

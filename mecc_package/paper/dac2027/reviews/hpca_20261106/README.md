@@ -27,6 +27,7 @@
 | R20 | 保留 R17 调整字号后的样式，增加首 token 加速比一列 | [三列柱图稿](./r20_three_columns/manuscript.pdf) | [修改记录](./r20_three_columns/THREE_COLUMN_REVIEW.md) | 本轮不评分 |
 | R21 | 图 5 改用正文文字及数学字体，移除右侧孤立方块并对齐三行 | [状态图修订稿](./r21_state_figure/manuscript.pdf) | [修改记录](./r21_state_figure/STATE_FIGURE_REVIEW.md) | 本轮不评分 |
 | R22 | 图 5 用专家轨迹表达驻留层级与最近使用次序，取消方框表格 | [轨迹图修订稿](./r22_recency_tracks/manuscript.pdf) | [修改记录](./r22_recency_tracks/RECENCY_TRACK_REVIEW.md) | 本轮不评分 |
+| R23 | 图 13 按实验采用点图、双对数曲线及柱图；图 14 改用成对端点 | [实验图修订稿](./r23_sensitivity_design/manuscript.pdf) | [修改记录](./r23_sensitivity_design/SENSITIVITY_DESIGN_REVIEW.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 

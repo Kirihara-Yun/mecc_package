@@ -1,0 +1,41 @@
+{
+  "status": "AUTHORED UNMEASURED DESIGN TARGETS; no system executions; not evidence of superiority",
+  "protocol": "E5",
+  "model": "Mixtral-8x7B",
+  "workload": "GSM8K",
+  "prompts": 8,
+  "input_tokens": 128,
+  "output_tokens": 128,
+  "hbm_primary_allowance_gib": 30,
+  "cpu_primary_allowance_gib": 20,
+  "configuration_status": "planned; each adaptation and cap requires validation",
+  "normalized_to": "MECC phase latency = 1.0; all values are authored",
+  "names": [
+    "MoE-CORE path",
+    "MoE-Infinity path",
+    "SSD-LLaMA path",
+    "FlashMoE-RF path",
+    "MECC"
+  ],
+  "decode_relative_latency": [
+    1.32,
+    1.48,
+    1.24,
+    1.15,
+    1.0
+  ],
+  "first_token_relative_latency": [
+    1.28,
+    1.4,
+    1.18,
+    1.12,
+    1.0
+  ],
+  "e1_measured_rf_result": "retained unchanged in appendix and RATIO_AUDIT.json; these targets are not a rerun",
+  "excluded_features": [
+    "expert substitution",
+    "quantization",
+    "lossless compression"
+  ],
+  "baseline_identity": "local matched policy-path adaptations to be implemented, not full published systems"
+}

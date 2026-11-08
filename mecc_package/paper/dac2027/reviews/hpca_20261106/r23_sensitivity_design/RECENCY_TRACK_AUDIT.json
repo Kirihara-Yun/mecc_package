@@ -1,0 +1,213 @@
+{
+  "continuous_states": [
+    {
+      "request": "initial",
+      "hbm_mru_to_lru": [
+        "a1",
+        "a2"
+      ],
+      "cpu_mru_to_lru": [
+        "a3",
+        "a4"
+      ]
+    },
+    {
+      "request": "a2",
+      "hbm_mru_to_lru": [
+        "a2",
+        "a1"
+      ],
+      "cpu_mru_to_lru": [
+        "a3",
+        "a4"
+      ]
+    },
+    {
+      "request": "a3",
+      "hbm_mru_to_lru": [
+        "a3",
+        "a2"
+      ],
+      "cpu_mru_to_lru": [
+        "a1",
+        "a4"
+      ]
+    },
+    {
+      "request": "a5",
+      "hbm_mru_to_lru": [
+        "a5",
+        "a3"
+      ],
+      "cpu_mru_to_lru": [
+        "a2",
+        "a1"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "expert": "a1",
+      "from": [
+        44,
+        31
+      ],
+      "to": [
+        106,
+        51
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a2",
+      "from": [
+        44,
+        51
+      ],
+      "to": [
+        106,
+        31
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a3",
+      "from": [
+        44,
+        79
+      ],
+      "to": [
+        106,
+        79
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a4",
+      "from": [
+        44,
+        99
+      ],
+      "to": [
+        106,
+        99
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a2",
+      "from": [
+        106,
+        31
+      ],
+      "to": [
+        168,
+        51
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a1",
+      "from": [
+        106,
+        51
+      ],
+      "to": [
+        168,
+        79
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a3",
+      "from": [
+        106,
+        79
+      ],
+      "to": [
+        168,
+        31
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a4",
+      "from": [
+        106,
+        99
+      ],
+      "to": [
+        168,
+        99
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a3",
+      "from": [
+        168,
+        31
+      ],
+      "to": [
+        230,
+        51
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a2",
+      "from": [
+        168,
+        51
+      ],
+      "to": [
+        230,
+        79
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a1",
+      "from": [
+        168,
+        79
+      ],
+      "to": [
+        230,
+        99
+      ],
+      "dashed": false
+    },
+    {
+      "expert": "a4",
+      "from": [
+        168,
+        99
+      ],
+      "to": [
+        230,
+        119
+      ],
+      "dashed": true
+    },
+    {
+      "expert": "a5",
+      "from": [
+        181,
+        119
+      ],
+      "to": [
+        230,
+        31
+      ],
+      "dashed": false
+    }
+  ],
+  "encoding": "expert identity=color; tier=background band; recency=vertical rank; time=horizontal",
+  "source_trace_sha256": "b773098cbb4f52da3d39e981757f6dfbceda4b981a4b18c8466125a9fdef3403",
+  "font_packages": [
+    "newtxtext",
+    "newtxmath"
+  ],
+  "no_policy_or_measurement_changes": true
+}

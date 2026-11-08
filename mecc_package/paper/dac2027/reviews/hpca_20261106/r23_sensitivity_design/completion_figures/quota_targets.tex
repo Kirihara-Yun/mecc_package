@@ -1,0 +1,69 @@
+\documentclass[tikz,border=0pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{xcolor}
+\definecolor{blue}{HTML}{326C9B}
+\definecolor{gray}{HTML}{9AA7B2}
+\definecolor{ink}{HTML}{203244}
+\definecolor{grid}{HTML}{E7EBEF}
+\definecolor{yellow}{HTML}{FFF19A}
+\begin{document}
+\begin{tikzpicture}[x=1bp,y=-1bp,every node/.style={inner sep=0pt,outer sep=0pt,text=ink,font=\fontsize{7.2}{8.2}\selectfont}]
+\path[use as bounding box] (0,0) rectangle (252,104);
+\node[anchor=west,text=ink,font=\fontsize{8.2}{9.2}\selectfont,fill=yellow,inner xsep=1.5bp,inner ysep=1.2bp] at (2.000,7.000) {Host-memory allowance};
+\fill[gray] (68.000,17.000) rectangle (72.000,21.000);
+\node[anchor=west,text=ink,font=\fontsize{6.5}{7.5}\selectfont] at (75.000,19.000) {Three-tier LRU};
+\filldraw[fill=blue,draw=white,line width=.45bp] (141.000,19.000) circle[radius=2.2bp];
+\node[anchor=west,text=ink,font=\fontsize{6.5}{7.5}\selectfont] at (146.000,19.000) {MECC};
+\draw[grid,line width=0.4bp] (44.000,25.000)--(44.000,79.000);
+\draw[ink,line width=0.4bp] (44.000,81.000)--(44.000,84.000);
+\node[anchor=center,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (44.000,90.000) {0};
+\draw[grid,line width=0.4bp] (109.333,25.000)--(109.333,79.000);
+\draw[ink,line width=0.4bp] (109.333,81.000)--(109.333,84.000);
+\node[anchor=center,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (109.333,90.000) {10};
+\draw[grid,line width=0.4bp] (174.667,25.000)--(174.667,79.000);
+\draw[ink,line width=0.4bp] (174.667,81.000)--(174.667,84.000);
+\node[anchor=center,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (174.667,90.000) {20};
+\draw[grid,line width=0.4bp] (240.000,25.000)--(240.000,79.000);
+\draw[ink,line width=0.4bp] (240.000,81.000)--(240.000,84.000);
+\node[anchor=center,text=ink,font=\fontsize{6.7}{7.7}\selectfont] at (240.000,90.000) {30};
+\draw[ink,line width=0.5bp] (44.000,81.000)--(240.000,81.000);
+\node[anchor=center,text=ink,font=\fontsize{7.3}{8.3}\selectfont] at (142.000,99.000) {TPOT (s/token)};
+\node[anchor=center,text=ink,font=\fontsize{7.1}{8.1}\selectfont,rotate=90] at (7.000,51.000) {Host allowance (GiB)};
+\draw[grid,line width=0.25bp] (44.000,29.000)--(240.000,29.000);
+\node[anchor=east,text=ink,font=\fontsize{6.9}{7.9}\selectfont] at (30.000,29.000) {16};
+\draw[gray!60,line width=1.8bp] (148.533,29.000)--(220.400,29.000);
+\fill[gray] (218.000,26.600) rectangle (222.800,31.400);
+\filldraw[fill=blue,draw=white,line width=.45bp] (148.533,29.000) circle[radius=2.4bp];
+\node[anchor=east,text=blue,font=\fontsize{6.8}{7.8}\selectfont] at (143.533,29.000) {16};
+\node[anchor=west,text=gray,font=\fontsize{6.8}{7.8}\selectfont] at (225.400,29.000) {27};
+\draw[grid,line width=0.25bp] (44.000,40.000)--(240.000,40.000);
+\node[anchor=east,text=ink,font=\fontsize{6.9}{7.9}\selectfont] at (30.000,40.000) {24};
+\draw[gray!60,line width=1.8bp] (122.400,40.000)--(181.200,40.000);
+\fill[gray] (178.800,37.600) rectangle (183.600,42.400);
+\filldraw[fill=blue,draw=white,line width=.45bp] (122.400,40.000) circle[radius=2.4bp];
+\node[anchor=east,text=blue,font=\fontsize{6.8}{7.8}\selectfont] at (117.400,40.000) {12};
+\node[anchor=west,text=gray,font=\fontsize{6.8}{7.8}\selectfont] at (186.200,40.000) {21};
+\draw[grid,line width=0.25bp] (44.000,51.000)--(240.000,51.000);
+\node[anchor=east,text=ink,font=\fontsize{6.9}{7.9}\selectfont] at (30.000,51.000) {32};
+\draw[gray!60,line width=1.8bp] (106.067,51.000)--(155.067,51.000);
+\fill[gray] (152.667,48.600) rectangle (157.467,53.400);
+\filldraw[fill=blue,draw=white,line width=.45bp] (106.067,51.000) circle[radius=2.4bp];
+\node[anchor=east,text=blue,font=\fontsize{6.8}{7.8}\selectfont] at (101.067,51.000) {9.5};
+\node[anchor=west,text=gray,font=\fontsize{6.8}{7.8}\selectfont] at (160.067,51.000) {17};
+\draw[grid,line width=0.25bp] (44.000,62.000)--(240.000,62.000);
+\node[anchor=east,text=ink,font=\fontsize{6.9}{7.9}\selectfont] at (30.000,62.000) {40};
+\draw[gray!60,line width=1.8bp] (96.267,62.000)--(135.467,62.000);
+\fill[gray] (133.067,59.600) rectangle (137.867,64.400);
+\filldraw[fill=blue,draw=white,line width=.45bp] (96.267,62.000) circle[radius=2.4bp];
+\node[anchor=east,text=blue,font=\fontsize{6.8}{7.8}\selectfont] at (91.267,62.000) {8};
+\node[anchor=west,text=gray,font=\fontsize{6.8}{7.8}\selectfont] at (140.467,62.000) {14};
+\draw[grid,line width=0.25bp] (44.000,73.000)--(240.000,73.000);
+\node[anchor=east,text=ink,font=\fontsize{6.9}{7.9}\selectfont] at (30.000,73.000) {48};
+\draw[gray!60,line width=1.8bp] (89.733,73.000)--(122.400,73.000);
+\fill[gray] (120.000,70.600) rectangle (124.800,75.400);
+\filldraw[fill=blue,draw=white,line width=.45bp] (89.733,73.000) circle[radius=2.4bp];
+\node[anchor=east,text=blue,font=\fontsize{6.8}{7.8}\selectfont] at (84.733,73.000) {7};
+\node[anchor=west,text=gray,font=\fontsize{6.8}{7.8}\selectfont] at (127.400,73.000) {12};
+\end{tikzpicture}
+\end{document}
