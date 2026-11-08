@@ -6,7 +6,7 @@ import hashlib,json,re,shutil,unicodedata
 import pymupdf as fitz
 from pptx import Presentation
 import numpy as np
-from update_talk_from_r27 import HERE,PAPER,OUT,CURRENT,NAME,sha
+from update_talk_from_r27 import HERE,PAPER,OUT,CURRENT,NAME,sha,OLD_INTRO,NEW_INTRO
 
 def compact(s):return re.sub(r'\s+','',unicodedata.normalize('NFKC',s))
 def visible_strings(sl):
@@ -25,7 +25,9 @@ def main():
     assert sha(PAPER/'manuscript.pdf')==body['paper_sha256']
     unchanged_images={}
     for i in range(12):
-        assert visible_strings(prs.slides[i])==visible_strings(original.slides[i]),i+1
+        expected_texts=visible_strings(original.slides[i])
+        if i==0:expected_texts=[s.replace(OLD_INTRO,NEW_INTRO) for s in expected_texts]
+        assert visible_strings(prs.slides[i])==expected_texts,i+1
         if i!=4:
             imgs=lambda sl:sorted(hashlib.sha256(sh.image.blob).hexdigest() for sh in sl.shapes if sh.shape_type==13)
             assert imgs(prs.slides[i])==imgs(original.slides[i]),i+1
@@ -67,17 +69,26 @@ def main():
         'paper_front_seven_pages_data_explanation_matches':0,'paper_unchanged_sha256':sha(PAPER/'manuscript.pdf'),
         'main_slide_data_identity_text_matches':main_status,'main_slide_yellow_highlight_pixels':yellow_counts,
         'updated_results_pages':list(range(13,21)),'new_page_native_text_verified':True,
-        'first_twelve_native_texts_unchanged':True,'first_twelve_image_assets_retained_except_retention':unchanged_images,
+        'first_twelve_native_texts_retained_except_intro_wording':True,'intro_wording':NEW_INTRO,
+        'first_twelve_image_assets_retained_except_retention':unchanged_images,
         'out_of_slide_shapes':out_of_slide,'notes_and_visible_appendix_retain_source_status':True,
         'complete_E1_RF_observation_retained_in_appendix':True,
         'pptx_sha256':sha(ppt),'pdf_sha256':sha(pdf)}
     doc.close()
     # Preserve the dated deliverables and update the familiar current entry points.
-    shutil.copy2(ppt,CURRENT/'MECC_HPCA_current.pptx')
-    shutil.copy2(pdf,CURRENT/'MECC_HPCA_current.pdf')
-    assert sha(CURRENT/'MECC_HPCA_current.pptx')==validation['pptx_sha256']
-    assert sha(CURRENT/'MECC_HPCA_current.pdf')==validation['pdf_sha256']
+    try:
+        # Check both destinations before replacing either file; preserve open user documents.
+        for target in [CURRENT/'MECC_HPCA_current.pptx',CURRENT/'MECC_HPCA_current.pdf']:
+            with target.open('r+b'):pass
+        shutil.copy2(ppt,CURRENT/'MECC_HPCA_current.pptx')
+        shutil.copy2(pdf,CURRENT/'MECC_HPCA_current.pdf')
+        assert sha(CURRENT/'MECC_HPCA_current.pptx')==validation['pptx_sha256']
+        assert sha(CURRENT/'MECC_HPCA_current.pdf')==validation['pdf_sha256']
+        validation['publication']={'current_updated':True}
+    except PermissionError:
+        validation['publication']={'current_updated':False,'reason':'An existing current file is open; preserved without closing it.',
+            'validated_pptx':str(ppt),'validated_pdf':str(pdf)}
     (OUT/'VALIDATION.json').write_text(json.dumps(validation,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-    print('PASS: paper front pages checked; 22 exported slides; no yellow highlights; figure text preserved; current PPT/PDF updated.')
+    print('PASS: 22 exported slides; paper checked; no yellow highlights; figure text preserved; current updated:',validation['publication']['current_updated'])
 
 if __name__=='__main__':main()

@@ -118,5 +118,6 @@
   },
   "visible_main_highlight": false,
   "target_identity_in_notes_and_appendix": true,
-  "deck_sha256": "552691799e07b49011851b65bab13f3d3c4f63cecb6e6c12a656765178c5a8cd"
+  "deck_sha256": "4f5efc07c789e0f75b0a652ac1e6aaf10375eea86fcc9e2265a094c74a3e48e6",
+  "intro_wording": "MoE 每次仅激活少数专家，但要求全部专家随时可用。"
 }

@@ -23,8 +23,20 @@ ASSETS=OUT/'assets'
 CURRENT=HERE/'current'
 SOURCE=CURRENT/'MECC_HPCA_current.pptx'
 NAME='MECC_group_meeting_R27_20261108'
+OLD_INTRO='MoE 每次仅激活少数专家，但不同输入可能激活不同专家。'
+NEW_INTRO='MoE 每次仅激活少数专家，但要求全部专家随时可用。'
 
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+
+def apply_intro_wording(prs):
+    changed=0
+    for sh in prs.slides[0].shapes:
+        if not sh.has_text_frame:continue
+        for p in sh.text_frame.paragraphs:
+            for run in p.runs:
+                if OLD_INTRO in run.text:run.text=run.text.replace(OLD_INTRO,NEW_INTRO);changed+=1
+    assert changed==1 or any(NEW_INTRO in sh.text for sh in prs.slides[0].shapes if sh.has_text_frame)
+    return changed
 
 def body_audit():
     d=fitz.open(PAPER/'manuscript.pdf')
@@ -117,6 +129,7 @@ def main():
     for name,rel in specs.items():assets[name]=clean_figure(rel,name)
     assets['retention']=retention();assets['matched_wide']=matched()
     prs=Presentation(OUT/'baseline/MECC_HPCA_current.pptx')
+    apply_intro_wording(prs)
     original_first12=[str(sl._element.xml) for sl in list(prs.slides)[:12]]
     # Refresh the retention evidence in the motivation while preserving its layout.
     s=prs.slides[4];oldpic=[sh for sh in s.shapes if sh.shape_type==13][0]
@@ -211,7 +224,7 @@ def main():
     prs.save(OUT/(NAME+'.pptx'))
     manifest={'paper_sha256':sha(PAPER/'manuscript.pdf'),'baseline_deck_sha256':sha(OUT/'baseline/MECC_HPCA_current.pptx'),
               'slides':len(prs.slides),'main_slides':21,'appendix_slides':[22],'assets':assets,
-              'unchanged_scope':'First twelve layouts and mechanism graphics retained; motivation II numerical chart refreshed.',
+              'unchanged_scope':'First twelve layouts and mechanism graphics retained; intro lead wording revised; motivation II numerical chart refreshed.',
               'expected_replacements':{'13':'E1 main','14':'E3 ablation/startup','15':'E3 models','16':'E5 candidates',
                   '17':'E6 capacity','18':'E7-E9 sensitivity','19':'E10 transfer','20':'deployment'},
               'visible_main_highlight':False,'target_identity_in_notes_and_appendix':True,

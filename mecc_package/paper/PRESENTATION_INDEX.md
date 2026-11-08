@@ -2,6 +2,8 @@
 
 ## 当前审阅版
 
+**第一页措辞修订稿**：[新版 PPT](./talk_updates/20261108_r27/MECC_group_meeting_R27_20261108.pptx) / [新版 PDF](./talk_updates/20261108_r27/MECC_group_meeting_R27_20261108.pdf)。首句改为“MoE 每次仅激活少数专家，但要求全部专家随时可用。”；当前入口被占用时，修订稿保存在此独立副本。
+
 **2026-11-08 当前组会版**：[可编辑 PPT](./current/MECC_HPCA_current.pptx) / [渲染 PDF](./current/MECC_HPCA_current.pdf) / [22 页预览](./talk_updates/20261108_r27/contact_sheet.png)。同步论文 R27，保留原有叙事和方法，更新第 13–20 页实验；含 21 页汇报和 1 页配置/数据附录。图中不使用黄色高亮，来源与目标值说明集中在第 22 页及逐页备注。[更新记录与检查](./talk_updates/20261108_r27/README.md)同时保留更新前的 17 页母版。
 
 **2026-11-06 独立实测版**：[可编辑 PPT](./current/MECC_A100_measured.pptx) / [渲染 PDF](./current/MECC_A100_measured.pdf)。11 页；数值图只读取已提交的 A100 `result.json`，每点一次完整运行。主对比展示全部六种本地策略；预算图只比较同输入来源的 30/60 GB 两档。该版本保留原状。

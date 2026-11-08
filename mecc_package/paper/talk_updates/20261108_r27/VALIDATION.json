@@ -40,7 +40,8 @@
     20
   ],
   "new_page_native_text_verified": true,
-  "first_twelve_native_texts_unchanged": true,
+  "first_twelve_native_texts_retained_except_intro_wording": true,
+  "intro_wording": "MoE 每次仅激活少数专家，但要求全部专家随时可用。",
   "first_twelve_image_assets_retained_except_retention": {
     "1": true,
     "2": true,
@@ -57,6 +58,12 @@
   "out_of_slide_shapes": [],
   "notes_and_visible_appendix_retain_source_status": true,
   "complete_E1_RF_observation_retained_in_appendix": true,
-  "pptx_sha256": "552691799e07b49011851b65bab13f3d3c4f63cecb6e6c12a656765178c5a8cd",
-  "pdf_sha256": "6a4d8c8a0e1e82576e6a9951bc14e6143d986a90bed57df9256937f639d287b0"
+  "pptx_sha256": "4f5efc07c789e0f75b0a652ac1e6aaf10375eea86fcc9e2265a094c74a3e48e6",
+  "pdf_sha256": "c01a3caa12a86b89d8ce23da8e0670b53dbf5594a9ce5e9352832dea535dffc9",
+  "publication": {
+    "current_updated": false,
+    "reason": "An existing current file is open; preserved without closing it.",
+    "validated_pptx": "D:\\mecc_message\\mecc_package\\paper\\talk_updates\\20261108_r27\\MECC_group_meeting_R27_20261108.pptx",
+    "validated_pdf": "D:\\mecc_message\\mecc_package\\paper\\talk_updates\\20261108_r27\\MECC_group_meeting_R27_20261108.pdf"
+  }
 }
