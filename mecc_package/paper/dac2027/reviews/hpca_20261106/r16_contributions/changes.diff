@@ -1,0 +1,15 @@
+--- r15_direct_terms
++++ r16_contributions
+@@ -87,9 +87,9 @@
+ 
+ This paper makes three contributions.
+ \begin{list}{}{\setlength{\leftmargin}{16pt}\setlength{\labelwidth}{14pt}\setlength{\labelsep}{2pt}\setlength{\itemsep}{3pt}\setlength{\topsep}{3pt}}
+-\item[(1)] \textbf{Compiling initial residency.} We emit a model-specific residency plan containing per-layer capacities and ranked expert IDs. A marginal-coverage scan maps each additional slot to the demand it covers.
+-\item[(2)] \textbf{Updating cross-tier residency.} We connect the compiled state to promotion and GPU-to-host demotion. Host retention preserves GPU evictions for later reuse, while read/copy ordering prepares selected weights for consumption.
+-\item[(3)] \textbf{Evaluating weight delivery.} We compare placement, retention, and scheduling through decode latency, first-token time, source-tier demand, and sample perplexity. Workload and capacity sweeps examine calibration, task transfer, prompt length, batch size, and host allocation. Deployment comparisons report latency and accelerator occupancy.
++\item[(1)] \textbf{Allocating capacity by layer.} We compile per-layer HBM/CPU capacities and initial expert IDs from routing profiles. Comparing each layer's next uncovered rank assigns shared slots to the demand they cover. Initialization loads the highest-ranked experts into HBM and the next ranks into CPU.
++\item[(2)] \textbf{Retaining experts after GPU eviction.} We maintain recency across HBM and CPU. A CPU promotion frees a host slot for the evicted GPU expert, preserving its weights for later reuse. Demotion reuses the host mirror through a metadata update.
++\item[(3)] \textbf{Adapting residency to serving requests.} We combine profile-based initialization with request-driven admission. Experts selected during serving enter the resident set and displace older entries within the compiled capacities. Residency persists across tokens and requests as the active expert set changes.
+ \end{list}
+ \twocolumn[{
+ \begin{minipage}{\textwidth}

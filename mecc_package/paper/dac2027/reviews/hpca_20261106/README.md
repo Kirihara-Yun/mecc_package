@@ -20,6 +20,7 @@
 | R13 | 实验冲突复核、三模型两任务、候选基线、切换与摊销口径 | [实验核对稿](./r13_experiment_audit/manuscript.pdf) | [覆盖与修改记录](./r13_experiment_audit/EXPERIMENT_AUDIT.md) | 本轮不评分 |
 | R14 | 图 11 三模型改用不同颜色和纹理，两任务保持一致 | [配色修订稿](./r14_model_colors/manuscript.pdf) | [配色记录](./r14_model_colors/FIGURE_COLOR_REVIEW.md) | 本轮不评分 |
 | R15 | 正文、图注和图内改用直接的专家淘汰与等待描述 | [措辞修订稿](./r15_direct_terms/manuscript.pdf) | [措辞记录](./r15_direct_terms/WORDING_REVIEW.md) | 本轮不评分 |
+| R16 | 三项贡献依次对应容量分配、淘汰后保留、运行期更新三项动机 | [贡献对应稿](./r16_contributions/manuscript.pdf) | [对应记录](./r16_contributions/CONTRIBUTION_REVIEW.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 

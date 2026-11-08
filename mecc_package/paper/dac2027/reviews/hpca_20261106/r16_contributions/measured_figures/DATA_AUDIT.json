@@ -1,0 +1,182 @@
+{
+  "scope": "one completed A100 run per plotted point; no ideal targets",
+  "medium": "RAID logical block device reports ROTA=1; physical disks not inventoried",
+  "main": {
+    "naive": {
+      "run_id": "a100-main-naive-20261104",
+      "sha256": "d2de3adf836a518c155d2d5de23d71902454fd2217b1ca9e260b2bcc7e6b5e60",
+      "config": {
+        "max_new_tokens": 64,
+        "prompt_len": 64,
+        "n_prompts": 8,
+        "cold_ssd": true
+      }
+    },
+    "swapmoe": {
+      "run_id": "a100-main-swapmoe-20261104",
+      "sha256": "f6a584302103d68d55849df89e53e0b99694c2b9833c637dec3727431f7d32b9",
+      "config": {
+        "max_new_tokens": 64,
+        "prompt_len": 64,
+        "n_prompts": 8,
+        "cold_ssd": true
+      }
+    },
+    "ours_io": {
+      "run_id": "a100-main-ours_io-20261105-retry1",
+      "sha256": "e079ed366a87dd900a623b688ebddc9f17dba7229f3bbeb98ef93dc6cbf93383",
+      "config": {
+        "max_new_tokens": 64,
+        "prompt_len": 64,
+        "n_prompts": 8,
+        "cold_ssd": true
+      }
+    },
+    "ours": {
+      "run_id": "a100-main-ours-20261104",
+      "sha256": "03d4e4b2a28663823724966e20769673a2ae876e80022e73c6a3525e497844e9",
+      "config": {
+        "max_new_tokens": 64,
+        "prompt_len": 64,
+        "n_prompts": 8,
+        "cold_ssd": true
+      }
+    },
+    "flashmoe_rf_adaptation": {
+      "run_id": "a100-main-flashmoe_rf_adaptation-20261104",
+      "sha256": "e935bf37c6f8207a501d4a7095732fd6ca5020e4f18bb116c197698ede64d668",
+      "config": {
+        "max_new_tokens": 64,
+        "prompt_len": 64,
+        "n_prompts": 8,
+        "cold_ssd": true
+      }
+    },
+    "fiddler": {
+      "run_id": "a100-main-fiddler-20261104",
+      "sha256": "3674a084ea3db352f50190e441ec330eaaa9ff8d1be745a21f944050961c4ccd",
+      "config": {
+        "max_new_tokens": 64,
+        "prompt_len": 64,
+        "n_prompts": 8,
+        "cold_ssd": true
+      }
+    }
+  },
+  "independent": {
+    "run_id": "a100-e06-independent-20261105",
+    "sha256": "b4a15f25500cd2ded37905dd1a2deea1165fc78ec05ecc96ed0b1a4641534c78",
+    "config": {
+      "max_new_tokens": 64,
+      "prompt_len": 64,
+      "n_prompts": 8,
+      "cold_ssd": true
+    }
+  },
+  "budget": {
+    "30": {
+      "naive": {
+        "run_id": "a100-p2-cpu30-naive-20261104",
+        "sha256": "89a6335d518e9b5efebd3a7997f6dbbb65071ceaf670d0926a7d61dc9ae60800",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "swapmoe": {
+        "run_id": "a100-p2-cpu30-swapmoe-20261104",
+        "sha256": "d07baf758e5959093a5e7110aedc973fc7a4e9e6cf92efb3d6af81fd4d629ec0",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "ours": {
+        "run_id": "a100-p2-cpu30-ours-20261104",
+        "sha256": "da4ab86dd61728b696d93e41aa75f85ef44fe4538b40b53a791ae31e85eebb29",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "flashmoe_rf_adaptation": {
+        "run_id": "a100-p2-cpu30-flashmoe_rf_adaptation-20261104",
+        "sha256": "b74d50a81a6fd8abadb61686d38f19af713bee8e79b12ca3ba6380e3f5442d0e",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "fiddler": {
+        "run_id": "a100-p2-cpu30-fiddler-20261104",
+        "sha256": "6256c622806a902afc0a0133b8603abb9dd9a6d8e04f106013fafcced9591a93",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      }
+    },
+    "60": {
+      "naive": {
+        "run_id": "a100-p2-cpu60-naive-20261104",
+        "sha256": "c62dfc06e821ac59f6b66020f99ae6c7eab47ea72af6a023da63aabe862e6870",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "swapmoe": {
+        "run_id": "a100-p2-cpu60-swapmoe-20261104",
+        "sha256": "2e8951fb1e1d80066a0ff826d82afcc11c9b525e36443b2e0e16868f14149aee",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "ours": {
+        "run_id": "a100-p2-cpu60-ours-20261104",
+        "sha256": "41312e74cd1158d307b91f42e440c5d591a1cba4b352099b89f41e8f2fea5018",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "flashmoe_rf_adaptation": {
+        "run_id": "a100-p2-cpu60-flashmoe_rf_adaptation-20261104",
+        "sha256": "2da7252d7bdbdaad97a3330f1807391e2e11745966d178d730714a7225c58030",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      },
+      "fiddler": {
+        "run_id": "a100-p2-cpu60-fiddler-20261104",
+        "sha256": "bf9e5f2ad6a97090b70a947a4dc096ad60d6b3ced558de0414130bec7d146c57",
+        "config": {
+          "max_new_tokens": 16,
+          "prompt_len": 64,
+          "n_prompts": 4,
+          "cold_ssd": true
+        }
+      }
+    }
+  }
+}

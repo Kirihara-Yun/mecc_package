@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日贡献对应修订**：[R16 PDF](./reviews/hpca_20261106/r16_contributions/manuscript.pdf)。三项贡献依次对应按层分配容量、保留 GPU 淘汰专家、按运行期请求更新驻留集合；实验验证不再单列为贡献，其余正文与配图保留。
+
 - **11 月 8 日直接措辞修订**：[R15 PDF](./reviews/hpca_20261106/r15_direct_terms/manuscript.pdf)。正文和嵌入配图移除 victim、critical 等措辞，改为专家淘汰及权重到达后执行的具体描述；数值和图 11 配色保留。
 
 - **11 月 8 日图 11 配色修订**：[R14 PDF](./reviews/hpca_20261106/r14_model_colors/manuscript.pdf)。三个模型使用蓝、青绿、橙三色与不同纹理，两个任务保持相同编码；数据和正文保持 R13 原样。
