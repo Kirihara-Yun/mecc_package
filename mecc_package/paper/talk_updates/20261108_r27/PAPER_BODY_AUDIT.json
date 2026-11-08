@@ -1,0 +1,47 @@
+{
+  "paper": "D:\\mecc_message\\mecc_package\\paper\\dac2027\\reviews\\hpca_20261106\\r27_savings_bars\\manuscript.pdf",
+  "paper_sha256": "ac7ebda1f53b8d2e64a247697de755f46185265d495995e8bdf87e376f6b53bf",
+  "checked_pages": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "data_nature_explanations_in_main_pages": [],
+  "appendix_disclosure_matches": [
+    {
+      "page": 8,
+      "text": "Yellow values and panel titles identify authored, unmeasured design"
+    },
+    {
+      "page": 8,
+      "text": "tries are authored targets for candidate local adaptations, not executions"
+    },
+    {
+      "page": 8,
+      "text": "2/GSM8K/HumanEval. Figures 13/14 add authored policy targets"
+    },
+    {
+      "page": 8,
+      "text": "ment. The added sweeps are not executions. All target configurations"
+    },
+    {
+      "page": 8,
+      "text": "equivalence. GSM8K/HumanEval task accuracy remains unmeasured."
+    },
+    {
+      "page": 8,
+      "text": "Figure 16 contains authored deployment targets."
+    }
+  ],
+  "main_highlight_commands": 47,
+  "excluded_normal_terms": [
+    "illustrates an allocation mechanism",
+    "pending HDD/I/O read"
+  ],
+  "paper_modified": false,
+  "status": "PASS"
+}

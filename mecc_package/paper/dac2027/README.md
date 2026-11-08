@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日正文说明核对与组会同步**：[当前 PPT](../current/MECC_HPCA_current.pptx) / [PPT PDF](../current/MECC_HPCA_current.pdf) / [论文正文核对记录](../talk_updates/20261108_r27/PAPER_BODY_AUDIT.json)。R27 论文前七页没有目标/理想数据性质说明，相关说明保留于第八页，正文黄色标记保留，论文 PDF 未修改。组会图取消黄色，数据身份保留于第 22 页及备注；实验页已按 R27 更新。
+
 - **11 月 8 日 MECC savings 柱状图修订**：[R27 PDF](./reviews/hpca_20261106/r27_savings_bars/manuscript.pdf) / [图 14](./reviews/hpca_20261106/r27_savings_bars/completion_figures/quota_targets.png)。右侧恢复从零起始的普通柱状图，调整柱宽、间距、纹理及柱顶标注。Input length、图 14 左侧和其他配图保持不变，原数组不变，已复核八页版式。
 
 - **11 月 8 日输入长度与容量瀑布图**：[R26 PDF](./reviews/hpca_20261106/r26_input_waterfall/manuscript.pdf) / [图 13](./reviews/hpca_20261106/r26_input_waterfall/completion_figures/workload_sensitivity.png) / [图 14](./reviews/hpca_20261106/r26_input_waterfall/completion_figures/quota_targets.png)。Input length 用相同输入长度下相对 Streaming 的 TTFT 分组柱图；MECC savings 用原容量数组的阶梯瀑布。所有底层数组不变，其他三个子图逐像素保留，已核对归一化、差值及八页版式。

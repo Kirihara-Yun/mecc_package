@@ -1,0 +1,122 @@
+{
+  "paper_sha256": "ac7ebda1f53b8d2e64a247697de755f46185265d495995e8bdf87e376f6b53bf",
+  "baseline_deck_sha256": "af84380319d56cf8ef5dfeefa34140e107e381e5a1a6cc2358f5f6ef04461464",
+  "slides": 22,
+  "main_slides": 21,
+  "appendix_slides": [
+    22
+  ],
+  "assets": {
+    "main": {
+      "source": "measured_figures/main.pdf",
+      "source_sha256": "c7db29c647489b7e1c1bc059fec71c1115feec523d885e84f5800883da01fc2b",
+      "removed_yellow_rectangles": 0,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "932ef54ab07e319f3e230e4ab80390dd74b154fb8321182e30ce57783f8c35ab"
+    },
+    "ablation": {
+      "source": "completion_figures/ablation_startup.pdf",
+      "source_sha256": "e2bb25e4e89a099ca8c45b7c4fd3c03f759f9ebb91161712a7136c94e6788182",
+      "removed_yellow_rectangles": 2,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "3d45c4a7b23eccceab200587cf45a3aafc157b2d733310177b405ff8f90d2552"
+    },
+    "traffic": {
+      "source": "completion_figures/traffic_exposure.pdf",
+      "source_sha256": "928052e41a82825949b537e54194b025a395b57aac859cb2256d75054c34eef3",
+      "removed_yellow_rectangles": 2,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "7f74b1aeb0ce92f446cf64f3cbcc9780541a70a31c93a19e695ce67a2f9743ee"
+    },
+    "models": {
+      "source": "completion_figures/cross_model.pdf",
+      "source_sha256": "793a726ea8df596d15924876218dc348e60d13d982fb403674b1ab6e44e1215b",
+      "removed_yellow_rectangles": 2,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "21026692311e33204c41a9cbf1d099442e772f0aa3f289a180f02a5f2e873b4f"
+    },
+    "matched": {
+      "source": "completion_figures/matched_baselines.pdf",
+      "source_sha256": "018f17e4e5ce4ff67a26c69ec6e104e14dee1f3861e1825a9be31f8d8bb2d4bd",
+      "removed_yellow_rectangles": 2,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "74c60dc5e00e3cbb351d7703830d17d7197563fec7b0453f3d39cb172438c91e"
+    },
+    "capacity": {
+      "source": "completion_figures/quota_targets.pdf",
+      "source_sha256": "fdd512b3682edc6d460bb56dbd329209a32c4ec5c5ce0ba47af2ad6ec15cccc5",
+      "removed_yellow_rectangles": 2,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "4204ea2ba2748bc879c0741e3936d5b023be490a867d39a9868fb26143bd685a"
+    },
+    "sensitivity": {
+      "source": "completion_figures/workload_sensitivity.pdf",
+      "source_sha256": "0bd05f8688b8482d2e56be4cbce418ff30a925733a7a5d216a118977d97f4bc1",
+      "removed_yellow_rectangles": 3,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "896a91e96a402dbfd42b8a1e0f66684e23cdf40b61f87dca2badbe7d39bae5bd"
+    },
+    "transfer": {
+      "source": "completion_figures/profile_mismatch.pdf",
+      "source_sha256": "e99afddebc0b51bcebc064b88e86b3add4e66ae9efbaeaa05ba273cd7cbfed99",
+      "removed_yellow_rectangles": 2,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "d615916802537b7c687c4725668681f3e8b9a6fbcc2ff5f1b2b90ccd11329975"
+    },
+    "deployment": {
+      "source": "completion_figures/gpu_tradeoff.pdf",
+      "source_sha256": "d5c316f6f4dadb16acc202240208c2115cc834348f3b9ec8de34b89ff37bc105",
+      "removed_yellow_rectangles": 2,
+      "figure_text_unchanged": true,
+      "display_png_sha256": "12e5a0d8cfaa1ce91f7f727b7c0ba4641965c8d9a8db59eb2975cf864a697b91"
+    },
+    "retention": {
+      "source": "INTRO_FIGURE_DATA.json",
+      "values_percent": [
+        0,
+        31.540034607519267,
+        47.87111320853652,
+        12.490168318389177
+      ],
+      "zero_reference": "structural full-HBM reference, not a measured multi-GPU run"
+    },
+    "matched_wide": {
+      "source": "EXPERIMENT_TARGETS.json:matched_policy_paths",
+      "geometric_mean_ratios": {
+        "decode_relative_latency": [
+          1.3398507379555382,
+          1.4949247472699085,
+          1.2598412598418898,
+          1.1698290473398238,
+          1.2349089035228469,
+          1.1899579824514812,
+          1.0
+        ],
+        "first_token_relative_latency": [
+          1.289961239727768,
+          1.4149204924659193,
+          1.1949058540320237,
+          1.1299557513460428,
+          1.2149074038789953,
+          1.1699572641767733,
+          1.0
+        ]
+      },
+      "status": "authored candidate adaptation targets, not system measurements"
+    }
+  },
+  "unchanged_scope": "First twelve layouts and mechanism graphics retained; motivation II numerical chart refreshed.",
+  "expected_replacements": {
+    "13": "E1 main",
+    "14": "E3 ablation/startup",
+    "15": "E3 models",
+    "16": "E5 candidates",
+    "17": "E6 capacity",
+    "18": "E7-E9 sensitivity",
+    "19": "E10 transfer",
+    "20": "deployment"
+  },
+  "visible_main_highlight": false,
+  "target_identity_in_notes_and_appendix": true,
+  "deck_sha256": "552691799e07b49011851b65bab13f3d3c4f63cecb6e6c12a656765178c5a8cd"
+}
