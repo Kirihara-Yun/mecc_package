@@ -1,0 +1,11 @@
+--- r19_intro_bars
++++ r20_three_columns
+@@ -79,7 +79,7 @@
+ \begin{figure}[!t]
+ \centering\includegraphics[width=\columnwidth]{measured_figures/intro_evidence.pdf}
+ \par\nointerlineskip
+-\caption{Mixtral-8x7B on one A100. Decode speedup is relative to streaming; Separate uses independent HBM/CPU caches. Swap-style is the SwapMoE-style adapter. Higher speedup and lower HDD demand are better.}
++\caption{Mixtral-8x7B on one A100. Speedups are relative to streaming; Separate uses independent HBM/CPU caches. Swap-style is the SwapMoE-style adapter. Higher speedup and lower HDD demand are better.}
+ \label{fig:intro}
+ \end{figure}
+ 

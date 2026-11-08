@@ -1,0 +1,235 @@
+{
+  "E1": {
+    "status": "measured single runs",
+    "model": "Mixtral-8x7B",
+    "dataset": "WikiText-2",
+    "prompts": 8,
+    "input_tokens": 64,
+    "output_tokens": 64,
+    "hbm_allowance_gib": 50,
+    "cpu_allowance_gib": 40,
+    "init": "uniform",
+    "figures": [
+      "intro",
+      "performance",
+      "motivation:b"
+    ]
+  },
+  "E2": {
+    "status": "authored unmeasured design",
+    "dataset": "GSM8K",
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "init": "profile",
+    "model_hc_gib": {
+      "Mixtral-8x7B": [
+        30,
+        20
+      ],
+      "Qwen2-57B-A14B": [
+        30,
+        16
+      ],
+      "Mixtral-8x22B": [
+        50,
+        64
+      ]
+    },
+    "figures": [
+      "mechanisms"
+    ],
+    "task_switch": {
+      "from": "GSM8K",
+      "to": "HumanEval",
+      "prompts_per_window": 8,
+      "calibration_task": "GSM8K"
+    },
+    "allocation_controls": [
+      "equal quotas",
+      "empirical-count marginal allocation",
+      "Zipf-smoothed marginal allocation"
+    ],
+    "calibration_samples": 512
+  },
+  "E3": {
+    "status": "authored unmeasured design",
+    "datasets": [
+      "GSM8K",
+      "HumanEval"
+    ],
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "init": "profile",
+    "calibration_samples": 2048,
+    "model_hc_gib": {
+      "Mixtral-8x7B": [
+        50,
+        40
+      ],
+      "Mixtral-8x22B": [
+        50,
+        64
+      ],
+      "Qwen2-57B-A14B": [
+        30,
+        16
+      ]
+    },
+    "figures": [
+      "ablation",
+      "cross_model",
+      "startup",
+      "traffic/exposure"
+    ],
+    "startup_reference": "uniform plan: I=12, D=12; compiled plan: I=30, D=8; curves exclude prefill"
+  },
+  "E4": {
+    "status": "measured single runs",
+    "model": "Mixtral-8x7B",
+    "dataset": "WikiText-2",
+    "prompts": 4,
+    "input_tokens": 64,
+    "output_tokens": 16,
+    "hbm_allowance_gib": 50,
+    "cpu_allowances_gib": [
+      30,
+      60
+    ],
+    "init": "uniform",
+    "figures": [
+      "capacity paragraph"
+    ]
+  },
+  "E5": {
+    "status": "authored unmeasured baseline targets",
+    "source": "EXPERIMENT_TARGETS.json:matched_policy_paths",
+    "figures": [
+      "matched_baselines"
+    ],
+    "datasets": [
+      "GSM8K",
+      "HumanEval"
+    ],
+    "prompts_per_task": 8,
+    "calibration_samples": 512
+  },
+  "metrics": {
+    "speedup": "unrounded reference phase latency / unrounded policy phase latency",
+    "hdd_share": "n_hdd / sum of hbm,cpu,hdd,cpu_compute classified accesses",
+    "main_count_windows": [
+      "warmup",
+      "prefill",
+      "decode",
+      "ppl"
+    ],
+    "initialization_in_demand_denominator": false,
+    "prefill_access_unit": "expert group consumed by a batch of rows"
+  },
+  "secondary_designs": {
+    "status": "unmeasured arrays",
+    "calibration": "narrative_targets.json:profile_*",
+    "prompt_sweep": "narrative_targets.json:input_*",
+    "batch": "narrative_targets.json:batch_*",
+    "transfer": "narrative_targets.json:transfer_*",
+    "quota": "ideal_assumptions.json:budget_tpot_seconds",
+    "deployment": "ideal_assumptions.json:gpus/resident_gpu_tpot_seconds/mecc_gpu_tpot_seconds[0]",
+    "configuration_map": "E6 quota; E7 calibration; E8 input length; E9 batch; E10 task transfer"
+  },
+  "E6": {
+    "status": "authored unmeasured targets",
+    "model": "Mixtral-8x7B",
+    "dataset": "GSM8K",
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "hbm_allowance_gib": 50,
+    "cpu_allowance_gib": 40,
+    "calibration_samples": 2048,
+    "batch_size": 1,
+    "varied": "cpu_allowance_gib",
+    "values": [
+      16,
+      24,
+      32,
+      40,
+      48
+    ]
+  },
+  "E7": {
+    "status": "authored unmeasured targets",
+    "model": "Mixtral-8x7B",
+    "dataset": "GSM8K",
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "hbm_allowance_gib": 50,
+    "cpu_allowance_gib": 40,
+    "calibration_samples": 2048,
+    "batch_size": 1,
+    "varied": "calibration_samples",
+    "values": [
+      32,
+      128,
+      512,
+      2048
+    ]
+  },
+  "E8": {
+    "status": "authored unmeasured targets",
+    "model": "Mixtral-8x7B",
+    "dataset": "GSM8K",
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "hbm_allowance_gib": 50,
+    "cpu_allowance_gib": 40,
+    "calibration_samples": 2048,
+    "batch_size": 1,
+    "varied": "input_tokens",
+    "values": [
+      32,
+      128,
+      512,
+      2048
+    ]
+  },
+  "E9": {
+    "status": "authored unmeasured targets",
+    "model": "Mixtral-8x7B",
+    "dataset": "GSM8K",
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "hbm_allowance_gib": 50,
+    "cpu_allowance_gib": 40,
+    "calibration_samples": 2048,
+    "batch_size": 1,
+    "varied": "batch_size",
+    "values": [
+      1,
+      2,
+      4,
+      8
+    ]
+  },
+  "E10": {
+    "status": "authored unmeasured targets",
+    "model": "Mixtral-8x7B",
+    "dataset": "GSM8K",
+    "prompts": 8,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "hbm_allowance_gib": 50,
+    "cpu_allowance_gib": 40,
+    "calibration_samples": 2048,
+    "batch_size": 1,
+    "datasets": [
+      "WikiText-2",
+      "GSM8K",
+      "HumanEval"
+    ],
+    "varied": "calibration/serving task pair"
+  }
+}

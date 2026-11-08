@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日首图增加一列数据**：[R20 PDF](./reviews/hpca_20261106/r20_three_columns/manuscript.pdf) / [首图预览](./reviews/hpca_20261106/r20_three_columns/measured_figures/intro_evidence.png)。保留 R17 调整字号后的横向柱图配色、纹理、字体及柱高，增加同组实测的首 token 加速比；三列依次为解码、首 token、HDD 访问比例。
+
 - **11 月 8 日引言柱图比例修订**：[R19 PDF](./reviews/hpca_20261106/r19_intro_bars/manuscript.pdf) / [图 1 预览](./reviews/hpca_20261106/r19_intro_bars/measured_figures/intro_evidence.png)。恢复原来的配色、纹理和双横向柱状图，调整柱宽、间距及坐标范围；原始数值保留，第一页右栏仍填充至距左栏底部不到一行。
 
 - **11 月 8 日引言图重排**：[R18 PDF](./reviews/hpca_20261106/r18_intro_design/manuscript.pdf) / [三列备选图](./reviews/hpca_20261106/r18_intro_design/measured_figures/intro_alternative_three_columns.png)。主稿采用紧凑双面板：左侧解码加速，右侧 HBM/CPU/HDD 请求占比，全部沿用同组实测；其余配图保持 R17 原样。

@@ -1,0 +1,141 @@
+{
+  "R17_text_and_caption_restored_exactly": true,
+  "original_figure_numerical_labels_unchanged": true,
+  "fifteen_other_embedded_figures_unchanged": true,
+  "data_and_prior_archives_unchanged": true,
+  "axes_start_at_zero": true,
+  "page1_column_bottoms": [
+    719.8358764648438,
+    712.3228759765625
+  ],
+  "layout": {
+    "pages": 8,
+    "body_pages": 6,
+    "reference_pages": [
+      7
+    ],
+    "appendix_pages": [
+      8
+    ],
+    "issues": [],
+    "figures": {
+      "fig:intro": {
+        "number": 1,
+        "page": 1,
+        "references": [
+          1,
+          4
+        ]
+      },
+      "fig:insights": {
+        "number": 2,
+        "page": 2,
+        "references": [
+          2
+        ]
+      },
+      "fig:overview": {
+        "number": 3,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:compile": {
+        "number": 4,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:retention": {
+        "number": 5,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:delivery": {
+        "number": 6,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:performance": {
+        "number": 7,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:target_mechanisms": {
+        "number": 8,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_ablation": {
+        "number": 9,
+        "page": 5,
+        "references": [
+          5,
+          6
+        ]
+      },
+      "fig:target_traffic": {
+        "number": 10,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_models": {
+        "number": 11,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:matched": {
+        "number": 12,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_sensitivity": {
+        "number": 13,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_quota": {
+        "number": 14,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_mismatch": {
+        "number": 15,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_gpu": {
+        "number": 16,
+        "page": 8,
+        "references": [
+          8
+        ]
+      }
+    },
+    "references": 45,
+    "no_banner": true,
+    "sha256": "dccc4ee3323a8030a52f0df1aeba6c4a6aff2d2d5a0299b4271c835a9f18cb57"
+  }
+}
