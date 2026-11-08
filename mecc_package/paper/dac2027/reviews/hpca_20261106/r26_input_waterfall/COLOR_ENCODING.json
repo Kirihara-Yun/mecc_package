@@ -1,0 +1,15 @@
+{
+  "figure": 11,
+  "model_colors": {
+    "Mixtral-8x7B": "#326C9B",
+    "Qwen2-57B-A14B": "#6D9FAD",
+    "Mixtral-8x22B": "#C78D51"
+  },
+  "model_hatches": {
+    "Mixtral-8x7B": "///",
+    "Qwen2-57B-A14B": "...",
+    "Mixtral-8x22B": "\\\\"
+  },
+  "same_encoding_in_both_workloads": true,
+  "numbers_and_text_modified": false
+}

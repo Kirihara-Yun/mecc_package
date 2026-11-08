@@ -1,0 +1,162 @@
+{
+  "status": "AUTHORED UNMEASURED DESIGN TARGETS; NOT BENCHMARK EXECUTIONS; NOT FOR SUBMISSION",
+  "purpose": "Four-method layout and sensitivity experiment planning; not evidence of relative performance.",
+  "definitions": {
+    "Reference": "E7 uses the inherited uniform-initialization control; E8/E9 use inherited streaming targets.",
+    "Fixed CPU": "Candidate local fixed-host-membership control with GPU replacement; not published SwapMoE system performance.",
+    "Three-tier LRU": "Candidate local unprofiled per-tier LRU control; retains the inherited E6 legacy series.",
+    "MECC": "Inherited authored targets, not new measurements."
+  },
+  "profile": {
+    "x": [
+      32,
+      128,
+      512,
+      2048
+    ],
+    "metric": "TPOT s/token",
+    "series": {
+      "Reference": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "Fixed CPU": [
+        15.0,
+        14.0,
+        13.4,
+        13.0
+      ],
+      "Three-tier LRU": [
+        16.4,
+        15.4,
+        14.6,
+        14.0
+      ],
+      "MECC": [
+        10.8,
+        9.4,
+        8.5,
+        8.0
+      ]
+    }
+  },
+  "input": {
+    "x": [
+      32,
+      128,
+      512,
+      2048
+    ],
+    "metric": "TTFT seconds",
+    "series": {
+      "Reference": [
+        45,
+        160,
+        620,
+        2440
+      ],
+      "Fixed CPU": [
+        39,
+        139,
+        545,
+        2150
+      ],
+      "Three-tier LRU": [
+        35,
+        122,
+        470,
+        1840
+      ],
+      "MECC": [
+        28,
+        92,
+        350,
+        1360
+      ]
+    }
+  },
+  "batch": {
+    "x": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "metric": "aggregate tokens/s",
+    "series": {
+      "Reference": [
+        0.041667,
+        0.076,
+        0.13,
+        0.21
+      ],
+      "Fixed CPU": [
+        0.07692307692307693,
+        0.137,
+        0.225,
+        0.31
+      ],
+      "Three-tier LRU": [
+        0.07142857142857142,
+        0.145,
+        0.258,
+        0.39
+      ],
+      "MECC": [
+        0.125,
+        0.22,
+        0.355,
+        0.505
+      ]
+    }
+  },
+  "capacity": {
+    "x": [
+      16,
+      24,
+      32,
+      40,
+      48
+    ],
+    "metric": "TPOT s/token",
+    "series": {
+      "Streaming": [
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "Fixed CPU": [
+        23,
+        18,
+        15,
+        13,
+        11.5
+      ],
+      "Three-tier LRU": [
+        27,
+        21,
+        17,
+        14,
+        12
+      ],
+      "MECC": [
+        16,
+        12,
+        9.5,
+        8,
+        7
+      ]
+    }
+  },
+  "authorship": "All new Fixed CPU and Three-tier LRU sweep values, and the capacity Streaming series, are explicitly authored planning values. They are not extrapolated measured results.",
+  "anchors": "At 40 GiB, capacity MECC=8, Fixed CPU=13 and Three-tier LRU=14 match the 2048-sample profile endpoints and reciprocal batch-one rates. Streaming=24 matches the inherited E3 GSM8K target.",
+  "source_hashes": {
+    "narrative_targets.json": "e96cb5a7d0a2f54d570754449c55c1f8b87f22facbff3d8cbe8a0ddec22d4836",
+    "ideal_assumptions.json": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768",
+    "EXPERIMENT_TARGETS.json": "24de6911c2ca695e979f9aa99ff91598b76619b5d9374bd7b11cc1e7172692b0"
+  }
+}

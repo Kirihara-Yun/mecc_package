@@ -1,0 +1,19 @@
+{
+  "source_hashes": {
+    "narrative_targets.json": "e96cb5a7d0a2f54d570754449c55c1f8b87f22facbff3d8cbe8a0ddec22d4836",
+    "ideal_assumptions.json": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768"
+  },
+  "data_unchanged": true,
+  "target_highlight_preserved": true,
+  "figure13": {
+    "a": "paired horizontal latency endpoints; uniform=12 s/token",
+    "b": "log-log TTFT; all original values retained",
+    "c": "grouped aggregate-throughput bars"
+  },
+  "figure14": "paired latency endpoints at five primary host allowances",
+  "new_measurements": false,
+  "font_packages": [
+    "newtxtext",
+    "newtxmath"
+  ]
+}

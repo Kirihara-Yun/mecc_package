@@ -1,0 +1,100 @@
+{
+  "style_source": "R17, after reducing oversized type",
+  "style_source_sha256": "5d627468b26e792359473ad213c95caefab980f7de739d470bc526524e1a26a2",
+  "panels": [
+    "decode speedup",
+    "first-token speedup",
+    "HDD demand share"
+  ],
+  "added_panel": "first-token speedup = streaming TTFT / policy TTFT",
+  "decode_speedups": [
+    1.0,
+    0.59961382239968,
+    0.39592719179136354,
+    1.7668145944583975
+  ],
+  "first_token_speedups": [
+    1.0,
+    0.9004640413452785,
+    0.6063286786353452,
+    1.1273157747441322
+  ],
+  "HDD_shares": [
+    20.072361176655658,
+    31.540034607519267,
+    47.87111320853652,
+    12.490168318389177
+  ],
+  "source_rows": [
+    {
+      "run_id": "a100-main-naive-20261104",
+      "source_sha256": "d2de3adf836a518c155d2d5de23d71902454fd2217b1ca9e260b2bcc7e6b5e60",
+      "counts_hbm_cpu_hdd": [
+        30486,
+        0,
+        7656
+      ],
+      "shares_hbm_cpu_hdd": [
+        79.92763882334435,
+        0.0,
+        20.072361176655658
+      ],
+      "tpot_ms": 13042.59,
+      "ttft_ms": 156855.01
+    },
+    {
+      "run_id": "a100-main-swapmoe-20261104",
+      "source_sha256": "f6a584302103d68d55849df89e53e0b99694c2b9833c637dec3727431f7d32b9",
+      "counts_hbm_cpu_hdd": [
+        23888,
+        2224,
+        12030
+      ],
+      "shares_hbm_cpu_hdd": [
+        62.629122751822145,
+        5.830842640658592,
+        31.540034607519267
+      ],
+      "tpot_ms": 21751.65,
+      "ttft_ms": 174193.53
+    },
+    {
+      "run_id": "a100-e06-independent-20261105",
+      "source_sha256": "b4a15f25500cd2ded37905dd1a2deea1165fc78ec05ecc96ed0b1a4641534c78",
+      "counts_hbm_cpu_hdd": [
+        19787,
+        96,
+        18259
+      ],
+      "shares_hbm_cpu_hdd": [
+        51.87719574222641,
+        0.2516910492370615,
+        47.87111320853652
+      ],
+      "tpot_ms": 32941.89,
+      "ttft_ms": 258696.34
+    },
+    {
+      "run_id": "a100-main-ours-20261104",
+      "source_sha256": "03d4e4b2a28663823724966e20769673a2ae876e80022e73c6a3525e497844e9",
+      "counts_hbm_cpu_hdd": [
+        29558,
+        3820,
+        4764
+      ],
+      "shares_hbm_cpu_hdd": [
+        77.49462534738608,
+        10.01520633422474,
+        12.490168318389177
+      ],
+      "tpot_ms": 7381.98,
+      "ttft_ms": 139140.26
+    }
+  ],
+  "regular_font_pdf_pt": 8.966376089663761,
+  "value_font_pdf_pt": 6.826,
+  "colors_and_hatches_from_original": true,
+  "bar_height_row_units": 0.58,
+  "no_new_runs_or_targets": true,
+  "canvas_height_pdf_pt": 162.03688049316406
+}

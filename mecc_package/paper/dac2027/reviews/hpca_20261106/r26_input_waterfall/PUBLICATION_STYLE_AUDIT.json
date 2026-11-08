@@ -1,0 +1,31 @@
+{
+  "source_hashes": {
+    "narrative_targets.json": "e96cb5a7d0a2f54d570754449c55c1f8b87f22facbff3d8cbe8a0ddec22d4836",
+    "ideal_assumptions.json": "d6637bc71322ad21c0f3b17043fcdfce6ad3387e1e95d18fece07f0e6727b768"
+  },
+  "source_arrays_unchanged": true,
+  "new_measurements": false,
+  "savings_formula": "previous MECC TPOT - current MECC TPOT",
+  "marginal_savings": [
+    4,
+    2.5,
+    1.5,
+    1
+  ],
+  "savings_at_gib": [
+    24,
+    32,
+    40,
+    48
+  ],
+  "shading": "gap between series, not uncertainty",
+  "highlight_preserved": true,
+  "references_inspected": [
+    "MoE-Lightning ASPLOS 2025 pages 9-11",
+    "SFD HPCA 2026 pages 9-11"
+  ],
+  "font_packages": [
+    "newtxtext",
+    "newtxmath"
+  ]
+}

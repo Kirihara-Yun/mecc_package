@@ -1,0 +1,29 @@
+{
+  "figure": 1,
+  "base_style": "original paired horizontal bars",
+  "canvas_width_pdf_pt": 252,
+  "canvas_height_pdf_pt": 162,
+  "bar_height_row_units": 0.74,
+  "x_limits": [
+    2.1,
+    56
+  ],
+  "x_axes_start_at_zero": true,
+  "maximum_font_pdf_pt": 8,
+  "numerical_labels": {
+    "decode": [
+      "1.000",
+      "0.600",
+      "0.396",
+      "1.767"
+    ],
+    "HDD": [
+      "20.1",
+      "31.5",
+      "47.9",
+      "12.5"
+    ]
+  },
+  "no_new_metrics_or_runs": true,
+  "colors_and_hatches_restored": true
+}

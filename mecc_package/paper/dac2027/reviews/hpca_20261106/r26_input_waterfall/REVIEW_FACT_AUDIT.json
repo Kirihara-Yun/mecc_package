@@ -1,0 +1,40 @@
+{
+  "transfer": {
+    "fixed_offdiagonal": [
+      14,
+      16,
+      12,
+      14,
+      13,
+      15
+    ],
+    "fixed_sum": 84,
+    "fixed_mean": 14.0,
+    "adaptive_mean": 9.383333333333333,
+    "reduction_pct": 32.97619047619048
+  },
+  "exact_ratios": {
+    "independent_to_mecc_tpot": 4.462473482724147,
+    "fiddler_to_mecc_ttft": 2.8636265305239474,
+    "streaming_to_mecc_tpot": 1.7668145944583975
+  },
+  "rounded_bar_ratio_is_not_exact_ratio": true,
+  "expert_bytes": 352321536,
+  "expert_mib": 336.0,
+  "expert_pool_gib": 84.0,
+  "capacity_4_plus_4": {
+    "hbm_primary_gib": 42,
+    "cpu_primary_gib": 42,
+    "cpu_mirrors_gib": 42,
+    "staging": "additional; not included in 84 GiB host weight storage"
+  },
+  "aggregate_access_counts": {
+    "hbm": 29558,
+    "cpu": 3820,
+    "hdd": 4764,
+    "cpu_compute": 0
+  },
+  "G1_cases_checked": 2,
+  "continuous_transition_verified": true,
+  "E5_status": "unmeasured author targets, not evidence of wins"
+}
