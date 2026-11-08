@@ -22,6 +22,7 @@
 | R15 | 正文、图注和图内改用直接的专家淘汰与等待描述 | [措辞修订稿](./r15_direct_terms/manuscript.pdf) | [措辞记录](./r15_direct_terms/WORDING_REVIEW.md) | 本轮不评分 |
 | R16 | 三项贡献依次对应容量分配、淘汰后保留、运行期更新三项动机 | [贡献对应稿](./r16_contributions/manuscript.pdf) | [对应记录](./r16_contributions/CONTRIBUTION_REVIEW.md) | 本轮不评分 |
 | R17 | 仅缩小偏大的图中文字，保留小字号，改善第一页右栏留白 | [字号修订稿](./r17_figure_type/manuscript.pdf) | [字号记录](./r17_figure_type/TYPOGRAPHY_REVIEW.md) | 本轮不评分 |
+| R18 | 引言图改为紧凑的速度与请求来源双面板，另存三列备选 | [引言图修订稿](./r18_intro_design/manuscript.pdf) | [设计记录](./r18_intro_design/INTRO_DESIGN_REVIEW.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 

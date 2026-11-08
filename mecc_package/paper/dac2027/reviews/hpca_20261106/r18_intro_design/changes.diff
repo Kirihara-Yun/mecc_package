@@ -1,0 +1,11 @@
+--- r17_figure_type
++++ r18_intro_design
+@@ -79,7 +79,7 @@
+ \begin{figure}[!t]
+ \centering\includegraphics[width=\columnwidth]{measured_figures/intro_evidence.pdf}
+ \par\nointerlineskip
+-\caption{Mixtral-8x7B on one A100. Decode speedup is relative to streaming; Separate uses independent HBM/CPU caches. Swap-style is the SwapMoE-style adapter. Higher speedup and lower HDD demand are better.}
++\caption{Mixtral-8x7B on one A100. (a) Decode speedup relative to streaming. (b) Request shares served by HBM, CPU, and HDD; labels show HBM and HDD shares. Separate uses independent caches. Swap-style denotes the SwapMoE-style adapter. The four paths execute experts on GPU.}
+ \label{fig:intro}
+ \end{figure}
+ 

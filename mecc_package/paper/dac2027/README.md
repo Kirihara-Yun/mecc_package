@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日引言图重排**：[R18 PDF](./reviews/hpca_20261106/r18_intro_design/manuscript.pdf) / [三列备选图](./reviews/hpca_20261106/r18_intro_design/measured_figures/intro_alternative_three_columns.png)。主稿采用紧凑双面板：左侧解码加速，右侧 HBM/CPU/HDD 请求占比，全部沿用同组实测；其余配图保持 R17 原样。
+
 - **11 月 8 日字号与第一页留白修订**：[R17 PDF](./reviews/hpca_20261106/r17_figure_type/manuscript.pdf)。按最新要求，只缩小四张图中超过正文大小的文字，其余十二张图保持原样，小字号不放大；第一页两栏正文底端相差不到一行。数值与图 11 配色保留。
 
 - **11 月 8 日贡献对应修订**：[R16 PDF](./reviews/hpca_20261106/r16_contributions/manuscript.pdf)。三项贡献依次对应按层分配容量、保留 GPU 淘汰专家、按运行期请求更新驻留集合；实验验证不再单列为贡献，其余正文与配图保留。

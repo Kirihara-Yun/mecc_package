@@ -1,0 +1,89 @@
+{
+  "selected_design": "two panels: decode plus source composition",
+  "three_column_alternative": "measured_figures/intro_alternative_three_columns.pdf",
+  "source_protocol": "E1; original four controls; no new runs or target data",
+  "decode_speedups": [
+    1.0,
+    0.59961382239968,
+    0.39592719179136354,
+    1.7668145944583975
+  ],
+  "first_token_speedups": [
+    1.0,
+    0.9004640413452785,
+    0.6063286786353452,
+    1.1273157747441322
+  ],
+  "rows": [
+    {
+      "run_id": "a100-main-naive-20261104",
+      "source_sha256": "d2de3adf836a518c155d2d5de23d71902454fd2217b1ca9e260b2bcc7e6b5e60",
+      "counts_hbm_cpu_hdd": [
+        30486,
+        0,
+        7656
+      ],
+      "shares_hbm_cpu_hdd": [
+        79.92763882334435,
+        0.0,
+        20.072361176655658
+      ],
+      "tpot_ms": 13042.59,
+      "ttft_ms": 156855.01
+    },
+    {
+      "run_id": "a100-main-swapmoe-20261104",
+      "source_sha256": "f6a584302103d68d55849df89e53e0b99694c2b9833c637dec3727431f7d32b9",
+      "counts_hbm_cpu_hdd": [
+        23888,
+        2224,
+        12030
+      ],
+      "shares_hbm_cpu_hdd": [
+        62.629122751822145,
+        5.830842640658592,
+        31.540034607519267
+      ],
+      "tpot_ms": 21751.65,
+      "ttft_ms": 174193.53
+    },
+    {
+      "run_id": "a100-e06-independent-20261105",
+      "source_sha256": "b4a15f25500cd2ded37905dd1a2deea1165fc78ec05ecc96ed0b1a4641534c78",
+      "counts_hbm_cpu_hdd": [
+        19787,
+        96,
+        18259
+      ],
+      "shares_hbm_cpu_hdd": [
+        51.87719574222641,
+        0.2516910492370615,
+        47.87111320853652
+      ],
+      "tpot_ms": 32941.89,
+      "ttft_ms": 258696.34
+    },
+    {
+      "run_id": "a100-main-ours-20261104",
+      "source_sha256": "03d4e4b2a28663823724966e20769673a2ae876e80022e73c6a3525e497844e9",
+      "counts_hbm_cpu_hdd": [
+        29558,
+        3820,
+        4764
+      ],
+      "shares_hbm_cpu_hdd": [
+        77.49462534738608,
+        10.01520633422474,
+        12.490168318389177
+      ],
+      "tpot_ms": 7381.98,
+      "ttft_ms": 139140.26
+    }
+  ],
+  "exact_shares_from_counts_not_normalized_rounded_percentages": true,
+  "numeric_labels": {
+    "decode_decimals": 3,
+    "share_decimals": 1
+  },
+  "color_scope": "left: neutral controls and MECC emphasis; right: one tier legend"
+}

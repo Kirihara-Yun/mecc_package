@@ -246,6 +246,10 @@
 
 ## 6. 复现台账（数字 → 命令）
 
+### R18 引言图的请求来源（2026-11-08）
+
+`paper/dac2027/reviews/hpca_20261106/r18_intro_design/INTRO_FIGURE_DATA.json` 记录四个已测 E1 控制的原始文件哈希、分阶段累计访问数和延迟。HBM/CPU/HDD 堆叠比例由计数直接计算，不重新归一化已舍入的百分比。来源是 `a100-main-{naive,swapmoe,ours}-20261104` 与 `a100-e06-independent-20261105`；均为既有单次 A100 观测，没有新增目标或运行。三列备选使用相同记录的 TTFT 比值。图形重建脚本为 `revise_r18_intro_figure.py`。
+
 ### R13 审阅目标补充（2026-11-07）
 
 `mecc_package/paper/dac2027/reviews/hpca_20261106/r13_experiment_audit/EXPERIMENT_TARGETS.json` 是作者设定的未实测目标，不属于 D2/D1 实验或 D0 理论证明，禁止登记为 verified 性能结论。补充 Qwen2 跨模型点、MoEpic/Diff-MoE 候选路径及 HumanEval 对照；旧测量和数组保持不变。论文通过黄色和第八页附录说明身份。同目录独立检查核对原始哈希、完整策略、比值和目标交点；verify_claims.py 本身不证明目标已完成。详见同目录 EXPERIMENT_AUDIT.md。
