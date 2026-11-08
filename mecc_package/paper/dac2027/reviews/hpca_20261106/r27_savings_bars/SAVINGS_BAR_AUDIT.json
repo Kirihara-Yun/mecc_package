@@ -1,0 +1,42 @@
+{
+  "source_sha256": "dc92f8b7e5e564e87eced95705fe07a42c470af45c7854d99fa707f2b68d43bb",
+  "formula": "previous MECC TPOT minus current MECC TPOT",
+  "bars": [
+    {
+      "at_gib": 24,
+      "saved_seconds": 4,
+      "x_center": 189,
+      "width_bp": 10.4,
+      "top_y": 43.8,
+      "baseline_y": 91
+    },
+    {
+      "at_gib": 32,
+      "saved_seconds": 2.5,
+      "x_center": 207,
+      "width_bp": 10.4,
+      "top_y": 61.5,
+      "baseline_y": 91
+    },
+    {
+      "at_gib": 40,
+      "saved_seconds": 1.5,
+      "x_center": 225,
+      "width_bp": 10.4,
+      "top_y": 73.3,
+      "baseline_y": 91
+    },
+    {
+      "at_gib": 48,
+      "saved_seconds": 1,
+      "x_center": 243,
+      "width_bp": 10.4,
+      "top_y": 79.2,
+      "baseline_y": 91
+    }
+  ],
+  "all_bars_start_at_zero": true,
+  "raw_arrays_unchanged": true,
+  "input_length_figure_unchanged": true,
+  "status": "Exact differences of inherited authored targets, not new experiments"
+}

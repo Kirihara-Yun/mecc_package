@@ -1,0 +1,148 @@
+{
+  "values": [
+    4,
+    2.5,
+    1.5,
+    1
+  ],
+  "zero_baseline": true,
+  "all_arrays_unchanged": true,
+  "fifteen_other_figures_unchanged": true,
+  "left_panel_pixel_hash": "e9ce09e4234865eca86a03d60dba656fbf8042ccbb9d792d4e60b2da31295fce",
+  "only_fig14_caption_changed": true,
+  "font_families": [
+    "TeXGyreTermesX-Regular"
+  ],
+  "text_overlaps": [],
+  "body_single_word_tails": [],
+  "layout": {
+    "pages": 8,
+    "body_pages": 6,
+    "reference_pages": [
+      7
+    ],
+    "appendix_pages": [
+      8
+    ],
+    "issues": [],
+    "figures": {
+      "fig:intro": {
+        "number": 1,
+        "page": 1,
+        "references": [
+          1,
+          4
+        ]
+      },
+      "fig:insights": {
+        "number": 2,
+        "page": 2,
+        "references": [
+          2
+        ]
+      },
+      "fig:overview": {
+        "number": 3,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:compile": {
+        "number": 4,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:retention": {
+        "number": 5,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:delivery": {
+        "number": 6,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:performance": {
+        "number": 7,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:target_mechanisms": {
+        "number": 8,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_ablation": {
+        "number": 9,
+        "page": 5,
+        "references": [
+          5,
+          6
+        ]
+      },
+      "fig:target_traffic": {
+        "number": 10,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_models": {
+        "number": 11,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:matched": {
+        "number": 12,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_sensitivity": {
+        "number": 13,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_quota": {
+        "number": 14,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_mismatch": {
+        "number": 15,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_gpu": {
+        "number": 16,
+        "page": 8,
+        "references": [
+          8
+        ]
+      }
+    },
+    "references": 45,
+    "no_banner": true,
+    "sha256": "ac7ebda1f53b8d2e64a247697de755f46185265d495995e8bdf87e376f6b53bf"
+  }
+}

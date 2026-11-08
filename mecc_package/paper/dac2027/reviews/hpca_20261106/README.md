@@ -31,6 +31,7 @@
 | R24 | 图 13 统一视觉与共享图例，图 14 增加容量边际收益面板 | [视觉统一稿](./r24_publication_style/manuscript.pdf) | [修改记录](./r24_publication_style/PUBLICATION_STYLE_REVIEW.md) | 本轮不评分 |
 | R25 | 图 13/14 增加四组机制对照，新增目标单独留档并在附录登记 | [四组对照稿](./r25_method_comparison/manuscript.pdf) | [修改记录](./r25_method_comparison/MULTIMETHOD_REVIEW.md) | 本轮不评分 |
 | R26 | 输入长度改为归一化分组柱图，MECC 容量收益改为阶梯瀑布 | [柱图与瀑布稿](./r26_input_waterfall/manuscript.pdf) | [修改记录](./r26_input_waterfall/INPUT_WATERFALL_REVIEW.md) | 本轮不评分 |
+| R27 | MECC savings 恢复普通柱状图，调整柱宽、间距、纹理及数值标注 | [柱状图修订稿](./r27_savings_bars/manuscript.pdf) | [修改记录](./r27_savings_bars/SAVINGS_BAR_REVIEW.md) | 本轮不评分 |
 
 分数来自单一模拟评审，不是 HPCA 官方意见。按 [本轮协议](./PROTOCOL.md)，评审暂时接受图中的理想结果，不因它们缺少实测扣分，也不自动假定未展示的技术已成立。理想数组和已有实测均未改变，没有重新加入图内横条。
 

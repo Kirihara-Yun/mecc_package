@@ -1,0 +1,154 @@
+{
+  "all_inherited_arrays_unchanged": true,
+  "normalization_exact": true,
+  "waterfall_sum_exact": true,
+  "unchanged_subpanel_pixel_hashes": {
+    "13a": "ddd945876cfc0d0f76defc07992cc91ff23136f1237b8be801a773995a5b74ab",
+    "13c": "413ebbea6ab941eea8eb592a32e9a33fde1c69e222ea1d573d92ba7dcc350c02",
+    "14a": "e9ce09e4234865eca86a03d60dba656fbf8042ccbb9d792d4e60b2da31295fce"
+  },
+  "fourteen_other_figures_unchanged": true,
+  "only_two_captions_changed": true,
+  "font_families": {
+    "completion_figures/workload_sensitivity.pdf": [
+      "TeXGyreTermesX-Regular"
+    ],
+    "completion_figures/quota_targets.pdf": [
+      "NewTXMI7",
+      "TeXGyreTermesX-Regular",
+      "txsys"
+    ]
+  },
+  "text_overlaps": [],
+  "body_single_word_tails": [],
+  "layout": {
+    "pages": 8,
+    "body_pages": 6,
+    "reference_pages": [
+      7
+    ],
+    "appendix_pages": [
+      8
+    ],
+    "issues": [],
+    "figures": {
+      "fig:intro": {
+        "number": 1,
+        "page": 1,
+        "references": [
+          1,
+          4
+        ]
+      },
+      "fig:insights": {
+        "number": 2,
+        "page": 2,
+        "references": [
+          2
+        ]
+      },
+      "fig:overview": {
+        "number": 3,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:compile": {
+        "number": 4,
+        "page": 3,
+        "references": [
+          3
+        ]
+      },
+      "fig:retention": {
+        "number": 5,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:delivery": {
+        "number": 6,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:performance": {
+        "number": 7,
+        "page": 4,
+        "references": [
+          4
+        ]
+      },
+      "fig:target_mechanisms": {
+        "number": 8,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_ablation": {
+        "number": 9,
+        "page": 5,
+        "references": [
+          5,
+          6
+        ]
+      },
+      "fig:target_traffic": {
+        "number": 10,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_models": {
+        "number": 11,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:matched": {
+        "number": 12,
+        "page": 5,
+        "references": [
+          5
+        ]
+      },
+      "fig:target_sensitivity": {
+        "number": 13,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_quota": {
+        "number": 14,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_mismatch": {
+        "number": 15,
+        "page": 6,
+        "references": [
+          6
+        ]
+      },
+      "fig:target_gpu": {
+        "number": 16,
+        "page": 8,
+        "references": [
+          8
+        ]
+      }
+    },
+    "references": 45,
+    "no_banner": true,
+    "sha256": "b1d19d753816a2f5fc2bc4a63304b0f30bbec94d5cb45766aa14394326a7a2bf"
+  }
+}

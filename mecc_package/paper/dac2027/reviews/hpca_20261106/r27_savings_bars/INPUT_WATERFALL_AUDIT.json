@@ -1,0 +1,60 @@
+{
+  "source_sha256": "dc92f8b7e5e564e87eced95705fe07a42c470af45c7854d99fa707f2b68d43bb",
+  "raw_arrays_unchanged": true,
+  "normalized_ttft": {
+    "Reference": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "Fixed CPU": [
+      0.8666666666666667,
+      0.86875,
+      0.8790322580645161,
+      0.8811475409836066
+    ],
+    "Three-tier LRU": [
+      0.7777777777777778,
+      0.7625,
+      0.7580645161290323,
+      0.7540983606557377
+    ],
+    "MECC": [
+      0.6222222222222222,
+      0.575,
+      0.5645161290322581,
+      0.5573770491803278
+    ]
+  },
+  "normalization": "each method TTFT / Reference TTFT at the same input length",
+  "waterfall_initial_seconds": 16,
+  "waterfall_steps": [
+    {
+      "at_gib": 24,
+      "from_seconds": 16,
+      "to_seconds": 12,
+      "saved_seconds": 4
+    },
+    {
+      "at_gib": 32,
+      "from_seconds": 12,
+      "to_seconds": 9.5,
+      "saved_seconds": 2.5
+    },
+    {
+      "at_gib": 40,
+      "from_seconds": 9.5,
+      "to_seconds": 8,
+      "saved_seconds": 1.5
+    },
+    {
+      "at_gib": 48,
+      "from_seconds": 8,
+      "to_seconds": 7,
+      "saved_seconds": 1
+    }
+  ],
+  "status": "Exact transformations of inherited authored targets, not new experiments",
+  "no_added_noise_or_samples": true
+}

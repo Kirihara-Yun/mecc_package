@@ -4,6 +4,8 @@
 
 ## 直接阅读
 
+- **11 月 8 日 MECC savings 柱状图修订**：[R27 PDF](./reviews/hpca_20261106/r27_savings_bars/manuscript.pdf) / [图 14](./reviews/hpca_20261106/r27_savings_bars/completion_figures/quota_targets.png)。右侧恢复从零起始的普通柱状图，调整柱宽、间距、纹理及柱顶标注。Input length、图 14 左侧和其他配图保持不变，原数组不变，已复核八页版式。
+
 - **11 月 8 日输入长度与容量瀑布图**：[R26 PDF](./reviews/hpca_20261106/r26_input_waterfall/manuscript.pdf) / [图 13](./reviews/hpca_20261106/r26_input_waterfall/completion_figures/workload_sensitivity.png) / [图 14](./reviews/hpca_20261106/r26_input_waterfall/completion_figures/quota_targets.png)。Input length 用相同输入长度下相对 Streaming 的 TTFT 分组柱图；MECC savings 用原容量数组的阶梯瀑布。所有底层数组不变，其他三个子图逐像素保留，已核对归一化、差值及八页版式。
 
 - **11 月 8 日四组敏感性对照稿**：[R25 PDF](./reviews/hpca_20261106/r25_method_comparison/manuscript.pdf) / [图 13](./reviews/hpca_20261106/r25_method_comparison/completion_figures/workload_sensitivity.png) / [图 14](./reviews/hpca_20261106/r25_method_comparison/completion_figures/quota_targets.png)。增加 Fixed CPU 与 Three-tier LRU 机制控制，使用颜色、线型及标记共同区分。新增未实测扫参目标单独存入 SENSITIVITY_COMPARISON_TARGETS.json，黄色与附录说明保留；原数组及其他十四幅图保持不变。

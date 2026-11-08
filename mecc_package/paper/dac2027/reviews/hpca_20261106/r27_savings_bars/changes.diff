@@ -1,0 +1,11 @@
+--- r26_input_waterfall
++++ r27_savings_bars
+@@ -309,7 +309,7 @@
+ \begin{figure}[H]
+ \centering\includegraphics[width=\columnwidth]{completion_figures/quota_targets.pdf}
+ \par\nointerlineskip
+-\caption{E6 capacity sensitivity at 50 GiB HBM allowance. (a) Four-policy decode latency. (b) Stepwise MECC latency: floating bars show the reduction from each additional 8 GiB.}
++\caption{E6 capacity sensitivity at 50 GiB HBM allowance. (a) Four-policy decode latency. (b) MECC TPOT saved per additional 8 GiB, relative to the preceding setting.}
+ \label{fig:target_quota}
+ \end{figure}
+ Figure~\ref{fig:target_quota} sweeps primary host allowances from \pending{16 to 48 GiB}. MECC TPOT changes from \pending{16 to 7 s/token}, versus \pending{27 to 12} for three-tier LRU. Its first increment saves \pending{4 s/token}; the last saves \pending{1}. Earlier slots cover shorter reuse distances. E4 separately reaches complete expert coverage at 42~GiB HBM plus 42~GiB CPU residency.

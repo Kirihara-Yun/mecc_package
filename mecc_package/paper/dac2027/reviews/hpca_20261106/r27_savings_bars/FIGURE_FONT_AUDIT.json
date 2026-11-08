@@ -1,0 +1,367 @@
+{
+  "body_tex_pt": 9,
+  "body_pdf_pt": 8.966376089663761,
+  "rule": "shrink text larger than body; never enlarge smaller text",
+  "figures": {
+    "measured_figures/intro_evidence.pdf": {
+      "changed": true,
+      "source_sha256": "3b926af76cf3bd75b968038800f18513a6cdd33110a9a53366fcfcf746d6d6a9",
+      "source_font_sizes_pdf_pt": [
+        6.826,
+        10.502,
+        11.552
+      ],
+      "only_oversized_spans_retypeset": true,
+      "changes": [
+        {
+          "text": "0",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "1",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "2",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Speedup (\u00d7)",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Streaming",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Swap-style",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Separate",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "MECC",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "(a) Decode speedup",
+          "old_pdf_pt": 11.55176067352295,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "0",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "25",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "50",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Demand share (%)",
+          "old_pdf_pt": 10.50160026550293,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "(b) HDD demand",
+          "old_pdf_pt": 11.55176067352295,
+          "new_pdf_pt": 8.966376089663761
+        }
+      ]
+    },
+    "figures/fig02_motivation_insights.pdf": {
+      "changed": false,
+      "source_sha256": "bbdd5408abbb2434d5d62165345ba6b8fb9ec9761a35e2a8495aa8d9bb7a8bb8",
+      "source_font_sizes_pdf_pt": [
+        5.181,
+        5.551,
+        6.555,
+        6.661,
+        6.978,
+        7.084,
+        7.189,
+        7.401,
+        7.612,
+        7.93,
+        8.458
+      ]
+    },
+    "figures/fig01_overview.pdf": {
+      "changed": true,
+      "source_sha256": "d0b6b1f381a5023bc9025957d3f9a1a2858caf40d173af0b879218d67c7f7b2b",
+      "source_font_sizes_pdf_pt": [
+        5.054,
+        5.776,
+        7.013,
+        7.22,
+        7.426,
+        7.529,
+        7.632,
+        7.735,
+        7.838,
+        8.251,
+        8.56,
+        8.767,
+        9.282
+      ],
+      "only_oversized_spans_retypeset": true,
+      "changes": [
+        {
+          "text": "Offline compilation",
+          "old_pdf_pt": 9.282330513000488,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Online execution",
+          "old_pdf_pt": 9.282330513000488,
+          "new_pdf_pt": 8.966376089663761
+        }
+      ]
+    },
+    "method_redesign/compile_frontiers.pdf": {
+      "changed": false,
+      "source_sha256": "375232045db0cadebce70808394eabbcb6240f67d2a02142c8a282d4055ce70a",
+      "source_font_sizes_pdf_pt": [
+        6.7,
+        6.8,
+        7.0,
+        7.5
+      ]
+    },
+    "method_redesign/residency_cases.pdf": {
+      "changed": true,
+      "source_sha256": "18c6c8f8b53726c6c4165c506951c69a36eccbd5d46de2356489364c06e930fd",
+      "source_font_sizes_pdf_pt": [
+        5.95,
+        6.4,
+        6.5,
+        7.2,
+        8.5,
+        11.0
+      ],
+      "only_oversized_spans_retypeset": true,
+      "changes": [
+        {
+          "text": "Start: HBM [a\u2081, a\u2082]   CPU [a\u2083, a\u2084]",
+          "old_pdf_pt": 11.0,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "HBM",
+          "old_pdf_pt": 11.0,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "CPU",
+          "old_pdf_pt": 11.0,
+          "new_pdf_pt": 8.966376089663761
+        }
+      ]
+    },
+    "method_redesign/delivery_overlap.pdf": {
+      "changed": false,
+      "source_sha256": "a41e3cd67f5c777870a58049cb3929157bd77e840f06eeb7e6a80201862c799f",
+      "source_font_sizes_pdf_pt": [
+        6.5,
+        6.7,
+        7.0,
+        7.5
+      ]
+    },
+    "measured_figures/main.pdf": {
+      "changed": true,
+      "source_sha256": "f399f92fe4a51a33e279b50a314d3e750285b54b9f4c2156d0e414fb86cc4936",
+      "source_font_sizes_pdf_pt": [
+        6.688,
+        7.874,
+        10.786
+      ],
+      "only_oversized_spans_retypeset": true,
+      "changes": [
+        {
+          "text": "0",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "1",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "2",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Speedup (\u00d7)",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Streaming",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Swap-style",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Fiddler-style",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "MECC I/O",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "MECC",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "0.0",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "1.0",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": " ",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "1.5",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        },
+        {
+          "text": "Speedup (\u00d7)",
+          "old_pdf_pt": 10.786399841308594,
+          "new_pdf_pt": 8.966376089663761
+        }
+      ]
+    },
+    "completion_figures/mechanism_sweeps.pdf": {
+      "changed": false,
+      "source_sha256": "54815efbc9e35f2de06188711a8b7ace370bb3004563854c488023dc9e51b514",
+      "source_font_sizes_pdf_pt": [
+        6.027,
+        6.443,
+        7.274,
+        7.794,
+        8.313
+      ]
+    },
+    "completion_figures/ablation_startup.pdf": {
+      "changed": false,
+      "source_sha256": "e2bb25e4e89a099ca8c45b7c4fd3c03f759f9ebb91161712a7136c94e6788182",
+      "source_font_sizes_pdf_pt": [
+        6.415,
+        7.484,
+        8.018,
+        8.553
+      ]
+    },
+    "completion_figures/traffic_exposure.pdf": {
+      "changed": false,
+      "source_sha256": "928052e41a82825949b537e54194b025a395b57aac859cb2256d75054c34eef3",
+      "source_font_sizes_pdf_pt": [
+        5.928,
+        7.41,
+        7.939,
+        8.468
+      ]
+    },
+    "completion_figures/cross_model.pdf": {
+      "changed": false,
+      "source_sha256": "793a726ea8df596d15924876218dc348e60d13d982fb403674b1ab6e44e1215b",
+      "source_font_sizes_pdf_pt": [
+        6.258,
+        6.582,
+        7.553,
+        7.769,
+        8.092
+      ]
+    },
+    "completion_figures/matched_baselines.pdf": {
+      "changed": false,
+      "source_sha256": "018f17e4e5ce4ff67a26c69ec6e104e14dee1f3861e1825a9be31f8d8bb2d4bd",
+      "source_font_sizes_pdf_pt": [
+        6.897,
+        7.373,
+        8.324,
+        8.562,
+        8.919
+      ]
+    },
+    "completion_figures/workload_sensitivity.pdf": {
+      "changed": false,
+      "source_sha256": "bd1b35c74d01f356f99d6ac3110a8a8246a6613405af468da7e52ddc1bf1189d",
+      "source_font_sizes_pdf_pt": [
+        6.661,
+        7.189,
+        7.401,
+        7.93,
+        8.458
+      ]
+    },
+    "completion_figures/quota_targets.pdf": {
+      "changed": false,
+      "source_sha256": "b316103f895bfc710e6d1c168276cd3384e9abee595d6ebfc6d848a70263b7cd",
+      "source_font_sizes_pdf_pt": [
+        6.841,
+        7.601,
+        8.144,
+        8.687
+      ]
+    },
+    "completion_figures/profile_mismatch.pdf": {
+      "changed": false,
+      "source_sha256": "e99afddebc0b51bcebc064b88e86b3add4e66ae9efbaeaa05ba273cd7cbfed99",
+      "source_font_sizes_pdf_pt": [
+        6.169,
+        6.273,
+        6.587,
+        7.11,
+        7.842,
+        8.365
+      ]
+    },
+    "completion_figures/gpu_tradeoff.pdf": {
+      "changed": false,
+      "source_sha256": "d5c316f6f4dadb16acc202240208c2115cc834348f3b9ec8de34b89ff37bc105",
+      "source_font_sizes_pdf_pt": [
+        6.078,
+        7.251,
+        7.465,
+        7.998,
+        8.531
+      ]
+    }
+  }
+}
