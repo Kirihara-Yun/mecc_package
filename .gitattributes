@@ -1,0 +1,5 @@
+# Frozen evidence/input hashes use the Git blob's LF bytes on every platform.
+mecc_package/scripts/motivation_causal_replay.py text eol=lf
+mecc_package/results/raw/mixtral_profile_20261105.json text eol=lf
+mecc_package/e2e/data/completion_tasks_20261109.json text eol=lf
+mecc_package/e2e/configs/completion_20261109.json text eol=lf

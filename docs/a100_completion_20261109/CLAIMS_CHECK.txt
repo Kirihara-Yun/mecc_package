@@ -1,0 +1,148 @@
+MECC 数字一致性体检 —— 权威源 docs/PROVENANCE.md
+
+
+== 权威文档存在性 ==
+  [ OK ] JSON 字段字典: results\SCHEMA.md
+  [ OK ] 数字真伪权威源: ..\docs\PROVENANCE.md
+== Claim ↔ 证据 一致性体检（仅 verified 项） ==
+  [ OK ] M1: Mixtral OURS vs SwapMoE 加速 1.33×（raw/mixtral_real.json:results.ours.speedup_vs.swapmoe = 1.333）
+  [ OK ] M2a: Mixtral OURS 无损 PPL 24.57（raw/mixtral_real.json:results.ours.ppl = 24.569）
+  [ OK ] M3a: Mixtral OURS SSD 命中 17.6%（raw/mixtral_real.json:results.ours.hit_pct.ssd = 17.6）
+  [ OK ] M3b: Mixtral SwapMoE SSD 命中 34.5%（raw/mixtral_real.json:results.swapmoe.hit_pct.ssd = 34.5）
+  [ OK ] M4a: Mixtral OURS CPU 命中 38.0%（raw/mixtral_real.json:results.ours.hit_pct.cpu = 38.0）
+  [ OK ] M4b: Mixtral SwapMoE CPU 命中 23.3%（raw/mixtral_real.json:results.swapmoe.hit_pct.cpu = 23.3）
+  [ OK ] D3: DeepSeek e2e OURS vs SwapMoE 2.55×（main_table_5090.json:results.ours.speedup_vs.swapmoe = 2.554）
+  [ OK ] H1a: 漂移 OURS vs FluxMoE 9.50×（模拟器）（raw/deepseek_real_e2e.json:workloads.1.speedup.vs_flux = 9.502）
+  [ OK ] H1b: 漂移 OURS vs SwapMoE 5.68×（模拟器）（raw/deepseek_real_e2e.json:workloads.1.speedup.vs_swap = 5.68）
+  [ OK ] H2a: 静止 OURS vs FluxMoE 6.26×（模拟器）（raw/deepseek_real_e2e.json:workloads.0.speedup.vs_flux = 6.26）
+  [ OK ] H3a: 静态对照静止负载 SSD 访问 7.5%（模拟器）（raw/deepseek_real_e2e.json:workloads.0.results.1.ssd_hit_pct = 7.5）
+  [ OK ] H3b: 静态对照漂移负载 SSD 访问 11.3%（模拟器）（raw/deepseek_real_e2e.json:workloads.1.results.1.ssd_hit_pct = 11.3）
+  [ OK ] L1h: 5090 HBM 命中延迟 255.8µs（raw/measured_latency_5090.json:tier_latency_us.hbm_hit = 255.8）
+  [ OK ] L1s: 5090 SSD miss 延迟 ~790ms（raw/measured_latency_5090.json:tier_latency_us.ssd_miss = 789738.9）
+  [ OK ] R1–R4: 192 D1 records, source/trace hashes, paired phase histograms, summaries and caps verified; no hardware claim
+
+== 平台/时间字段体检（SCHEMA §5 强制；真机 JSON 须有 platform + run_time）==
+  [ OK ] l2_preflight_20260718.json: platform='A100 80GB' run_time='2026-07-18T11:19:12+08:00'
+  [ OK ] main_table_5090.json: platform='A100 80GB' run_time='2026-06-19T11:04:13+08:00'
+  [ OK ] main_table_amp.json: platform='A100 80GB' run_time='2026-06-19T12:55:52+08:00'
+  [ OK ] main_table_batch.json: platform='A100 80GB' run_time='2026-06-19T14:17:52+08:00'
+  [ OK ] main_table_opts.json: platform='A100 80GB' run_time='2026-06-19T12:42:07+08:00'
+  [ OK ] main_table_prefetch.json: platform='A100 80GB' run_time='2026-06-19T21:05:21+08:00'
+  [ OK ] main_table_stream.json: platform='A100 80GB' run_time='2026-06-19T11:49:25+08:00'
+  [ OK ] smoke_test.json: platform='A100 80GB' run_time='2026-06-19T13:19:00+08:00'
+  [ OK ] raw\deepseek_e2e_results.json: platform='A100 80GB' run_time='2026-06-20T20:15:50+08:00'
+  [ OK ] raw\deepseek_e2e_results_old.json: platform='A100 80GB' run_time='2026-06-20T11:56:08+08:00'
+  [ OK ] raw\deepseek_fused.json: platform='A100 80GB' run_time='2026-06-21T16:26:12+08:00'
+  [ OK ] raw\mixtral_fused.json: platform='A100 80GB' run_time='2026-06-21T14:11:55+08:00'
+  [ OK ] raw\mixtral_io.json: platform='A100 80GB' run_time='2026-06-21T12:01:38+08:00'
+  [ OK ] raw\mixtral_l2_kh2_20260622.json: platform='A100 80GB' run_time='2026-06-22T19:03:00+08:00'
+  [WARN] raw\mixtral_l2_kh2_4policies_20260624.json: 缺字段 platform+run_time —— 旧遗留文件请回填（平台真值见 PROVENANCE M5），新实验落盘必须带齐 platform + run_time
+  [WARN] raw\mixtral_l2_m2_20260623.json: 缺字段 platform+run_time —— 旧遗留文件请回填（平台真值见 PROVENANCE M5），新实验落盘必须带齐 platform + run_time
+  [ OK ] raw\mixtral_real.json: platform='A100 80GB' run_time='2026-06-21T10:15:48+08:00'
+  [ OK ] reports\a100-copy-ready-p4t16-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T15:49:05+08:00'
+  [ OK ] reports\a100-copy-ready-p4t16-20261103\result.json: platform='a100-80g' run_time='2026-11-03T15:49:05+08:00'
+  [ OK ] reports\a100-copy-ready-ppl128-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T15:22:48+08:00'
+  [ OK ] reports\a100-copy-ready-ppl128-20261103\result.json: platform='a100-80g' run_time='2026-11-03T15:22:48+08:00'
+  [ OK ] reports\a100-g1-correctness-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T16:42:43.011369+08:00'
+  [ OK ] reports\a100-g1-l0-20261103\partial_result.json: platform='cpu-local' run_time='2026-11-03T16:41:43+08:00'
+  [ OK ] reports\a100-g1-l0-20261103\result.json: platform='cpu-local' run_time='2026-11-03T16:41:43+08:00'
+  [ OK ] reports\a100-g2b-l0-20261103\partial_result.json: platform='cpu-local' run_time='2026-11-03T17:44:04+08:00'
+  [ OK ] reports\a100-g2b-l0-20261103\result.json: platform='cpu-local' run_time='2026-11-03T17:44:04+08:00'
+  [ OK ] reports\a100-g2b-memory-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T17:44:33.708404+08:00'
+  [ OK ] reports\a100-l0-copy-ready-20261103\partial_result.json: platform='cpu-local' run_time='2026-11-03T15:03:44+08:00'
+  [ OK ] reports\a100-l0-copy-ready-20261103\result.json: platform='cpu-local' run_time='2026-11-03T15:03:44+08:00'
+  [ OK ] reports\a100-l0-nearmiss-20261103\partial_result.json: platform='cpu-local' run_time='2026-11-03T12:25:28+08:00'
+  [ OK ] reports\a100-l0-nearmiss-20261103\result.json: platform='cpu-local' run_time='2026-11-03T12:25:28+08:00'
+  [ OK ] reports\a100-l0-trace-20261103\partial_result.json: platform='cpu-local' run_time='2026-11-03T11:00:43+08:00'
+  [ OK ] reports\a100-l0-trace-20261103\result.json: platform='cpu-local' run_time='2026-11-03T11:00:43+08:00'
+  [ OK ] reports\a100-nearmiss-b1-p1t16-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T12:33:11+08:00'
+  [ OK ] reports\a100-nearmiss-b1-p1t16-20261103\result.json: platform='a100-80g' run_time='2026-11-03T12:33:11+08:00'
+  [ OK ] reports\a100-nearmiss-b3-p4t16-20261103-retry1\partial_result.json: platform='a100-80g' run_time='2026-11-03T12:54:47+08:00'
+  [ OK ] reports\a100-nearmiss-b3-p4t16-20261103-retry1\result.json: platform='a100-80g' run_time='2026-11-03T12:54:47+08:00'
+  [ OK ] reports\a100-oom-b2-p4t2-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T10:35:22+08:00'
+  [ OK ] reports\a100-oom-b2-p4t2-20261103\result.json: platform='a100-80g' run_time='2026-11-03T10:35:22+08:00'
+  [ OK ] reports\a100-oom-trace-p4t2-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T11:22:17+08:00'
+  [ OK ] reports\a100-oom-trace-p4t2-20261103\result.json: platform='a100-80g' run_time='2026-11-03T11:22:17+08:00'
+  [ OK ] reports\a100-p0-l0-20261103\partial_result.json: platform='cpu-local' run_time='2026-11-03T20:35:41+08:00'
+  [ OK ] reports\a100-p0-l0-20261103\result.json: platform='cpu-local' run_time='2026-11-03T20:35:41+08:00'
+  [ OK ] reports\a100-p0-swapmoe-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T20:03:50.884292+08:00'
+  [ OK ] reports\a100-p0-swapmoe-20261103\result.json: platform='a100-80g' run_time='2026-11-03T20:03:50.884292+08:00'
+  [ OK ] reports\a100-p1-fiddler-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-04T00:14:54+08:00'
+  [ OK ] reports\a100-p1-fiddler-20261103\result.json: platform='a100-80g' run_time='2026-11-04T00:14:54+08:00'
+  [ OK ] reports\a100-p1-flashmoe-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-04T01:24:04+08:00'
+  [ OK ] reports\a100-p1-flashmoe-20261103\result.json: platform='a100-80g' run_time='2026-11-04T01:24:04+08:00'
+  [ OK ] reports\a100-p1-naive-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-04T00:58:16+08:00'
+  [ OK ] reports\a100-p1-naive-20261103\result.json: platform='a100-80g' run_time='2026-11-04T00:58:16+08:00'
+  [ OK ] reports\a100-p1-ours-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T22:40:01+08:00'
+  [ OK ] reports\a100-p1-ours-20261103\result.json: platform='a100-80g' run_time='2026-11-03T22:40:01+08:00'
+  [ OK ] reports\a100-p1-swapmoe-20261103\partial_result.json: platform='a100-80g' run_time='2026-11-03T23:34:35+08:00'
+  [ OK ] reports\a100-p1-swapmoe-20261103\result.json: platform='a100-80g' run_time='2026-11-03T23:34:35+08:00'
+  [ OK ] reports\a100-p2-cpu20-ours-20261104\partial_result.json: platform='a100-80g' run_time='2026-11-04T08:07:05+08:00'
+  [ OK ] reports\a100-p2-cpu20-ours-20261104\result.json: platform='a100-80g' run_time='2026-11-04T08:07:05+08:00'
+  [ OK ] reports\p1a-cpu20g-run1\result.json: platform='a100-80g' run_time='2026-10-13T03:56:21+08:00'
+  [ OK ] reports\p1a-cpu40g-run2\result.json: platform='a100-80g' run_time='2026-10-13T01:10:02+08:00'
+  [ OK ] runs\a100-e05-avg-20261105\result.json: platform='a100-80g' run_time='2026-11-06T13:35:12+08:00'
+  [ OK ] runs\a100-e05-global-20261105\result.json: platform='a100-80g' run_time='2026-11-06T11:49:59+08:00'
+  [ OK ] runs\a100-e05-per_layer-20261105-retry1\result.json: platform='a100-80g' run_time='2026-11-06T10:05:10+08:00'
+  [ OK ] runs\a100-e06-independent-20261105\result.json: platform='a100-80g' run_time='2026-11-06T00:13:13+08:00'
+  [ OK ] runs\a100-e07-a_b-20261105\result.json: platform='a100-80g' run_time='2026-11-06T16:50:49+08:00'
+  [ OK ] runs\a100-e08-a_a-20261105\result.json: platform='a100-80g' run_time='2026-11-06T21:48:59+08:00'
+  [ OK ] runs\a100-e08-b_a-20261105\result.json: platform='a100-80g' run_time='2026-11-06T20:06:53+08:00'
+  [ OK ] runs\a100-g2b-l0-20261103\result.json: platform='cpu-local' run_time='2026-11-03T17:44:04+08:00'
+  [ OK ] runs\a100-l0-20261010-1731\result.json: platform='cpu-local' run_time='2026-10-10T17:31:34+08:00'
+  [ OK ] runs\a100-l0-20261103-0846\result.json: platform='cpu-local' run_time='2026-11-03T08:47:37+08:00'
+  [ OK ] runs\a100-main-fiddler-20261104\result.json: platform='a100-80g' run_time='2026-11-05T13:31:06+08:00'
+  [ OK ] runs\a100-main-flashmoe_rf_adaptation-20261104\result.json: platform='a100-80g' run_time='2026-11-05T02:07:47+08:00'
+  [ OK ] runs\a100-main-naive-20261104\result.json: platform='a100-80g' run_time='2026-11-05T04:51:00+08:00'
+  [ OK ] runs\a100-main-ours-20261104\result.json: platform='a100-80g' run_time='2026-11-05T00:33:45+08:00'
+  [ OK ] runs\a100-main-ours_io-20261105-retry1\result.json: platform='a100-80g' run_time='2026-11-05T16:49:55+08:00'
+  [ OK ] runs\a100-main-swapmoe-20261104\result.json: platform='a100-80g' run_time='2026-11-05T08:58:55+08:00'
+  [ OK ] runs\a100-mixtral-30g-1-20261011-2158\result.json: platform='a100-80g' run_time='2026-10-11T23:39:50+08:00'
+  [ OK ] runs\a100-mixtral-30g-2-20261011-2343\result.json: platform='a100-80g' run_time='2026-10-12T01:32:40+08:00'
+  [ OK ] runs\a100-mixtral-30g-3-20261012-0137\result.json: platform='a100-80g' run_time='2026-10-12T03:09:54+08:00'
+  [ OK ] runs\a100-mixtral-preflight-20261010-1900\result.json: platform='a100-80g' run_time='2026-10-10T19:02:37+08:00'
+  [ OK ] runs\a100-mixtral-preflight-20261103\result.json: platform='a100-80g' run_time='2026-11-03T09:09:07+08:00'
+  [ OK ] runs\a100-mixtral-repro-20261011-1500\result.json: platform='a100-80g' run_time='2026-10-11T16:49:24+08:00'
+  [ OK ] runs\a100-p0-l0-20261103\result.json: platform='cpu-local' run_time='2026-11-03T20:35:41+08:00'
+  [ OK ] runs\a100-p0-swapmoe-20261103\result.json: platform='a100-80g' run_time='2026-11-03T20:03:50.884292+08:00'
+  [ OK ] runs\a100-p1-fiddler-20261103\result.json: platform='a100-80g' run_time='2026-11-04T00:14:54+08:00'
+  [ OK ] runs\a100-p1-flashmoe-20261103\result.json: platform='a100-80g' run_time='2026-11-04T01:24:04+08:00'
+  [ OK ] runs\a100-p1-naive-20261103\result.json: platform='a100-80g' run_time='2026-11-04T00:58:16+08:00'
+  [ OK ] runs\a100-p1-ours-20261103\result.json: platform='a100-80g' run_time='2026-11-03T22:40:01+08:00'
+  [ OK ] runs\a100-p1-pilot-ours-20261103\result.json: platform='a100-80g' run_time='2026-11-03T21:55:31+08:00'
+  [ OK ] runs\a100-p1-swapmoe-20261103\result.json: platform='a100-80g' run_time='2026-11-03T23:34:35+08:00'
+  [ OK ] runs\a100-p2-cpu20-fiddler-20261104\result.json: platform='a100-80g' run_time='2026-11-04T10:24:47+08:00'
+  [ OK ] runs\a100-p2-cpu20-flashmoe_rf_adaptation-20261104\result.json: platform='a100-80g' run_time='2026-11-04T12:27:29+08:00'
+  [ OK ] runs\a100-p2-cpu20-naive-20261104\result.json: platform='a100-80g' run_time='2026-11-04T11:26:24+08:00'
+  [ OK ] runs\a100-p2-cpu20-ours-20261104\result.json: platform='a100-80g' run_time='2026-11-04T08:07:05+08:00'
+  [ OK ] runs\a100-p2-cpu20-swapmoe-20261104\result.json: platform='a100-80g' run_time='2026-11-04T09:22:49+08:00'
+  [ OK ] runs\a100-p2-cpu30-fiddler-20261104\result.json: platform='a100-80g' run_time='2026-11-04T16:51:36+08:00'
+  [ OK ] runs\a100-p2-cpu30-flashmoe_rf_adaptation-20261104\result.json: platform='a100-80g' run_time='2026-11-04T18:52:41+08:00'
+  [ OK ] runs\a100-p2-cpu30-naive-20261104\result.json: platform='a100-80g' run_time='2026-11-04T18:10:36+08:00'
+  [ OK ] runs\a100-p2-cpu30-ours-20261104\result.json: platform='a100-80g' run_time='2026-11-04T13:13:10+08:00'
+  [ OK ] runs\a100-p2-cpu30-swapmoe-20261104\result.json: platform='a100-80g' run_time='2026-11-04T14:17:18+08:00'
+  [ OK ] runs\a100-p2-cpu60-fiddler-20261104\result.json: platform='a100-80g' run_time='2026-11-04T22:04:05+08:00'
+  [ OK ] runs\a100-p2-cpu60-flashmoe_rf_adaptation-20261104\result.json: platform='a100-80g' run_time='2026-11-04T22:41:15+08:00'
+  [ OK ] runs\a100-p2-cpu60-naive-20261104\result.json: platform='a100-80g' run_time='2026-11-04T22:35:15+08:00'
+  [ OK ] runs\a100-p2-cpu60-ours-20261104\result.json: platform='a100-80g' run_time='2026-11-04T19:06:49+08:00'
+  [ OK ] runs\a100-p2-cpu60-swapmoe-20261104\result.json: platform='a100-80g' run_time='2026-11-04T19:52:13+08:00'
+  [ OK ] runs\l2-mixtral-20260811-1915-retry2-smoke\result.json: platform='a100-80g' run_time='2026-08-11T20:38:33+08:00'
+  （真机文件 105 个，缺平台/时间 2 个）
+
+== 高风险文本 claim 体检（正式入口与论文材料）==
+  [ OK ] 10 个正式文本通过平台/加速口径/baseline 身份规则
+
+== 已登记矛盾 / 未核实项（禁止当结论引用，详见 docs/PROVENANCE.md §4）==
+  [WARN] X7: 同槽位预算未证明同物理CPU字节；镜像/缓冲/预取公平性待核，历史结果只作观测
+  [WARN] X8: A100短窗naive/ours一致；swapmoe与独立实现等价性未完成，不能把静态风险当作已证PPL根因
+  [WARN] X9: warmup/生成/PPL命中窗口与预取来源计数待拆分；暂不能据此做性能因果归因
+  [WARN] X1: 论文表3 DeepSeek e2e（TTFT 7426/tok/s 0.92/1.56×）无对应 JSON —— unverified，禁止外引
+  [WARN] X2: Mixtral 平台 [已澄清]：实验先 5090 后 A100，主结果在 A100 跑定（STRATEGY §2.2 佐证）—— 平台真值已写入各 JSON 顶层 platform=A100；compiled_plan.hardware 降级为编译期配置串，不再作平台依据
+  [WARN] X3: 加速口径：1.33×(综合) 与 1.62×(TPOT) 是两个指标，引用须标口径
+  [WARN] X4: expert 体积：336MB(实测张量) vs 1407MB(理论3矩阵)，口径不同
+  [WARN] X6: mixtral_real.json 的 swapmoe.ppl=36.116 数值存在，但当前 e2e SwapMoePolicy 为 fp16、无量化调用；2-bit baseline 身份未核实，禁止合成主 claim
+  [WARN] X5: results/README.md 顶部硬件 A100 [已澄清，正确] —— 各 JSON 顶层 platform=A100 已与之一致；以 platform 字段为平台真值
+
+== 小结 ==
+  OK=121  WARN=11  FAIL=0
+  ✓ 所有 verified 数字与实测 JSON 一致。

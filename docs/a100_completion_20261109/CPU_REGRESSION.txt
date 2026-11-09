@@ -1,0 +1,16 @@
+test_every_config_is_supported_and_single_policy (__main__.CompletionTests.test_every_config_is_supported_and_single_policy) ... ok
+test_frozen_input_hash_and_no_fallback (__main__.CompletionTests.test_frozen_input_hash_and_no_fallback) ... ok
+test_frozen_policy_preserves_membership (__main__.CompletionTests.test_frozen_policy_preserves_membership) ... ok
+test_independent_control_refills_cpu_and_retains_hit (__main__.CompletionTests.test_independent_control_refills_cpu_and_retains_hit) ... ok
+test_memory_limit_is_a_systemd_property_not_an_e2e_argument (__main__.CompletionTests.test_memory_limit_is_a_systemd_property_not_an_e2e_argument) ... ok
+test_phase_delta_does_not_mix_prefill_and_decode (__main__.CompletionTests.test_phase_delta_does_not_mix_prefill_and_decode) ... ok
+test_profile_plan_modes_differ_when_m3_is_disabled (__main__.CompletionTests.test_profile_plan_modes_differ_when_m3_is_disabled) ... D:\mecc_message_worktrees\a100_completion_20261109\mecc_package\e2e\compile_config.py:59: ResourceWarning: unclosed file <_io.TextIOWrapper name='D:\\mecc_message_worktrees\\a100_completion_20261109\\mecc_package\\results\\raw\\mixtral_profile_20261105.json' mode='r' encoding='cp65001'>
+  prof = json.load(open(profile_path))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_task_sequences_have_equal_request_counts (__main__.CompletionTests.test_task_sequences_have_equal_request_counts) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.409s
+
+OK

@@ -233,6 +233,8 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `naive` | 朴素基线 | 无损 | 无优化按需加载 | active | 同上 |
 | `moe_infinity` | 外部 offload baseline | 待核 | 草稿脚本尚无版本锁定、同预算对齐、PPL、平台/时间与 Schema A | inactive | 未跟踪草稿 `e2e/bench_moe_infinity.py`；完成审计前禁用 |
 | `flashmoe_rf_adaptation` | FlashMoE 论文机制适配 | 无损 fp16 | 同三层预算；HBM LRU，CPU 用公开 recency/frequency 特征的确定性等权评分；不是作者训练 FFN | active | `e2e/policy_plugin.py:FlashMoeRFAdaptationPolicy`；原论文未发布训练权重/实现，禁称官方复现 |
+| `frozen_placement` | 固定驻留集合对照 | fp16，待本轮 G1 验证 | HBM/CPU 初态固定，miss 临时交付，不更新集合 | active_opt_in | `policy_plugin.py:FrozenPlacementPolicy`；C11 显式 L0/G1 覆盖，不加入旧 `--policies all` |
+| `independent_inclusive` | 普通独立 LRU 对照 | fp16，待本轮 G1 验证 | CPU 冷读入池、CPU hit 保留；HBM 淘汰不降级到 CPU | active_opt_in | `policy_plugin.py:IndependentCachesPolicy`；不是会排空 CPU 的旧 `independent` |
 | `<新baseline>` | <类别> | <是/否> | <一句话> | active/inactive | <文件:函数> |
 
 独立 D1 分析（不加入上述 e2e active 集合）：`scripts/motivation_causal_replay.py` 的六个初态/保留实验臂，以及容量 H+C 的普通全局 LRU 参考。它们是抽象缓存模型，不冒称现有 CUDA 策略或外部系统实现；协议见 `HPCA_CAUSAL_REPLAY_PROTOCOL.md`。
@@ -251,6 +253,8 @@ python3 mecc_package/scripts/experiment_launcher.py run <run-id> \
 | `speedup_vs` | 相对各 baseline 加速比 | 越大越好 | ⛔(不可引用) | ⚠️ | ✅ | 派生 |
 | `<新benchmark>` | <如 MMLU/长上下文吞吐> | <方向> | | | | <位置> |
 | `ssd_demand_misses_per_1000` | 需求到来前来源为 SSD 的次数/千请求 | 越低越好 | — | — | — | 独立 D1 回放；非 e2e 速度证据 |
+| `c11_requests` | WikiText-2/GSM8K/HumanEval 真实离线提示的逐请求 TTFT/TPOT/整请求耗时 | — | 协议回归 | — | C11 必采 | `data/completion_tasks_20261109.json`、`completion_protocol.py`；HumanEval 不执行代码，不报 pass@1 |
+| `c11_physical_memory` | 所有策略同一 unit memory.max/swap.max；峰值及去重存储另报 | — | — | — | C11 必采 | `resource_monitor.py`、`completion_queue.py`；每点一次独立测量，见当前工作包 |
 
 ### 7.3 实验平台注册表
 

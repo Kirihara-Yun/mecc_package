@@ -136,6 +136,8 @@
 | `adaptive_alpha` | A 算法 | 运行期自适应 α（随负载调热度权重） | METHODS §M4 | 增加运行期开销，需净收益 | candidate |
 | `batch_prefetch_plus` | B 工程 | 前瞻预取（gate 信号预测 + 与 SSD 异步读联动） | METHODS §M5 | 预测错则浪费 PCIe；与 async_ssd_read 抢 I/O | candidate |
 | `stronger_baselines` | C 评测 | 引入更新的 offload baseline | METHODS §M6 | 先在 EXPERIMENTS §7.1 登记 | candidate |
+| `c11_measurement_protocol` | C 评测 | 关闭逐请求预热、显式关闭 M3 覆盖、真实 alpha、等总槽数、逐请求分相位与物理上限 | `WORKBUDDY_A100_COMPLETION_20261109.md` | 不是新算法收益；本地无 torch，待 A100 L0/G1；旧协议默认行为保留 | implemented_pending_gpu |
+| `c11_retention_controls` | C 评测 | 固定初态与有正常冷读补入的独立 LRU | `EXPERIMENTS.md §7.1` | 新协议禁用 policy 前批量提升，先通过正确性，再比较数据 | implemented_pending_gpu |
 | `extra_benchmarks` | C 评测 | MMLU / 长上下文吞吐等 | METHODS §M7 | 先在 EXPERIMENTS §7.2 登记 | candidate |
 | `<新优化>` | A/B/C | <想法> | METHODS §M* | <风险> | candidate |
 

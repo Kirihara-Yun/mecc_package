@@ -265,7 +265,8 @@ def organize_task_sequence(prompts: List[str], task_seq: str,
 # miss 次数 × expert 大小，属逻辑口径，未考虑块对齐/RAID 条带/页缓存命中。
 # 这里补两个实测口径供核对：
 #   * disk_read_bytes —— /proc/diskstats 的 sectors_read×512，块设备层实际读字节（不含页缓存命中）；
-#   * proc_read_bytes —— /proc/self/io 的 read_bytes，进程 read() 请求字节（含页缓存命中）。
+#   * proc_read_bytes —— /proc/self/io 的 read_bytes，归属于该进程的存储读取字节；不含纯页缓存命中。
+#     /proc/self/io 的 rchar 才是包含缓存命中的逻辑 read 字节（也可能含其他文件）。
 # 两者在 run 前后各采样一次，差值随 result 落盘，与 ssd_read 并列对照。
 # ════════════════════════════════════════════════════════════════════
 
@@ -324,6 +325,8 @@ def resolve_state_path(model_name: str, state_path: Optional[str]) -> str:
 
 def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, use_cache,
                smoke_cfg=None, model_type="mixtral", window_sizes=None):
+    protocol = getattr(args, "completion_protocol_data", None)
+    build_started = time.perf_counter()
     use_amp = args.baseline_opts and not args.no_amp and device.type == "cuda"
     print(f"\n{'='*70}\n[POLICY = {policy}]\n{'='*70}")
     if args.smoke:
@@ -349,6 +352,22 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
             per_layer_k_h=plan.per_layer_k_h if plan.per_layer_alpha else None,
             per_layer_k_c=plan.per_layer_k_c if plan.per_layer_alpha else None)
 
+    initialization_s = time.perf_counter() - build_started
+    request_rows = []
+    if protocol:
+        from completion_protocol import (RequestRecorder, append_request, digest,
+                                         resident_state, storage_bytes)
+        initial_residents = resident_state(caches)
+        initial_storage = storage_bytes(caches)
+        # The old batch fast path promotes before policy.access and labels those
+        # CPU deliveries as HBM hits. Use policy-owned updates for every arm.
+        for cache in caches:
+            if cache is not None:
+                cache._completion_sequential = True
+        if not protocol.get("prefill_overlap", True):
+            for cache in caches:
+                if cache is not None:
+                    cache.prefetch_ssd_batch = lambda *a, **kw: None
     # ── torch.compile 不适合动态 MoE (会触发达纳错误), 跳过 ──
     # cudnn.benchmark + TF32 在 main() 中已启用, 所有策略自动受益
 
@@ -390,19 +409,37 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
             ids = tokenizer(p, return_tensors="pt").input_ids[:, :args.prompt_len].to(device)
         input_tokens = ids.shape[1]
         # warmup 一次 (排除首次 kernel 编译/换页抖动)
-        set_phase_all("warmup")
-        warmup_trace = memory_observer("warmup", prompt_index, input_tokens)
-        if warmup_trace is not None:
-            warmup_trace("before_forward", -1, None)
-        _ = measure_latency(model, ids, min(4, args.max_new_tokens), device, use_cache,
-                            use_amp=use_amp, trace_fn=warmup_trace)
+        if not protocol or protocol["warmup"] == "per_request":
+            set_phase_all("warmup")
+            warmup_trace = memory_observer("warmup", prompt_index, input_tokens)
+            if warmup_trace is not None:
+                warmup_trace("before_forward", -1, None)
+            _ = measure_latency(model, ids, min(4, args.max_new_tokens), device, use_cache,
+                                use_amp=use_amp, trace_fn=warmup_trace)
         # measure 阶段：prefill 与 decode 分桶（X9 修复）
         measured_trace = memory_observer("measure", prompt_index, input_tokens)
         if measured_trace is not None:
             measured_trace("before_forward", -1, None)
+        callback = set_phase_all
+        recorder = None
+        if protocol:
+            block_dev = _store_device_name(args.store_root)
+            recorder = RequestRecorder(caches, lambda: None if block_dev is None else _disk_sectors_read(block_dev), None)
+            callback = recorder.boundary
         lat.append(measure_latency(model, ids, args.max_new_tokens, device, use_cache,
                                    use_amp=use_amp, trace_fn=measured_trace,
-                                   phase_cb=set_phase_all))
+                                   phase_cb=callback))
+        if recorder is not None:
+            recorder.boundary("between_requests")
+            row = {"request_index": prompt_index, "policy": policy,
+                   "input": args.completion_input_rows[prompt_index],
+                   "input_tokens": input_tokens, "input_token_sha256": digest(ids[0].tolist()),
+                   "output_tokens": args.max_new_tokens, **lat[-1],
+                   "phases": recorder.rows, "storage": storage_bytes(caches),
+                   "residents_after": resident_state(caches)}
+            row["input"] = {k: v for k, v in row["input"].items() if k != "text"}
+            request_rows.append(row)
+            append_request(os.path.join(os.path.dirname(os.path.abspath(args.out)), "requests.jsonl"), row)
         # 窗口边界：快照本窗口增量命中 + SSD 读字节
         win_count += 1
         if win_idx < len(window_sizes) and win_count >= window_sizes[win_idx]:
@@ -463,6 +500,16 @@ def run_policy(policy, args, plan, store, device, prompts, ppl_text, tokenizer, 
     agg["window_hits"] = window_hits        # Motivation III: 逐窗口增量命中 [hbm,cpu,ssd,cpu_compute]
     agg["window_sizes"] = window_sizes      # 窗口边界（prompt 数）
     agg["window_ssd_bytes"] = window_ssd_bytes  # Motivation III: 逐窗口 ssd_read 字节增量
+    if protocol:
+        agg["initialization_s"] = initialization_s
+        agg["initial_residents"] = initial_residents
+        agg["initial_storage"] = initial_storage
+        agg["requests"] = request_rows
+        agg["quality_status"] = "not_measured" if args.skip_ppl else "ppl_measured"
+        agg["completion_protocol_sha256"] = protocol["sha256"]
+        if device.type == "cuda":
+            agg["cuda_peak_allocated_bytes"] = torch.cuda.max_memory_allocated(device)
+            agg["cuda_peak_reserved_bytes"] = torch.cuda.max_memory_reserved(device)
 
     print(f"  TTFT={agg['ttft_ms']}ms  TPOT={agg['tpot_ms']}ms  "
           f"throughput={agg['tokens_per_s']} tok/s  PPL={agg['ppl']}")
@@ -547,11 +594,35 @@ def _main():
     ap.add_argument("--status_file", default=None, help="atomic phase-status JSON for persistent runs")
     ap.add_argument("--input_manifest", default=None,
                     help="离线固定输入清单 JSON（QA/Code/PPL/画像 + token 哈希），优先于网络下载")
+    ap.add_argument("--completion-protocol", default=None,
+                    help="frozen offline request/measurement contract; legacy defaults unchanged")
     args = ap.parse_args()
+    args.completion_protocol_data = None
+    if args.completion_protocol:
+        from completion_protocol import load_protocol
+        args.completion_protocol_data, args.completion_bundle = load_protocol(args.completion_protocol)
+        # The monitor lives in this run's unit and samples loading as well as inference.
+        if os.path.isdir("/proc/self") and args.status_file:
+            import subprocess, sys, atexit
+            monitor = subprocess.Popen([
+                sys.executable, os.path.join(os.path.dirname(__file__), "resource_monitor.py"),
+                "--pid", str(os.getpid()), "--out",
+                os.path.join(os.path.dirname(os.path.abspath(args.out)), "resource_trace.jsonl"),
+                "--status-file", args.status_file, "--interval", "1"])
+            def stop_monitor():
+                if monitor.poll() is None:
+                    monitor.terminate()
+                    try:
+                        monitor.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        monitor.kill()
+            atexit.register(stop_monitor)
     _STATUS_FILE = args.status_file
     _phase("initializing")
 
     device = get_device()
+    if args.completion_protocol_data and (device.type != "cuda" or "A100" not in torch.cuda.get_device_name(device)):
+        raise RuntimeError("the frozen completion protocol requires the assigned A100, not CPU fallback")
     print("=" * 70)
     print("MECC End-to-End: REAL MoE Compile→Run (TTFT/TPOT/tokens·s / PPL)")
     print("=" * 70)
@@ -613,15 +684,32 @@ def _main():
     import random; random.seed(42)
     cfg = AutoConfig.from_pretrained(args.state_path_resolved, trust_remote_code=True)
     n_layers = cfg.num_hidden_layers
-    if getattr(args, 'uniform', False):
+    protocol = args.completion_protocol_data
+    if protocol and protocol["allocation"] == "profile":
+        from completion_protocol import measured_alpha
+        if not args.profile or hashlib.sha256(open(args.profile, "rb").read()).hexdigest() != protocol.get("profile_sha256"):
+            raise ValueError("missing or changed allocation profile")
+        per_layer_alpha = measured_alpha(args.profile, n_layers)
+    elif protocol or getattr(args, 'uniform', False):
         per_layer_alpha = None
         print("  [compile] uniform allocation (no per-layer alpha)")
     else:
         per_layer_alpha = [max(0.5, min(2.0, random.gauss(args.alpha, 0.3))) for _ in range(n_layers)]
-    plan = compile_plan(args.model, args.hbm_budget, args.cpu_budget,
+    planning_hbm, planning_cpu = args.hbm_budget, args.cpu_budget
+    if protocol and protocol.get("equal_uniform_slots"):
+        _, ne, _, expert_mb = MODEL_SPECS[args.model]
+        size = expert_mb / 1024
+        kh = min(ne, int(args.hbm_budget / n_layers / size))
+        kc = min(ne - kh, int(args.cpu_budget / n_layers / size))
+        planning_hbm, planning_cpu = kh * n_layers * size, kc * n_layers * size
+    if protocol and args.profile:
+        if hashlib.sha256(open(args.profile, "rb").read()).hexdigest() != protocol.get("profile_sha256"):
+            raise ValueError("profile hash changed")
+    plan = compile_plan(args.model, planning_hbm, planning_cpu,
                         alpha=args.alpha, profile_path=args.profile,
                         per_layer_alpha=per_layer_alpha,
-                        init_plan=args.init_plan)
+                        init_plan=args.init_plan,
+                        enable_m3=not bool(protocol and protocol.get("disable_m3")))
     print_plan(plan)
 
     # 自动检测模型类型
@@ -663,12 +751,17 @@ def _main():
         write_manifest(args.store_root, manifest)
         print("  [store] manifest finalized after integrity check.")
 
-    input_manifest = load_manifest(args.input_manifest) if args.input_manifest else None
-    prompts, ppl_text = load_prompts(
-        args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl,
-        manifest=input_manifest)
-    task_b_prompts = GSM8K_PROMPTS if args.task_seq in ("a_b", "b_a") else None
-    prompts, window_sizes = organize_task_sequence(prompts, args.task_seq, task_b_prompts)
+    if protocol:
+        from completion_protocol import select_inputs
+        prompts, ppl_text, args.completion_input_rows = select_inputs(protocol, args.completion_bundle, args.n_prompts)
+        window_sizes = [1] * len(prompts)
+    else:
+        input_manifest = load_manifest(args.input_manifest) if args.input_manifest else None
+        prompts, ppl_text = load_prompts(
+            args.n_prompts, args.prompt_len, use_wikitext=not args.skip_ppl,
+            manifest=input_manifest)
+        task_b_prompts = GSM8K_PROMPTS if args.task_seq in ("a_b", "b_a") else None
+        prompts, window_sizes = organize_task_sequence(prompts, args.task_seq, task_b_prompts)
     prompt_digest = hashlib.sha256(json.dumps(prompts, ensure_ascii=False).encode()).hexdigest()
     ppl_digest = hashlib.sha256(ppl_text.encode()).hexdigest()
     ppl_input_tokens = tokenizer(ppl_text, return_tensors="pt").input_ids[:, :args.ppl_tokens].shape[1]
@@ -758,6 +851,10 @@ def _build_result(args, device, plan, results, smoke, block_io=None):
         "results": results,
     }
     prof_ident = _profile_identity(args.profile)
+    if getattr(args, "completion_protocol_data", None):
+        out["completion_protocol"] = args.completion_protocol_data
+        out["compiled_plan"]["placement"] = plan.placement
+        out["config"]["actual_requests"] = len(args.completion_input_rows)
     if prof_ident is not None:
         out["profile"] = prof_ident
     if block_io is not None:

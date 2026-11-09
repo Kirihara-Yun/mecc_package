@@ -275,6 +275,14 @@
 
 ## 6. 复现台账（数字 → 命令）
 
+### 2026-11-09 C11 实验补全工作包（尚未上机）
+
+入口：[`WORKBUDDY_A100_COMPLETION_20261109.md`](WORKBUDDY_A100_COMPLETION_20261109.md)。冻结矩阵 `e2e/configs/completion_20261109.json` 含 23 个默认运行与 6 个可选长度运行，每臂一次独立测量，统一 unit 物理上限 80 GiB、零 swap；不声明已获得任何新加速结果。已存在的 E1/P2/E05–E08 数据保留，不与 C11 混算。
+
+本轮修复的是评测隔离：关闭共现 M3 对初始计划开关的覆盖；去掉逐请求预热；使用真实画像 alpha 与等总槽位；显式 policy 更新路径；分请求/阶段计数和物理字节。新增的固定驻留/普通独立 LRU 需先过 L0/G1。审计可复算于 `scripts/audit_completion_evidence.py`，原 E05 没有保存实际 placement ID，审计中的相同计划为按原配置重建，另有实际 phase 直方图相同的证据。
+
+Windows checkout 的 CRLF 会使旧 D1 源文件 SHA 检查失败；本分支以 `.gitattributes` 固定该文件及冻结画像的 LF 字节，恢复 Git blob 与已存 SHA 的一致性，未修改历史结果或放宽校验。当前本地检查 121 OK / 11 WARN / 0 FAIL；这不认证尚未执行的 C11 结果，也不关闭 X7/X9。A100 的门禁与性能结果等待回传。
+
 > 让每个 D2 数字可一键回溯到产生它的命令。**新增实测必须补一行**。
 
 | 证据文件 | 产生命令（在 `mecc_package/` 下） | 级别 | 备注 |

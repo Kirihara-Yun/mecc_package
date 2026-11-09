@@ -101,6 +101,62 @@ class OursPolicy(CachePolicy):
 
 
 @register
+class FrozenPlacementPolicy(CachePolicy):
+    """A fixed initial HBM/CPU resident set; misses do not change membership.
+
+    Local mechanism control, not a reproduction of an external system.
+    """
+    name = "frozen_placement"
+
+    def access(self, cache, uid):
+        if uid in cache.gpu:
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        source = cache.cpu.get(uid)
+        if source is not None:
+            result = cache._to_gpu(source)
+            cache.record_hit(1, h2d_bytes=source.nbytes())
+            return result
+        source = cache._load_from_ssd(uid).pin()
+        result = cache._to_gpu(source)
+        cache.record_hit(2, ssd_bytes=source.nbytes(), h2d_bytes=source.nbytes())
+        return result
+
+
+@register
+class IndependentCachesPolicy(CachePolicy):
+    """Two ordinary independent LRUs, including refill of the CPU cache.
+
+    The CPU tier admits cold reads and retains CPU hits after H2D. GPU
+    replacement does not demote into CPU. Kept separate from the old draining
+    `independent` diagnostic so historical observations stay reproducible.
+    """
+    name = "independent_inclusive"
+
+    def access(self, cache, uid):
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            source = cache.cpu[uid]
+            cache.cpu.move_to_end(uid)
+            cache.record_hit(1, h2d_bytes=source.nbytes())
+        else:
+            source = cache._load_from_ssd(uid).pin()
+            cache.cpu[uid] = source
+            cache.cpu.move_to_end(uid)
+            while len(cache.cpu) > cache.k_c:
+                cache.cpu.popitem(last=False)
+            cache.record_hit(2, ssd_bytes=source.nbytes(), h2d_bytes=source.nbytes())
+        result = cache._to_gpu(source)
+        cache.gpu[uid] = (result, source)
+        cache.gpu.move_to_end(uid)
+        cache._evict_gpu_if_needed(spill_to_cpu=False)
+        return result
+
+
+@register
 class IndependentLruPolicy(CachePolicy):
     """Insight II: 独立更新。HBM 独立 LRU + CPU 独立 LRU，两者不联动：
     HBM 淘汰不回写 CPU（直接落 SSD），CPU 命中搬到 HBM 后从 CPU 移除、不回流补充。

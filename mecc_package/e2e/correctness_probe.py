@@ -23,7 +23,7 @@ from run_e2e import _forward, measure_ppl
 from store_manifest import expected_manifest, validate_store
 from tiered_engine import SSDExpertStore
 
-POLICIES = ('naive', 'ours', 'swapmoe')
+POLICIES = ('naive', 'ours', 'swapmoe', 'frozen_placement', 'independent_inclusive')
 ATOL, RTOL, PPL_DELTA = .05, .001, .01
 
 def digest(data: bytes) -> str:
@@ -187,7 +187,7 @@ def compare(ref, got):
 def run(args):
     requested = [p.strip() for p in args.policies.split(',') if p.strip()]
     if not requested or any(p not in POLICIES for p in requested):
-        raise ValueError('policies must be a nonempty subset of naive,ours,swapmoe')
+        raise ValueError('policies must be a nonempty subset of ' + ','.join(POLICIES))
     if requested[0] != 'naive':
         raise ValueError('naive must be the first (reference) policy')
     policies = [p for p in POLICIES if p in requested]
@@ -235,6 +235,7 @@ def run(args):
         'config':{'hbm_budget_gb':args.hbm_budget,'cpu_budget_gb':args.cpu_budget,
                   'max_new_tokens':args.max_new_tokens,'ppl_tokens':args.ppl_tokens,
                   'policies':list(policies),'cold_ssd':True,'uniform':True,
+                  'completion_sequential':args.completion_sequential,
                   'atol':ATOL,'rtol':RTOL,'max_ppl_delta':PPL_DELTA},
         'results':{}}
     reference = None
@@ -246,6 +247,10 @@ def run(args):
         model,caches = build_tiered_model(state,state,store,device,
             plan.placement,plan.k_h,plan.k_c,policy=policy,cold_ssd=True,
             per_layer_k_h=plan.per_layer_k_h,per_layer_k_c=plan.per_layer_k_c)
+        if args.completion_sequential:
+            for cache in caches:
+                if cache is not None:
+                    cache._completion_sequential = True
         checkpoint(args,policy,'after_load',device,caches)
         phase(args,'running_policy',policy=policy,stage='after_load',
               completed_policies=list(result['results']))
@@ -293,6 +298,7 @@ def main():
     for key in ('max_new_tokens','n_prompts','ppl_tokens'):
         parser.add_argument('--'+key,type=int,required=True)
     parser.add_argument('--policies',required=True)
+    parser.add_argument('--completion-sequential', action='store_true')
     parser.add_argument('--resource_trace',action='store_true')
     args = parser.parse_args()
     monitor = None

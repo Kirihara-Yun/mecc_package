@@ -15,7 +15,7 @@ import time
 
 
 CGROUP_FIELDS = (
-    'memory.current', 'memory.peak', 'memory.max', 'memory.high',
+    'memory.current', 'memory.peak', 'memory.max', 'memory.high', 'memory.stat',
     'memory.events', 'memory.pressure', 'memory.swap.current',
     'memory.swap.max', 'memory.swap.events',
 )

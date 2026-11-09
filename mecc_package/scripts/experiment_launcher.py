@@ -25,7 +25,8 @@ CONFIG_KEYS = {"smoke", "model", "state_path", "store_root", "hbm_budget",
                "cpu_budget", "alpha", "prompt_len", "max_new_tokens",
                "n_prompts", "policies", "platform", "skip_ppl", "uniform",
                "trace_memory", "resource_trace", "ppl_tokens", "job", "fixtures",
-               "profile", "init_plan", "update_rule", "task_seq"}
+               "profile", "init_plan", "update_rule", "task_seq",
+               "completion_protocol", "host_memory_max_gib", "completion_sequential"}
 CONFIG_DEFAULTS = {
     "job": "e2e",
     "fixtures": None,
@@ -50,6 +51,9 @@ CONFIG_DEFAULTS = {
     "init_plan": None,
     "update_rule": None,
     "task_seq": None,
+    "completion_protocol": None,
+    "host_memory_max_gib": None,
+    "completion_sequential": False,
 }
 
 
@@ -136,6 +140,8 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
         ]
         if args.resource_trace:
             command.append("--resource_trace")
+        if args.completion_sequential:
+            command.append("--completion-sequential")
         return command
     command = [sys.executable, "run_e2e.py"]
     if args.smoke:
@@ -173,6 +179,8 @@ def build_command(args: argparse.Namespace, output: Path) -> list[str]:
         command += ["--update-rule", args.update_rule]
     if getattr(args, "task_seq", None):
         command += ["--task-seq", args.task_seq]
+    if getattr(args, "completion_protocol", None):
+        command += ["--completion-protocol", str(Path(args.completion_protocol).resolve())]
     if getattr(args, "trace_memory", False):
         command.append("--trace_memory")
     return command
@@ -198,8 +206,10 @@ def load_config(path: str) -> dict:
     if value.get("job") == "correctness":
         if value["level"] != "L2" or value.get("skip_ppl") or not value.get("fixtures"):
             raise ValueError("correctness job requires L2, skip_ppl=false, fixtures")
-        if value.get("policies") != "naive,ours,swapmoe":
-            raise ValueError("correctness policies must be naive,ours,swapmoe")
+        policies = value.get("policies", "").split(",")
+        if (not policies or policies[0] != "naive"
+                or set(policies) - {"naive", "ours", "swapmoe", "frozen_placement", "independent_inclusive"}):
+            raise ValueError("correctness policies must start with naive and use registered diagnostic policies")
     return value
 
 
@@ -245,6 +255,10 @@ def start(args: argparse.Namespace) -> int:
         "log": str(log),
         "output": str(output),
     }
+    if getattr(args, "host_memory_max_gib", None) is not None:
+        if args.host_memory_max_gib <= 0:
+            raise ValueError("host_memory_max_gib must be positive")
+        metadata["host_memory_max_bytes"] = int(args.host_memory_max_gib * 1024**3)
     launch = [
         "systemd-run", "--user", f"--unit={unit}", "--collect",
         f"--property=WorkingDirectory={E2E}",
@@ -254,6 +268,10 @@ def start(args: argparse.Namespace) -> int:
         "--setenv=PYTHONUNBUFFERED=1",
         *command,
     ]
+    if getattr(args, "host_memory_max_gib", None) is not None:
+        launch[3:3] = ["--property=MemoryAccounting=yes",
+                       f"--property=MemoryMax={int(args.host_memory_max_gib * 1024**3)}",
+                       "--property=MemorySwapMax=0"]
     if args.dry_run:
         print(json.dumps({"metadata": metadata, "launch": launch}, indent=2))
         return 0
@@ -306,6 +324,10 @@ def resume(args: argparse.Namespace) -> int:
               f"--property=StandardError=append:{log}",
               f"--setenv=CUDA_VISIBLE_DEVICES={args.gpu}",
               "--setenv=PYTHONUNBUFFERED=1", *command]
+    if prior.get("host_memory_max_bytes"):
+        launch[3:3] = ["--property=MemoryAccounting=yes",
+                       f"--property=MemoryMax={prior['host_memory_max_bytes']}",
+                       "--property=MemorySwapMax=0"]
     if args.dry_run:
         print(json.dumps({"metadata": metadata, "launch": launch}, indent=2)); return 0
     run_dir.mkdir(parents=True)
@@ -473,6 +495,10 @@ def parser() -> argparse.ArgumentParser:
                      help="Insight II: cache update rule (overrides --policies)")
     run.add_argument("--task-seq", default=None, choices=["none", "a_b", "b_a", "a_a"],
                      help="Motivation III: task switch sequence")
+    run.add_argument("--completion-protocol", default=None)
+    run.add_argument("--host-memory-max-gib", type=float, default=None,
+                     help="own experiment unit's physical memory.max; never changes host settings")
+    run.add_argument("--completion-sequential", action="store_true", default=None)
     resume_cmd = sub.add_parser("resume-from-store", help="rerun a prior command with its store")
     resume_cmd.add_argument("from_run")
     resume_cmd.add_argument("run_id")

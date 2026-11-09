@@ -1,0 +1,87 @@
+{
+  "audited_remote_commit": "56da814",
+  "existing_runs": [
+    {
+      "run_id": "a100-e05-avg-20261105",
+      "result_sha256": "a05a858d3b2d414a38735ddd943dd8cee341b1364fce17e5bd734841d4455612",
+      "run_commit": "d1368ce5d82f4a88a14b0632d5badbcf0d439923",
+      "recorded_placement_available": false,
+      "request_records_available": false,
+      "window_counts": [
+        1
+      ],
+      "phase_hits_sha256": "9e5fa8dc509fb8e058190d1d4f4b6730a0837919b436b78eb6cf6cd02df8fe2c",
+      "reconstructed_placement_sha256": "b4b5ff14891221ef021df710850d04ab23091c1ec38ba8fc7b69dba11887ca5a"
+    },
+    {
+      "run_id": "a100-e05-global-20261105",
+      "result_sha256": "480a3482d1b8fb8b3a42bab2dc0768245b070db3b7aa944561ceecd62a4cff5a",
+      "run_commit": "d1368ce5d82f4a88a14b0632d5badbcf0d439923",
+      "recorded_placement_available": false,
+      "request_records_available": false,
+      "window_counts": [
+        1
+      ],
+      "phase_hits_sha256": "9e5fa8dc509fb8e058190d1d4f4b6730a0837919b436b78eb6cf6cd02df8fe2c",
+      "reconstructed_placement_sha256": "b4b5ff14891221ef021df710850d04ab23091c1ec38ba8fc7b69dba11887ca5a"
+    },
+    {
+      "run_id": "a100-e05-per_layer-20261105-retry1",
+      "result_sha256": "2092fe9aab95dfec5621d30ff01e49da8282a370930287d8e2a7b95ea093000a",
+      "run_commit": "50cde8f272132cc94ed20c5d6d4acd66a651d015",
+      "recorded_placement_available": false,
+      "request_records_available": false,
+      "window_counts": [
+        1
+      ],
+      "phase_hits_sha256": "9e5fa8dc509fb8e058190d1d4f4b6730a0837919b436b78eb6cf6cd02df8fe2c",
+      "reconstructed_placement_sha256": "b4b5ff14891221ef021df710850d04ab23091c1ec38ba8fc7b69dba11887ca5a"
+    },
+    {
+      "run_id": "a100-e07-a_b-20261105",
+      "result_sha256": "90921cbf1b1e84f351e1ea6e499433ebb4620b5c791e8838ff669e8ae243ef3b",
+      "run_commit": "d1368ce5d82f4a88a14b0632d5badbcf0d439923",
+      "recorded_placement_available": false,
+      "request_records_available": false,
+      "window_counts": [
+        2
+      ],
+      "phase_hits_sha256": "dec28e5ba98746a1b9f26a4c88611f0443928effa1036276855ff6a9e301ba08"
+    },
+    {
+      "run_id": "a100-e08-b_a-20261105",
+      "result_sha256": "d5af3925ccf5ea4f94b0e1b0803749a0f42fd141d18ae02d9058d365465db68b",
+      "run_commit": "d1368ce5d82f4a88a14b0632d5badbcf0d439923",
+      "recorded_placement_available": false,
+      "request_records_available": false,
+      "window_counts": [
+        2
+      ],
+      "phase_hits_sha256": "2655e01811743a2dae26f88468f78d487bf9b267c7c93979f2517b39bf54d6b4"
+    },
+    {
+      "run_id": "a100-e08-a_a-20261105",
+      "result_sha256": "ba0e160daa921c1ce64f2cf6946ce6c7d19f262abbae014b486d9aa803432916",
+      "run_commit": "d1368ce5d82f4a88a14b0632d5badbcf0d439923",
+      "recorded_placement_available": false,
+      "request_records_available": false,
+      "window_counts": [
+        2
+      ],
+      "phase_hits_sha256": "bbe7cf2e2d1dbda3eeb91dadf48307b6712b91d64d399de8b6fd116c73209830"
+    }
+  ],
+  "e05_reconstructed_plans_identical": true,
+  "e05_observed_phase_histograms_identical": true,
+  "note": "Prior result files omit placement IDs. Reconstruction follows their uniform budgets, init flags, unchanged compile_plan and committed profile; it is not a saved runtime placement trace.",
+  "new_gpu_data_collected": false,
+  "local_validation": {
+    "protocol_tests": 8,
+    "verify_claims_ok": 121,
+    "verify_claims_warn": 11,
+    "verify_claims_fail": 0,
+    "torch_available": false,
+    "gpu_gate": "pending_remote"
+  },
+  "hash_portability": "Git blobs use LF; .gitattributes prevents CRLF changing frozen input/evidence hashes; historical result values unchanged"
+}

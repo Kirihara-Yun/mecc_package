@@ -353,7 +353,9 @@ class LayerExpertCache:
         # compiler's HBM budget before eviction.  Keep the common decode batch
         # path, but fall back to sequential access/eviction for oversized
         # prefill batches.
-        can_batch = 0 < len(cpu_uids) <= self.k_h
+        can_batch = (0 < len(cpu_uids) <= self.k_h
+                     and not getattr(self, "_completion_sequential", False)
+                     and self._policy_plugin.name != "frozen_placement")
         if can_batch and self._policy_plugin.name != "flashmoe_rf_adaptation":
             self.batch_prefetch(cpu_uids)
             # 直接把预取结果放进 self.gpu, 让 _access 自动命中
