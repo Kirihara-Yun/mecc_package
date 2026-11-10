@@ -1,0 +1,363 @@
+{
+  "version": 1,
+  "base_commit": "56da814",
+  "run_prefix": "a100-c11",
+  "profile_path": "mecc_package/results/raw/mixtral_profile_20261105.json",
+  "profile_tokens": 346,
+  "base": {
+    "level": "L2",
+    "smoke": false,
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "platform": "a100-80g",
+    "store_root": "/data/mecc_store_mixtral",
+    "hbm_budget": 50.0,
+    "cpu_budget": 16.0,
+    "alpha": 1.0,
+    "prompt_len": 64,
+    "max_new_tokens": 16,
+    "n_prompts": 4,
+    "ppl_tokens": 1024,
+    "policies": "ours",
+    "skip_ppl": false,
+    "uniform": true,
+    "init_plan": "avg",
+    "host_memory_max_gib": 80.0
+  },
+  "protocol": {
+    "version": 1,
+    "task": "wikitext2",
+    "sequence": "none",
+    "warmup": "none",
+    "allocation": "uniform",
+    "disable_m3": true,
+    "prefill_overlap": true,
+    "equal_uniform_slots": true,
+    "bundle": "data/completion_tasks_20261109.json",
+    "bundle_sha256": "ef13d513b79c6ddcd095c2002f0682cbcf259137b56e02b27bc849c10cf6c70d",
+    "profile_sha256": "a1c523d00f3144721a54cb312d48231534fcd3fc4642701307416a83500c0bc0"
+  },
+  "jobs": [
+    {
+      "id": "pilot",
+      "stage": "pilot",
+      "config": {
+        "n_prompts": 1,
+        "max_new_tokens": 2,
+        "skip_ppl": true
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "main-wikitext2-ours",
+      "stage": "main",
+      "config": {
+        "policies": "ours"
+      },
+      "protocol": {
+        "task": "wikitext2"
+      },
+      "profile": false
+    },
+    {
+      "id": "main-wikitext2-naive",
+      "stage": "main",
+      "config": {
+        "policies": "naive"
+      },
+      "protocol": {
+        "task": "wikitext2"
+      },
+      "profile": false
+    },
+    {
+      "id": "main-gsm8k-ours",
+      "stage": "main",
+      "config": {
+        "policies": "ours"
+      },
+      "protocol": {
+        "task": "gsm8k"
+      },
+      "profile": false
+    },
+    {
+      "id": "main-gsm8k-naive",
+      "stage": "main",
+      "config": {
+        "policies": "naive"
+      },
+      "protocol": {
+        "task": "gsm8k"
+      },
+      "profile": false
+    },
+    {
+      "id": "main-humaneval-ours",
+      "stage": "main",
+      "config": {
+        "policies": "ours"
+      },
+      "protocol": {
+        "task": "humaneval"
+      },
+      "profile": false
+    },
+    {
+      "id": "main-humaneval-naive",
+      "stage": "main",
+      "config": {
+        "policies": "naive"
+      },
+      "protocol": {
+        "task": "humaneval"
+      },
+      "profile": false
+    },
+    {
+      "id": "main-wikitext2-swapmoe",
+      "stage": "main",
+      "config": {
+        "policies": "swapmoe"
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "main-wikitext2-flashmoe_rf_adaptation",
+      "stage": "main",
+      "config": {
+        "policies": "flashmoe_rf_adaptation"
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "main-wikitext2-independent_inclusive",
+      "stage": "main",
+      "config": {
+        "policies": "independent_inclusive"
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "place-uniform-profile",
+      "stage": "placement",
+      "config": {
+        "init_plan": "per_layer"
+      },
+      "protocol": {
+        "task": "gsm8k"
+      },
+      "profile": true
+    },
+    {
+      "id": "place-adaptive-profile",
+      "stage": "placement",
+      "config": {
+        "init_plan": "per_layer"
+      },
+      "protocol": {
+        "task": "gsm8k",
+        "allocation": "profile"
+      },
+      "profile": true
+    },
+    {
+      "id": "shift-a_b-ours",
+      "stage": "shift",
+      "config": {
+        "policies": "ours"
+      },
+      "protocol": {
+        "sequence": "a_b"
+      },
+      "profile": false
+    },
+    {
+      "id": "shift-a_b-frozen_placement",
+      "stage": "shift",
+      "config": {
+        "policies": "frozen_placement"
+      },
+      "protocol": {
+        "sequence": "a_b"
+      },
+      "profile": false
+    },
+    {
+      "id": "shift-b_a-ours",
+      "stage": "shift",
+      "config": {
+        "policies": "ours"
+      },
+      "protocol": {
+        "sequence": "b_a"
+      },
+      "profile": false
+    },
+    {
+      "id": "shift-b_a-frozen_placement",
+      "stage": "shift",
+      "config": {
+        "policies": "frozen_placement"
+      },
+      "protocol": {
+        "sequence": "b_a"
+      },
+      "profile": false
+    },
+    {
+      "id": "shift-a_a-ours",
+      "stage": "shift",
+      "config": {
+        "policies": "ours"
+      },
+      "protocol": {
+        "sequence": "a_a"
+      },
+      "profile": false
+    },
+    {
+      "id": "shift-a_a-frozen_placement",
+      "stage": "shift",
+      "config": {
+        "policies": "frozen_placement"
+      },
+      "protocol": {
+        "sequence": "a_a"
+      },
+      "profile": false
+    },
+    {
+      "id": "cpu8-ours",
+      "stage": "capacity",
+      "config": {
+        "cpu_budget": 8,
+        "policies": "ours"
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "cpu8-naive",
+      "stage": "capacity",
+      "config": {
+        "cpu_budget": 8,
+        "policies": "naive"
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "cpu24-ours",
+      "stage": "capacity",
+      "config": {
+        "cpu_budget": 24,
+        "policies": "ours"
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "cpu24-naive",
+      "stage": "capacity",
+      "config": {
+        "cpu_budget": 24,
+        "policies": "naive"
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "overlap-off",
+      "stage": "overlap",
+      "config": {},
+      "protocol": {
+        "prefill_overlap": false
+      },
+      "profile": false
+    },
+    {
+      "id": "input32-ours",
+      "stage": "length",
+      "config": {
+        "prompt_len": 32,
+        "n_prompts": 2,
+        "max_new_tokens": 8
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "input32-naive",
+      "stage": "length",
+      "config": {
+        "prompt_len": 32,
+        "n_prompts": 2,
+        "max_new_tokens": 8
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "input128-ours",
+      "stage": "length",
+      "config": {
+        "prompt_len": 128,
+        "n_prompts": 2,
+        "max_new_tokens": 8
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "input128-naive",
+      "stage": "length",
+      "config": {
+        "prompt_len": 128,
+        "n_prompts": 2,
+        "max_new_tokens": 8
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "input512-ours",
+      "stage": "length",
+      "config": {
+        "prompt_len": 512,
+        "n_prompts": 2,
+        "max_new_tokens": 8
+      },
+      "protocol": {},
+      "profile": false
+    },
+    {
+      "id": "input512-naive",
+      "stage": "length",
+      "config": {
+        "prompt_len": 512,
+        "n_prompts": 2,
+        "max_new_tokens": 8
+      },
+      "protocol": {},
+      "profile": false
+    }
+  ],
+  "default_stages": [
+    "pilot",
+    "main",
+    "placement",
+    "shift",
+    "capacity",
+    "overlap"
+  ],
+  "policy": {
+    "independent_repeats": 1,
+    "error_bars": false,
+    "max_run_seconds": 28800,
+    "model_revision": "eba92302a2861cdc0098cc54bc9f17cb2c47eb61"
+  }
+}

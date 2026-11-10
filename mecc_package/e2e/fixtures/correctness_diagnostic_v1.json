@@ -1,0 +1,8 @@
+{
+  "kind": "repository_diagnostic_not_benchmark",
+  "prompts": [
+    "A researcher compares two cache policies for a sparse model. The next expert is selected by",
+    "A server has one graphics processor and a limited memory budget. When a requested expert is stored on disk,"
+  ],
+  "ppl_text": "A sparse language model contains many expert modules. For each token, a router selects a small subset of those modules. A system with one graphics processor cannot keep every expert in graphics memory. It may keep frequently used experts in graphics memory, place other experts in system memory, and store the remaining weights on a local disk. A correct implementation must return the same selected experts and nearly the same output values when the storage policy changes. The comparison uses identical model weights, identical input tokens, and identical numeric precision. The storage policy may change where an expert is found and how long it takes to load, but it must not change the mathematical role of that expert. To check this property, the investigator records the router decision at every layer and compares the final logits for each generated token. If the generated tokens differ, the first step with different logits and the first layer with a different routing decision are recorded. This text is written for an internal diagnostic. It is not sampled from a public language modeling benchmark and it must not be reported as a benchmark result. Its only purpose is to provide a fixed sequence long enough for a short numerical comparison across cache policies."
+}

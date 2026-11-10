@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.olauth
+*.safetensors
+*.bin
+mecc_package/results/runs/
+mecc_package/results/reports/
+main_table.json
+smoke_report.json

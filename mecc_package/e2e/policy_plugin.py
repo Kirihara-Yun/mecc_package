@@ -1,0 +1,343 @@
+#!/usr/bin/env python3
+"""
+policy_plugin.py — MECC 缓存策略插件化
+========================================
+策略从 if/elif 平铺提取为独立插件类，支持动态注册。
+每个插件只暴露 access() + name() + supports() 三个接口。
+
+使用:
+    from policy_plugin import get_policy
+
+    cache = LayerExpertCache(..., policy=get_policy("ours"))
+    cache._access(uid)   # → 走 OursPolicy.access()
+
+扩展新策略:
+    class MyPolicy(CachePolicy):
+        name = "my_policy"
+        def access(self, cache, uid): ...
+
+    register(MyPolicy)
+"""
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import Dict, Optional, Type
+
+# 前向引用，避免循环导入
+from tiered_engine import ExpertUID, ExpertWeights  # noqa: F401
+
+
+class CachePolicy(ABC):
+    """缓存策略基类。
+
+    access(cache, uid) → ExpertWeights
+        cache: LayerExpertCache 实例 (提供 .gpu / .cpu / .store 等)
+        uid:   (layer_id, expert_idx)
+    """
+
+    name: str = "base"
+
+    @abstractmethod
+    def access(self, cache: "LayerExpertCache", uid: "ExpertUID") -> "ExpertWeights":  # type: ignore
+        ...
+
+    @classmethod
+    def supports_device(cls, device_type: str) -> bool:
+        return True
+
+
+# ── 策略注册表 ────────────────────────────────────────────
+
+_registry: Dict[str, Type[CachePolicy]] = {}
+
+
+def register(policy_cls: Type[CachePolicy]) -> Type[CachePolicy]:
+    _registry[policy_cls.name] = policy_cls
+    return policy_cls
+
+
+def get_policy(name: str) -> CachePolicy:
+    cls = _registry.get(name)
+    if cls is None:
+        raise KeyError(f"Unknown policy: {name}. Registered: {list(_registry)}")
+    return cls()
+
+
+def list_policies() -> list:
+    return list(_registry.keys())
+
+
+# ── 四基线策略 ────────────────────────────────────────────
+
+@register
+class OursPolicy(CachePolicy):
+    """OURS: HBM + CPU 联合动态 LRU, 带升降级 HBM→CPU→SSD"""
+    name = "ours"
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]                     # (gpu_ws, cpu_ws) 对
+        if uid in cache.cpu:
+            ws_cpu = cache.cpu.pop(uid)
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
+        else:
+            # Router-logit 预测预取: near-miss 缓冲命中 → 免冷读, 算 CPU hit
+            ws_cpu = cache.consume_nearmiss(uid)
+            if ws_cpu is not None:
+                g = cache._to_gpu(ws_cpu)
+                cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())   # 预取命中 = CPU hit
+            else:
+                # M2: pin 后 H2D 走 DMA (~12GB/s vs ~6GB/s staged)
+                ws_cpu = cache._load_from_ssd(uid).pin()
+                g = cache._to_gpu(ws_cpu)
+                cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                                 h2d_bytes=ws_cpu.nbytes())
+        cache.gpu[uid] = (g, ws_cpu)
+        cache.gpu.move_to_end(uid)
+        cache._evict_gpu_if_needed(spill_to_cpu=True)
+        return g
+
+
+@register
+class FrozenPlacementPolicy(CachePolicy):
+    """A fixed initial HBM/CPU resident set; misses do not change membership.
+
+    Local mechanism control, not a reproduction of an external system.
+    """
+    name = "frozen_placement"
+
+    def access(self, cache, uid):
+        if uid in cache.gpu:
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        source = cache.cpu.get(uid)
+        if source is not None:
+            result = cache._to_gpu(source)
+            cache.record_hit(1, h2d_bytes=source.nbytes())
+            return result
+        source = cache._load_from_ssd(uid).pin()
+        result = cache._to_gpu(source)
+        cache.record_hit(2, ssd_bytes=source.nbytes(), h2d_bytes=source.nbytes())
+        return result
+
+
+@register
+class IndependentCachesPolicy(CachePolicy):
+    """Two ordinary independent LRUs, including refill of the CPU cache.
+
+    The CPU tier admits cold reads and retains CPU hits after H2D. GPU
+    replacement does not demote into CPU. Kept separate from the old draining
+    `independent` diagnostic so historical observations stay reproducible.
+    """
+    name = "independent_inclusive"
+
+    def access(self, cache, uid):
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            source = cache.cpu[uid]
+            cache.cpu.move_to_end(uid)
+            cache.record_hit(1, h2d_bytes=source.nbytes())
+        else:
+            source = cache._load_from_ssd(uid).pin()
+            cache.cpu[uid] = source
+            cache.cpu.move_to_end(uid)
+            while len(cache.cpu) > cache.k_c:
+                cache.cpu.popitem(last=False)
+            cache.record_hit(2, ssd_bytes=source.nbytes(), h2d_bytes=source.nbytes())
+        result = cache._to_gpu(source)
+        cache.gpu[uid] = (result, source)
+        cache.gpu.move_to_end(uid)
+        cache._evict_gpu_if_needed(spill_to_cpu=False)
+        return result
+
+
+@register
+class IndependentLruPolicy(CachePolicy):
+    """Insight II: 独立更新。HBM 独立 LRU + CPU 独立 LRU，两者不联动：
+    HBM 淘汰不回写 CPU（直接落 SSD），CPU 命中搬到 HBM 后从 CPU 移除、不回流补充。
+    与联合更新（OursPolicy: spill_to_cpu=True）的差异在于缺「HBM→CPU→SSD」级联淘汰；
+    与固定 CPU（swapmoe: static_cpu 命中不 pop）的差异在于 CPU 是动态 LRU 而非静态。"""
+    name = "independent"
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            ws_cpu = cache.cpu.pop(uid)                 # 命中即搬走, CPU 不保留
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
+        else:
+            ws_cpu = cache._load_from_ssd(uid).pin()
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                             h2d_bytes=ws_cpu.nbytes())
+        cache.gpu[uid] = (g, ws_cpu)
+        cache.gpu.move_to_end(uid)
+        cache._evict_gpu_if_needed(spill_to_cpu=False)   # 独立: 不回写 CPU
+        return g
+
+
+@register
+class SwapMoePolicy(CachePolicy):
+    """SwapMoE: 仅 HBM 动态 LRU; CPU 静态 top-K_C; 不回写 CPU"""
+    name = "swapmoe"
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.static_cpu:
+            g = cache._to_gpu(cache.static_cpu[uid])
+            cache.record_hit(1, h2d_bytes=cache.static_cpu[uid].nbytes())
+        else:
+            # M2: pin 后 H2D 走 DMA
+            ws = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
+            g = cache._to_gpu(ws)
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0), h2d_bytes=ws.nbytes())
+        cache.gpu[uid] = (g, None)                        # swapmoe 不保留 CPU 镜像
+        cache.gpu.move_to_end(uid)
+        cache._evict_gpu_if_needed(spill_to_cpu=False)
+        return g
+
+
+@register
+class FiddlerPolicy(CachePolicy):
+    """Fiddler: HBM 常驻 K_H; miss 在 CPU 上算 (搬激活不搬权重)"""
+    name = "fiddler"
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            cache.cpu.move_to_end(uid)
+            cache.record_hit(3)    # cpu_compute
+            return cache.cpu[uid]
+        # M2: pin 后 H2D 走 DMA
+        src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
+        cache.cpu[uid] = src
+        cache.cpu.move_to_end(uid)
+        while len(cache.cpu) > cache.k_c:
+            cache.cpu.popitem(last=False)
+        cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0))
+        return src
+
+
+@register
+class NaivePolicy(CachePolicy):
+    """Naive: 不常驻 HBM; 每次从 SSD/CPU 流式搬运"""
+    name = "naive"
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        # M2: pin 后 H2D 走 DMA
+        src = cache.store.load_to_cpu(uid, cold=cache.cold_ssd).pin()
+        cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0), h2d_bytes=src.nbytes())
+        return cache._to_gpu(src)
+
+
+@register
+class FlashMoeRFAdaptationPolicy(CachePolicy):
+    """Paper-derived FlashMoE mechanism adaptation, not the authors' trained model.
+
+    HBM remains an LRU cache.  The CPU expert cache uses the public FlashMoE
+    features (inverse recency and cumulative frequency), combined with equal
+    deterministic weights because the paper's trained FFN parameters/code are
+    unavailable.  The lowest predicted-reuse score is evicted to SSD.
+    """
+    name = "flashmoe_rf_adaptation"
+
+    @staticmethod
+    def _record_access(cache: "LayerExpertCache", uid) -> None:
+        cache._flash_clock = getattr(cache, "_flash_clock", 0) + 1
+        cache._flash_last = getattr(cache, "_flash_last", {})
+        cache._flash_frequency = getattr(cache, "_flash_frequency", {})
+        cache._flash_last[uid] = cache._flash_clock
+        cache._flash_frequency[uid] = cache._flash_frequency.get(uid, 0) + 1
+
+    @staticmethod
+    def _evict_cpu(cache: "LayerExpertCache") -> None:
+        while len(cache.cpu) > cache.k_c:
+            max_frequency = max(cache._flash_frequency.values(), default=1)
+
+            def reuse_score(candidate) -> float:
+                last = cache._flash_last.get(candidate, 0)
+                recency = max(1, cache._flash_clock - last + 1)
+                inverse_recency = 1.0 / recency
+                frequency = cache._flash_frequency.get(candidate, 0) / max_frequency
+                return 0.5 * inverse_recency + 0.5 * frequency
+
+            victim = min(cache.cpu, key=lambda candidate: (reuse_score(candidate), candidate))
+            del cache.cpu[victim]
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        self._record_access(cache, uid)
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            ws_cpu = cache.cpu.pop(uid)
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
+        else:
+            ws_cpu = cache._load_from_ssd(uid).pin()
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                             h2d_bytes=ws_cpu.nbytes())
+        cache.gpu[uid] = (g, ws_cpu)
+        cache.gpu.move_to_end(uid)
+        while len(cache.gpu) > cache.k_h:
+            ev_uid, (_ev_gpu, ev_cpu) = cache.gpu.popitem(last=False)
+            if cache.k_c > 0 and ev_cpu is not None:
+                cache.cpu[ev_uid] = ev_cpu
+                cache.cpu.move_to_end(ev_uid)
+                self._evict_cpu(cache)
+        return g
+
+
+# ── ours_io: OURS + 并行 SSD I/O ────────────────────────────
+
+@register
+class OursIOPolicy(CachePolicy):
+    """OURS + ThreadPool 并行 SSD I/O: prefill 阶段多路磁盘读"""
+    name = "ours_io"
+
+    def access(self, cache: "LayerExpertCache", uid) -> "ExpertWeights":
+        if uid in cache.gpu:
+            cache.gpu.move_to_end(uid)
+            cache.record_hit(0)
+            return cache.gpu[uid][0]
+        if uid in cache.cpu:
+            ws_cpu = cache.cpu.pop(uid)
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(1, h2d_bytes=ws_cpu.nbytes())
+        else:
+            ws_cpu = cache._load_from_ssd(uid)
+            g = cache._to_gpu(ws_cpu)
+            cache.record_hit(2, ssd_bytes=getattr(cache.store, 'total_bytes', 0),
+                             h2d_bytes=ws_cpu.nbytes())
+        cache.gpu[uid] = (g, ws_cpu)
+        cache.gpu.move_to_end(uid)
+        cache._evict_gpu_if_needed(spill_to_cpu=True)
+        return g
+
+
+# ── 注册预定义策略组 ──
+
+BASELINE_POLICIES = ["ours", "swapmoe", "fiddler", "naive",
+                     "flashmoe_rf_adaptation"]
+OUR_POLICIES = ["ours", "ours_io"]
+COMPETITOR_POLICIES = ["swapmoe", "fiddler", "naive", "flashmoe_rf_adaptation"]
