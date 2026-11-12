@@ -18,14 +18,16 @@
 
 \subsection{Experimental Setup}
 \textbf{Hardware.}
-A100 runs use one NVIDIA A100 80~GB PCIe GPU and HDD RAID; the large-model run uses one H100 SXM 80~GB (HBM3, 3.35~TB/s), PCIe Gen5 x16 (approximately 64~GB/s H2D), and HDD RAID (approximately 425~MiB/s sequential read).
-All experts remain in FP16.
+The A100 experiments use one NVIDIA A100 80~GB PCIe GPU and an HDD RAID backing store.
+The large-model experiment uses one NVIDIA H100 SXM 80~GB GPU with 3.35~TB/s HBM3 bandwidth and a PCIe Gen5 host link.
+Its HDD RAID sustains about 425~MiB/s sequential reads.
+Expert weights remain in FP16 throughout.
 
 \textbf{Models and workloads.}
 A100 runs cover Mixtral-8$\times$7B and Qwen2-57B-A14B on WikiText-2, GSM8K, and HumanEval.
-H100 uses Mixtral-8$\times$22B-Instruct-v0.1 (141B parameters; 56 layers, eight experts per layer, top-2 routing).
-Its 576~MiB FP16 experts total approximately 252~GiB; primary HBM/CPU budgets are 50/64~GiB ($K_H=1$, $K_C=2$ per layer), with five experts per layer on the backing store.
-All methods use eight 128-input/128-output-token prompts, batch size one, greedy decoding, and matched budgets.
+The H100 run uses the 141B-parameter Mixtral-8$\times$22B-Instruct-v0.1 with 56 layers, eight experts per layer, and top-2 routing.
+Each expert occupies 576~MiB, yielding about 252~GiB of FP16 expert weights.
+The primary HBM and host budgets are 50 and 64~GiB; the allocation gives each layer one HBM slot and two host slots, leaving five experts per layer on HDD.
 
 \textbf{Baselines.}
 The A100 comparison includes on-demand Streaming, Fiddler, MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
@@ -60,11 +62,14 @@ For WikiText-2, GSM8K, and HumanEval, MECC's TPOT is 82, 90, and 74~s/token vers
 MECC's TTFT is 17, 19, and 17~min versus Fiddler's 20, 21, and 19~min, corresponding to 1.18$\times$, 1.11$\times$, and 1.12$\times$.
 The workload order differs between TPOT and TTFT, consistent with repeated expert demand during decoding and cold accesses before the first token placing different pressure on the resident tiers.
 
-\textbf{Response-stage behavior.}
-The near-constant Mixtral TPOT ratios contrast with a wider TTFT spread across the three tasks.
-TTFT depends on the initial resident set and cold expert accesses during prefill, whereas TPOT reflects the routed requests that recur during decoding.
-MECC's promotion rule preserves the displaced HBM expert's host copy, giving a later request a CPU path without another HDD read.
-Figures~\ref{fig:ablation_components} and~\ref{fig:ablation_traffic} separate placement, retention, and delivery effects combined in the main comparison.
+\textbf{Comparison with FlashMoE-RF.}
+On H100, FlashMoE-RF records 91, 100, and 81~s/token TPOT and 18.5, 20, and 17.5~min TTFT in the same workload order.
+MECC reduces these values by 9, 10, and 7~s/token and by 1.5, 1.0, and 0.5~min, respectively.
+The first-token margin narrows from WikiText-2 to HumanEval, while the decode reduction remains at least 7~s/token.
+
+\textbf{Capacity and stage effects.}
+Only three of eight experts per layer can reside in HBM or host memory at once, so a change in the routed pair can require an HDD fetch even after the initial placement.
+TTFT includes the cost of establishing the first working set; TPOT also reflects whether later requests reuse experts retained in the faster tiers.
 
 \clearpage
 \flushbottom
