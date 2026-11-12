@@ -18,21 +18,25 @@
 
 \subsection{Experimental Setup}
 \textbf{Hardware.}
-We evaluate on one NVIDIA A100 80~GB PCIe GPU with a local HDD-backed RAID volume.
+A100 runs use one NVIDIA A100 80~GB PCIe GPU and HDD RAID; the large-model run uses one H100 SXM 80~GB (HBM3, 3.35~TB/s), PCIe Gen5 x16 (approximately 64~GB/s H2D), and HDD RAID (approximately 425~MiB/s sequential read).
 All experts remain in FP16.
 
 \textbf{Models and workloads.}
 A100 runs cover Mixtral-8$\times$7B and Qwen2-57B-A14B on WikiText-2, GSM8K, and HumanEval.
+H100 uses Mixtral-8$\times$22B-Instruct-v0.1 (141B parameters; 56 layers, eight experts per layer, top-2 routing).
+Its 576~MiB FP16 experts total approximately 252~GiB; primary HBM/CPU budgets are 50/64~GiB ($K_H=1$, $K_C=2$ per layer), with five experts per layer on the backing store.
 All methods use eight 128-input/128-output-token prompts, batch size one, greedy decoding, and matched budgets.
 
 \textbf{Baselines.}
-The comparison includes on-demand Streaming, Fiddler, MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
+The A100 comparison includes on-demand Streaming, Fiddler, MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
+The H100 comparison includes Streaming, Fiddler, FlashMoE-RF, and MECC.
 Streaming loads each requested expert from the backing store when it is needed.
 
 \textbf{Metrics.}
 TTFT measures time to the first token; TPOT averages the time per subsequent token.
 Both include computation and expert delivery, and we average latency across prompts.
 Figure~\ref{fig:performance} reports $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$ for each model, workload, and metric; values above one indicate lower latency than Fiddler.
+Figure~\ref{fig:h100_main} uses the same ratio for H100.
 
 \subsection{End-to-End Performance}
 \textbf{A100 model--workload comparison.}
@@ -41,6 +45,20 @@ The corresponding Qwen2-57B-A14B ranges are 1.15--1.22$\times$ and 1.12--1.19$\t
 Mixtral's TPOT ratios cluster within 0.05$\times$, whereas its TTFT ratio moves from 1.19$\times$ on WikiText-2 to 1.11$\times$ on HumanEval.
 Qwen2 responds differently: GSM8K gives MECC its smallest TPOT ratio and largest TTFT ratio among the three tasks.
 These differences locate the benefit in the response stage: prompt processing and autoregressive decoding expose different expert-request sequences to the same residency policy.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig09_h100_main.pdf}
+\par\nointerlineskip
+\caption{H100 SXM 80~GB comparison on Mixtral-8$\times$22B-Instruct-v0.1 across WikiText-2, GSM8K, and HumanEval at 128/128 tokens. Colors and hatches follow Figure~\ref{fig:performance}; each bar is $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$. Higher is better.}
+\label{fig:h100_main}
+\end{figure}
+
+\textbf{H100 large-model comparison.}
+The approximately 252~GiB expert pool exceeds the 50~GiB HBM and 64~GiB CPU primary pools combined, so the backing store remains necessary.
+For WikiText-2, GSM8K, and HumanEval, MECC's TPOT is 82, 90, and 74~s/token versus Fiddler's 100, 108, and 92~s/token: 1.22$\times$, 1.20$\times$, and 1.24$\times$ speedup, respectively (Figure~\ref{fig:h100_main}).
+MECC's TTFT is 17, 19, and 17~min versus Fiddler's 20, 21, and 19~min, corresponding to 1.18$\times$, 1.11$\times$, and 1.12$\times$.
+The workload order differs between TPOT and TTFT, consistent with repeated expert demand during decoding and cold accesses before the first token placing different pressure on the resident tiers.
 
 \textbf{Response-stage behavior.}
 The near-constant Mixtral TPOT ratios contrast with a wider TTFT spread across the three tasks.
