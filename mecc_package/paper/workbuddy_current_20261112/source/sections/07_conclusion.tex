@@ -4,7 +4,5 @@ MECC couples CPU promotion with retention of the displaced GPU expert in the fre
 A host mirror supports this update without a device-to-host copy.
 Placement planning supplies the initial residents; serving requests update their membership.
 Across the models and workloads in Figure~\ref{fig:performance}, MECC improves both TPOT and TTFT relative to the matched Fiddler reference.
-On H100 with Mixtral-8$\times$22B, MECC reaches 67~s/token TPOT and 773~s TTFT under the 50/64~GiB HBM/CPU primary budgets.
-The component study separates the effects of initial placement, cross-tier retention, and delivery scheduling.
-Capacity and task-transfer results further show how available host slots and online membership affect expert reuse.
+Component, capacity, and task-transfer studies characterize placement, cross-tier retention, delivery, and adaptation.
 

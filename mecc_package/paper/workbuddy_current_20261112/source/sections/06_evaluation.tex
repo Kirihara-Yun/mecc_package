@@ -18,25 +18,21 @@
 
 \subsection{Experimental Setup}
 \textbf{Hardware.}
-A100 comparisons use one NVIDIA A100 80~GB PCIe GPU and HDD RAID; the large-model run uses one H100 SXM 80~GB, PCIe Gen5 x16 (approximately 64~GB/s H2D), and HDD RAID (approximately 425~MiB/s sequential read).
+We evaluate on one NVIDIA A100 80~GB PCIe GPU with a local HDD-backed RAID volume.
 All experts remain in FP16.
 
 \textbf{Models and workloads.}
 A100 runs cover Mixtral-8$\times$7B and Qwen2-57B-A14B on WikiText-2, GSM8K, and HumanEval.
-H100 uses Mixtral-8$\times$22B-Instruct-v0.1 (141B parameters; 56 layers, eight experts per layer, top-2 routing).
-Its 576~MiB FP16 experts total approximately 252~GiB; primary HBM/CPU budgets are 50/64~GiB, with five experts per layer backed by HDD.
-All methods use eight 128-input/128-output-token prompts, batch size one, greedy decoding, and matched budgets; H100 has $\alpha\approx0.35$.
+All methods use eight 128-input/128-output-token prompts, batch size one, greedy decoding, and matched budgets.
 
 \textbf{Baselines.}
-The A100 comparison includes on-demand Streaming, Fiddler, MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
-The H100 comparison includes Streaming, Fiddler, FlashMoE-RF, and MECC.
+The comparison includes on-demand Streaming, Fiddler, MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
 Streaming loads each requested expert from the backing store when it is needed.
 
 \textbf{Metrics.}
 TTFT measures time to the first token; TPOT averages the time per subsequent token.
 Both include computation and expert delivery, and we average latency across prompts.
-For the A100 models, Figure~\ref{fig:performance} reports $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$; values above one indicate lower latency than Fiddler.
-Figure~\ref{fig:h100_main} applies the same Fiddler normalization to the H100 run.
+Figure~\ref{fig:performance} reports $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$ for each model, workload, and metric; values above one indicate lower latency than Fiddler.
 
 \subsection{End-to-End Performance}
 \textbf{A100 model--workload comparison.}
@@ -46,25 +42,11 @@ Mixtral's TPOT ratios cluster within 0.05$\times$, whereas its TTFT ratio moves 
 Qwen2 responds differently: GSM8K gives MECC its smallest TPOT ratio and largest TTFT ratio among the three tasks.
 These differences locate the benefit in the response stage: prompt processing and autoregressive decoding expose different expert-request sequences to the same residency policy.
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=\columnwidth]{figures/fig09_h100_main.pdf}
-\par\nointerlineskip
-\caption{H100 SXM 80~GB comparison on Mixtral-8$\times$22B-Instruct-v0.1 at 128/128 tokens. Each bar is $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$; higher is better. Dashed lines mark Fiddler.}
-\label{fig:h100_main}
-\end{figure}
-
-\textbf{H100 large-model comparison.}
-Figure~\ref{fig:h100_main} extends the evaluation to Mixtral-8$\times$22B, whose approximately 252~GiB of FP16 expert weights exceeds the 50~GiB HBM and 64~GiB CPU primary pools combined.
-MECC reduces TPOT from Fiddler's 100 to 67~s/token (1.49$\times$) and TTFT from 864 to 773~s (1.12$\times$).
-FlashMoE-RF takes 74~s/token and 788~s TTFT, while Streaming takes 105~s/token and 929~s TTFT.
-The wider TPOT than TTFT separation against Fiddler is consistent with reuse during decoding: a displaced HBM expert can remain available through its host mirror, whereas a cold expert needed during prefill still delays the first token.
-With a 425~MiB/s HDD read path, avoiding a repeated backing-store access can matter more than the nominal HBM transfer bandwidth suggests.
-
-\textbf{Interpreting the two platforms.}
-Each panel normalizes to the Fiddler latency measured on the same model, workload, and hardware.
-The A100 and H100 panels thus report matched method comparisons rather than a hardware scaling curve.
-Figures~\ref{fig:ablation_components} and~\ref{fig:ablation_traffic} separate placement, retention, and delivery effects that the end-to-end results combine.
+\textbf{Response-stage behavior.}
+The near-constant Mixtral TPOT ratios contrast with a wider TTFT spread across the three tasks.
+TTFT depends on the initial resident set and cold expert accesses during prefill, whereas TPOT reflects the routed requests that recur during decoding.
+MECC's promotion rule preserves the displaced HBM expert's host copy, giving a later request a CPU path without another HDD read.
+Figures~\ref{fig:ablation_components} and~\ref{fig:ablation_traffic} separate placement, retention, and delivery effects combined in the main comparison.
 
 \clearpage
 \flushbottom
