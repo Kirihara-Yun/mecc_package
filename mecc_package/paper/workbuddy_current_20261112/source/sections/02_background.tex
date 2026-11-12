@@ -1,0 +1,35 @@
+% !TeX root = ../main.tex
+\section{Background}
+\label{sec:background}
+\subsection{Mixture-of-Experts Inference}
+An MoE layer contains a router and a set of expert networks~\cite{shazeer,switch,gshard}.
+The router selects a subset of experts for each token and assigns a weight to each selected expert.
+For input $x$, let $G(x)$ denote the selected set and $g_e(x)$ the normalized gate weight for expert $e$.
+The layer computes
+\begin{equation}
+y(x)=\sum_{e\in G(x)}g_e(x)E_e(x).
+\end{equation}
+Here $E_e$ denotes the computation of expert $e$.
+Each expert belongs to one layer; equal indices at different layers identify different weights.
+Mixtral and the DeepSeek family activate a subset of their experts while retaining access to the full pool~\cite{mixtral,deepseekmoe,deepseekv2,deepseekv3,mixtral22}.
+
+Autoregressive inference consists of prefill and token generation.
+Prefill processes the prompt and builds its KV cache.
+Prompt tokens assigned to the same expert share its fetched weights.
+Token generation processes one new token per sequence at each step and updates the KV cache.
+Both phases traverse the model's layers and invoke their selected experts.
+
+\subsection{Expert Offloading}
+Expert offloading stores part of the expert pool outside GPU memory and delivers selected weights to the GPU for execution.
+Expert weights share HBM with dense parameters, activations, and the KV cache~\cite{pagedattention,sglang}.
+In an HDD-backed deployment, HDD retains the complete pool, while HBM and CPU memory cache resident experts.
+An HBM hit executes with resident weights.
+A CPU hit requires an H2D copy.
+A miss in both memory tiers requires an HDD read followed by H2D.
+
+Initial placement selects the experts loaded before serving.
+Replacement updates the resident set as requests arrive.
+Offline selection counts determine expert ranking; runtime accesses determine recency.
+An expert's cache identity includes its layer and expert index.
+Offloading systems coordinate CPU memory, GPU execution, and weight transfers~\cite{flexgen,dsinference,zeroinfinity,llmflash,powerinfer,hetegen}.
+Precision selection~\cite{hobbit,specter}, expert segmentation~\cite{moepic,slicemoe}, and staging or compression~\cite{mira,zipmoe} change the volume of transferred data.

@@ -1,5 +1,13 @@
 # WorkBuddy A100 execution entry
 
+## 2026-11-12 status handoff
+
+Read [`docs/WORKBUDDY_CURRENT_STATUS_20261112.md`](docs/WORKBUDDY_CURRENT_STATUS_20261112.md)
+first. This branch includes the current seven-page manuscript and the frozen A100
+execution code. The status handoff is informational: it does not start a new GPU
+run or authorize changes to the manuscript or Overleaf. The experiment procedure
+below applies when the author explicitly starts that run.
+
 This repository is developed locally and executed on the remote A100 host.  The
 remote agent is an **experiment operator**, not an independent paper editor.
 

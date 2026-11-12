@@ -1,0 +1,41 @@
+% !TeX root = ../main.tex
+\section{Motivation}
+\label{sec:challenges}
+Figure~\ref{fig:insights} examines cold start, repeated reads, and changes in the active expert set.
+
+\subsection{Cold Start}
+\label{sec:challenge_initial}
+Cold start concerns expert availability when the first input arrives.
+Initial residents determine which selected experts require HDD reads.
+Expert demand varies within and across layers~\cite{routingconsistency}.
+A fixed slot count can cover concentrated demand in one layer and leave more accesses uncovered in another.
+Figure~\ref{fig:insights}(a) compares Separate, Streaming, Fiddler~\cite{fiddler}, and MECC using TTFT normalized to Separate.
+Figure~\ref{fig:insights}(b) expands one cold expert access.
+HDD reading, host staging, and H2D precede expert execution.
+The first token waits for these transfers.
+Startup placement therefore involves both per-layer capacities and the expert IDs assigned to those slots.
+
+\subsection{Repeated Reads}
+\label{sec:challenge_reuse}
+An expert evicted from HBM may be requested again during generation.
+A CPU copy serves that request through H2D.
+Figure~\ref{fig:insights}(c) compares TPOT normalized to Separate across the same four methods.
+Independent replacement can retain the same experts in both tiers.
+In Figure~\ref{fig:insights}(d), four slots hold only $b$ and $c$.
+A later request for $a$ misses both caches and reloads its weights from HDD.
+Repeated transfers add weight-delivery time to otherwise identical expert computation.
+Duplicate residents occupy space that could retain other reusable experts.
+
+\subsection{Dynamic Cache Adaptation}
+\label{sec:challenge_shift}
+Task changes alter which experts receive requests.
+An initial ranking reflects the inputs analyzed before deployment.
+Figure~\ref{fig:insights}(e) compares fixed and online CPU retention.
+Both use the same initial residents, HBM LRU, and slot budgets.
+Figure~\ref{fig:insights}(f) follows requests $u,v,w,u$.
+The request for $w$ replaces $u$ in HBM.
+CPU memory still retains the earlier task's $a,b,c,d$.
+The final $u$ therefore misses both caches and reads its weights again.
+The four CPU slots could retain all three task-B experts.
+Their fixed membership leaves this capacity unavailable to the new working set.
+Membership updates redirect these slots toward the serving task's experts.
