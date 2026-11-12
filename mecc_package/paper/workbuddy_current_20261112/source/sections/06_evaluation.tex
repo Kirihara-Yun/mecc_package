@@ -41,12 +41,33 @@ Figure~\ref{fig:performance} reports $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$ 
 Figure~\ref{fig:h100_main} uses the same ratio for H100.
 
 \subsection{End-to-End Performance}
-\textbf{A100 model--workload comparison.}
-On Mixtral-8$\times$7B, MECC provides 1.20--1.25$\times$ TPOT and 1.11--1.19$\times$ TTFT speedup over Fiddler across the three workloads (Figure~\ref{fig:performance}, left).
-The corresponding Qwen2-57B-A14B ranges are 1.15--1.22$\times$ and 1.12--1.19$\times$ (Figure~\ref{fig:performance}, right).
-Mixtral's TPOT ratios cluster within 0.05$\times$, whereas its TTFT ratio moves from 1.19$\times$ on WikiText-2 to 1.11$\times$ on HumanEval.
-Qwen2 responds differently: GSM8K gives MECC its smallest TPOT ratio and largest TTFT ratio among the three tasks.
-These differences locate the benefit in the response stage: prompt processing and autoregressive decoding expose different expert-request sequences to the same residency policy.
+Figure~\ref{fig:performance} compares MECC with the offloading baselines on two A100 models.
+Relative to Fiddler, MECC improves TPOT by 1.20--1.25$\times$ and TTFT by 1.11--1.19$\times$ on Mixtral-8$\times$7B, and by 1.15--1.22$\times$ and 1.12--1.19$\times$, respectively, on Qwen2-57B-A14B.
+These ranges summarize three workloads for each model; every bar retains its own workload- and metric-matched denominator.
+MECC is the only method that improves both metrics on every workload.
+On Mixtral, TPOT speedups lie within 0.05$\times$, while TTFT falls from 1.19$\times$ on WikiText-2 to 1.11$\times$ on HumanEval.
+Qwen2 shows a different phase response: GSM8K has the smallest TPOT speedup but the largest TTFT speedup of its three workloads.
+
+The phase difference follows the access patterns each metric exposes.
+Before the first token, cold expert accesses can delay prefill; during decoding, a previously used expert may be requested again after it has left HBM.
+Retaining that expert in the host tier can replace another HDD read with a host-to-device transfer.
+The differing workload rankings therefore indicate that the benefit cannot be described by a single model-level speedup, although the main figures alone cannot separate placement, retention, and delivery effects.
+
+The decoding panels split the baselines into three groups.
+Streaming reloads every non-resident expert on demand and keeps no residency across requests, so its bars reach only 0.53--0.72 of Fiddler's decoding speedup, a 1.4--1.9$\times$ latency deficit.
+MoE-Infinity narrows this gap with trace-guided replacement, yet stays below Fiddler on four of the six model-workload pairs; when requests diverge from the collected traces, its misses expose cold storage reads.
+MoE-CORE, SSD-LLaMA, and FlashMoE-RF land near Fiddler, between 0.91 and 1.25 of its decoding speedup.
+MECC posts the largest decoding speedup on four of the six pairs and ties the strongest competing bar at 1.20$\times$ on Mixtral HumanEval.
+Its margin on the other pairs is consistent with the component study below, where joint retention contributes the largest decoding reduction by converting revisits of displaced experts into host-tier hits.
+
+TTFT separates the methods more sharply.
+MECC is the only method whose TTFT bars exceed one on all six model-workload pairs; MoE-CORE and SSD-LLaMA each fall below Fiddler on two pairs, and FlashMoE-RF on all six despite its decoding gains.
+These baselines obtain their benefit from reuse: replacement policies act only after an expert has been requested and displaced, and a learned policy requires an established request history.
+Prefill is dominated by first-touch accesses for which no such history exists, so cold reads set the baselines' first-token latency.
+MECC initializes residency from offline routing analysis, covering part of this first-touch sequence before serving begins; consistent with this, its TTFT advantage is comparable to its decoding advantage.
+
+Taken together, the two panels favor MECC on both axes: a geometric mean over the bars of each model puts MECC 6--8\% ahead of the second-best method, SSD-LLaMA.
+The margin concentrates where reuse alone does not help---on Qwen2 GSM8K, where MoE-CORE, SSD-LLaMA, and FlashMoE-RF stay within 0.91--1.00 of Fiddler on decoding, MECC's decoding bar remains highest at 1.15$\times$ and its TTFT bar reaches 1.19$\times$.
 
 \begin{figure}[H]
 \centering
@@ -56,84 +77,53 @@ These differences locate the benefit in the response stage: prompt processing an
 \label{fig:h100_main}
 \end{figure}
 
-\textbf{H100 large-model comparison.}
-The approximately 252~GiB expert pool exceeds the 50~GiB HBM and 64~GiB CPU primary pools combined, so the backing store remains necessary.
-For WikiText-2, GSM8K, and HumanEval, MECC's TPOT is 82, 90, and 74~s/token versus Fiddler's 100, 108, and 92~s/token: 1.22$\times$, 1.20$\times$, and 1.24$\times$ speedup, respectively (Figure~\ref{fig:h100_main}).
-MECC's TTFT is 17, 19, and 17~min versus Fiddler's 20, 21, and 19~min, corresponding to 1.18$\times$, 1.11$\times$, and 1.12$\times$.
-The workload order differs between TPOT and TTFT, consistent with repeated expert demand during decoding and cold accesses before the first token placing different pressure on the resident tiers.
+Figure~\ref{fig:h100_main} examines the larger Mixtral-8$\times$22B model, whose 252~GiB expert pool exceeds the combined HBM and host budgets.
+Against Fiddler, MECC achieves 1.22$\times$, 1.20$\times$, and 1.24$\times$ TPOT speedup on WikiText-2, GSM8K, and HumanEval; the corresponding TTFT speedups are 1.18$\times$, 1.11$\times$, and 1.12$\times$.
+Even with HBM3 bandwidth, Streaming reaches only 0.75--0.86 of Fiddler's decoding speedup, confirming that on-demand delivery alone does not close the gap at this scale.
+FlashMoE-RF lies between Fiddler and MECC on every bar, at 1.08--1.14$\times$ TPOT and 1.05--1.09$\times$ TTFT, while MECC reaches 1.20--1.24$\times$ and 1.11--1.18$\times$.
+This ordering carries over on the larger expert pool: MECC is first on both metrics of all three workloads, and its decoding lead over FlashMoE-RF is 0.11--0.12$\times$ on every one of them.
+The TPOT gain exceeds the TTFT gain on every workload, consistent with repeated expert accesses giving retention more opportunities to avoid storage reads after the first token.
+The H100 allocation leaves only one expert per layer in HBM and two in host memory while top-2 routing selects two experts at each layer.
+A change in the routed pair can therefore trigger an HDD access even after the first working set has been loaded.
+Keeping an expert displaced from HBM in the host tier lowers the cost of a later revisit without increasing either cache budget.
+This interpretation is tested below by separating changes in request source from changes in exposed transfer time.
 
-\textbf{Comparison with FlashMoE-RF.}
-On H100, FlashMoE-RF records 91, 100, and 81~s/token TPOT and 18.5, 20, and 17.5~min TTFT in the same workload order.
-MECC reduces these values by 9, 10, and 7~s/token and by 1.5, 1.0, and 0.5~min, respectively.
-The first-token margin narrows from WikiText-2 to HumanEval, while the decode reduction remains at least 7~s/token.
-
-\textbf{Capacity and stage effects.}
-Only three of eight experts per layer can reside in HBM or host memory at once, so a change in the routed pair can require an HDD fetch even after the initial placement.
-TTFT includes the cost of establishing the first working set; TPOT also reflects whether later requests reuse experts retained in the faster tiers.
-
-\clearpage
-\flushbottom
-\subsection{Ablation Study}
-We add placement, joint retention, and delivery scheduling in sequence, then measure request sources and exposed time under the same configurations.
+\subsection{Mechanism Analysis}
+We examine the contribution of each component and the behavior of online residency when the analysis task differs from the inference task.
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{figures/fig09_ablation_startup.pdf}
 \par\nointerlineskip
-\caption{Component addition and initialization amortization. (a) Adding placement, joint retention, and delivery scheduling. (b) Initialization plus generation over output length.}
+\caption{Per-token and first-token latency of the component sequence. (a) TPOT normalized to Base. (b) TTFT normalized to Base.}
 \label{fig:ablation_components}
 \end{figure}
 \textbf{Component addition.}
-Figure~\ref{fig:ablation_components}(a) shows the TPOT change after each component is added.
-The largest reduction follows joint retention, which keeps a displaced GPU expert in the host tier.
-The plan changes the starting residents; joint retention then changes which experts remain accessible after a GPU replacement.
-This distinction matters because a useful initial set alone cannot preserve an expert once subsequent requests displace it.
-Panel (b) includes initialization cost: over $n$ output tokens, its amortized contribution is $T_{\mathrm{init}}/n$ per token.
+Figure~\ref{fig:ablation_components} adds placement, joint retention, and delivery scheduling in sequence, normalizing TPOT and TTFT to Base.
+TPOT falls to 0.75, 0.46, and 0.33, with joint retention contributing the largest step by keeping a displaced GPU expert in the host tier for a later request; placement alone does not determine decode latency because subsequent replacements can remove its initial residents.
+TTFT falls to 0.67, 0.54, and 0.36: placement contributes the largest step by cutting the SSD-served fraction from 84\% to 56\%, and delivery scheduling removes the 1.5$\times$ penalty of an unscheduled storage read.
 
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{figures/fig10_traffic_exposure.pdf}
 \par\nointerlineskip
-\caption{Expert request sources and exposed time across the same component sequence.}
+\caption{Expert request sources and exposed time across the same component sequence. (a) Request share (\%). (b) Exposed time normalized to Base.}
 \label{fig:ablation_traffic}
 \end{figure}
 \textbf{Traffic and delivery.}
 Figure~\ref{fig:ablation_traffic}(a) shows the fraction of expert requests served from HBM, CPU, and HDD after each component is added.
-Panel (b) breaks exposed time into computation, host-to-device transfer, and HDD access.
-The final delivery step changes exposed time without changing the request-source fractions, separating scheduling effects from changes in cache residency.
-Thus, a lower HDD demand share and a shorter exposed HDD interval are distinct effects: the former changes where requests hit, while the latter changes how much of a required read remains on the critical path.
-
-\subsection{Sensitivity Analysis}
-\begin{figure}[H]
-\centering\includegraphics[width=\columnwidth]{figures/fig11_calibration_input.pdf}
-\par\nointerlineskip
-\caption{Sensitivity to analysis samples and input length. TTFT uses the Streaming reference at each input length.}
-\label{fig:workload_sensitivity}
-\end{figure}
-\textbf{Analysis and request shape.}
-Figure~\ref{fig:workload_sensitivity}(a) increases the number of analysis samples from 32 to 2048; TPOT decreases from 10.8 to 8.0~s/token.
-Panel (b) reports TTFT relative to Streaming at each input length, so each point uses a length-matched denominator.
-The TPOT curve flattens as the analysis set grows, consistent with later samples making smaller changes to the selected initial residents.
-
-\begin{figure}[H]
-\centering\includegraphics[width=\columnwidth]{figures/fig14_quota_targets.pdf}
-\par\nointerlineskip
-\caption{CPU capacity sensitivity. (a) TPOT at a fixed HBM budget. (b) Savings from each additional allocation.}
-\label{fig:capacity_sensitivity}
-\end{figure}
-\textbf{Host capacity.}
-Figure~\ref{fig:capacity_sensitivity} increases primary CPU residency from 16 to 48~GiB at a fixed HBM budget; MECC TPOT falls from 16 to 7~s/token.
-The first 8~GiB increment saves 4~s/token, whereas the last saves 1~s/token.
-The diminishing reduction is consistent with additional slots covering less frequently reused experts.
+Panel (b) breaks exposed time, normalized to Base, into computation, host-to-device transfer, and HDD access.
+An HBM hit needs no expert-weight transfer; a host hit requires a host-to-device copy; an HDD miss also requires a storage read.
+The final delivery step lowers exposed time from 0.46 to 0.33 of Base without changing the request-source fractions, showing that scheduling shortens the critical path independently of cache residency.
 
 \begin{figure}[H]
 \centering\includegraphics[width=\columnwidth]{figures/fig15_profile_mismatch.pdf}
 \par\nointerlineskip
-\caption{Task transfer. Rows select the analysis task; columns select the inference task. Both panels share a TPOT scale.}
+\caption{Task transfer. Rows select the analysis task; columns select the inference task. Cells are online TPOT relative to fixed residency; values below one indicate adaptation to a changed task.}
 \label{fig:task_transfer}
 \end{figure}
 \textbf{Task transfer.}
-In Figure~\ref{fig:task_transfer}, rows specify the analysis task and columns the inference task.
-Across the six off-diagonal pairs, online membership reduces mean TPOT from 14.00 to 9.38~s/token, a 33.0\% decrease; the diagonal entries are unchanged.
-For the HumanEval inference column, the largest fixed-residency value falls from 16 to 9.8~s/token with online updates.
+Figure~\ref{fig:task_transfer} reports online TPOT relative to fixed residency when the analysis and inference tasks are matched or differ.
+Across the six off-diagonal pairs, online membership lowers mean TPOT to 0.67 of the fixed value, a 33\% decrease; the diagonal entries remain at one.
+For the HumanEval inference column, the largest off-diagonal entry falls to 0.61 with online updates.
 An access to an expert outside the initial set admits it to the resident hierarchy; later requests can then reuse the new placement.
-The unchanged diagonal cells and reduced off-diagonal values separate adaptation to a changed task from simply increasing the slot budget.
+The off-diagonal improvement without a change in slot budget isolates adaptation to a changed task.
 
 \flushbottom
