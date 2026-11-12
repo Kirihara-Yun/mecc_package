@@ -1,84 +1,73 @@
 % !TeX root = ../main.tex
 \section{Evaluation}
 \label{sec:evaluation}
-\flushbottom
+\raggedbottom
+
+\begin{figure*}[!t]
+\centering
+\begin{minipage}{0.49\textwidth}
+\centering\includegraphics[width=\linewidth]{figures/fig07_main_mixtral_compact.pdf}
+\end{minipage}\hfill
+\begin{minipage}{0.49\textwidth}
+\centering\includegraphics[width=\linewidth]{figures/fig08_main_qwen_compact.pdf}
+\end{minipage}
+\caption{A100 end-to-end comparison. The left pair shows Mixtral-8$\times$7B; the right pair shows Qwen2-57B-A14B. Each bar is speedup over Fiddler for the matched model, workload, and metric; higher is better.}
+\label{fig:performance}
+\end{figure*}
 
 
 \subsection{Experimental Setup}
 \textbf{Hardware.}
-We evaluate on one NVIDIA A100 80~GB PCIe GPU with a local HDD-backed RAID volume.
-Expert weights remain in FP16.
-Each comparison fixes the primary HBM and CPU residency budgets; host memory also holds mirrors of HBM-resident experts and staging buffers.
+A100 comparisons use one NVIDIA A100 80~GB PCIe GPU and HDD RAID; the large-model run uses one H100 SXM 80~GB, PCIe Gen5 x16 (approximately 64~GB/s H2D), and HDD RAID (approximately 425~MiB/s sequential read).
+All experts remain in FP16.
 
 \textbf{Models and workloads.}
-The main comparison covers Mixtral-8$\times$7B and Qwen2-57B-A14B.
-The workloads are WikiText-2, GSM8K, and HumanEval.
-Unless stated otherwise, each uses eight prompts of 128 input tokens and 128 output tokens.
-We serve requests sequentially with batch size one and greedy decoding.
-Methods receive matched prompts and residency budgets within each comparison.
+A100 runs cover Mixtral-8$\times$7B and Qwen2-57B-A14B on WikiText-2, GSM8K, and HumanEval.
+H100 uses Mixtral-8$\times$22B-Instruct-v0.1 (141B parameters; 56 layers, eight experts per layer, top-2 routing).
+Its 576~MiB FP16 experts total approximately 252~GiB; primary HBM/CPU budgets are 50/64~GiB, with five experts per layer backed by HDD.
+All methods use eight 128-input/128-output-token prompts, batch size one, greedy decoding, and matched budgets; H100 has $\alpha\approx0.35$.
 
 \textbf{Baselines.}
-We compare MECC with on-demand Streaming, Fiddler, MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
+The A100 comparison includes on-demand Streaming, Fiddler, MoE-CORE, MoE-Infinity, SSD-LLaMA, and FlashMoE-RF~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
+The H100 comparison includes Streaming, Fiddler, FlashMoE-RF, and MECC.
 Streaming loads each requested expert from the backing store when it is needed.
 
 \textbf{Metrics.}
 TTFT measures time to the first token; TPOT averages the time per subsequent token.
 Both include computation and expert delivery, and we average latency across prompts.
-For each model, workload, and metric, Figures~\ref{fig:performance} and~\ref{fig:performance_qwen} report $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$; values above one indicate lower latency than Fiddler.
+For the A100 models, Figure~\ref{fig:performance} reports $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$; values above one indicate lower latency than Fiddler.
+Figure~\ref{fig:h100_main} applies the same Fiddler normalization to the H100 run.
+
+\subsection{End-to-End Performance}
+\textbf{A100 model--workload comparison.}
+On Mixtral-8$\times$7B, MECC provides 1.20--1.25$\times$ TPOT and 1.11--1.19$\times$ TTFT speedup over Fiddler across the three workloads (Figure~\ref{fig:performance}, left).
+The corresponding Qwen2-57B-A14B ranges are 1.15--1.22$\times$ and 1.12--1.19$\times$ (Figure~\ref{fig:performance}, right).
+Mixtral's TPOT ratios cluster within 0.05$\times$, whereas its TTFT ratio moves from 1.19$\times$ on WikiText-2 to 1.11$\times$ on HumanEval.
+Qwen2 responds differently: GSM8K gives MECC its smallest TPOT ratio and largest TTFT ratio among the three tasks.
+These differences locate the benefit in the response stage: prompt processing and autoregressive decoding expose different expert-request sequences to the same residency policy.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\columnwidth]{figures/fig07_main_mixtral_compact.pdf}
+\includegraphics[width=\columnwidth]{figures/fig09_h100_main.pdf}
 \par\nointerlineskip
-\caption{TPOT and TTFT comparison on Mixtral-8$\times$7B.
-Speedup is relative to Fiddler under the matched model, workload, and metric; higher is better. Methods follow a common order within both panels.}
-\label{fig:performance}
-\vspace{5pt}
-\includegraphics[width=\columnwidth]{figures/fig08_main_qwen_compact.pdf}
-\par\nointerlineskip
-\caption{TPOT and TTFT comparison on Qwen2-57B-A14B.
-Colors and method order match Figure~\ref{fig:performance}; speedup is relative to Fiddler.}
-\label{fig:performance_qwen}
+\caption{H100 SXM 80~GB comparison on Mixtral-8$\times$22B-Instruct-v0.1 at 128/128 tokens. Each bar is $T_{\mathrm{Fiddler}}/T_{\mathrm{method}}$; higher is better. Dashed lines mark Fiddler.}
+\label{fig:h100_main}
 \end{figure}
 
-\subsection{End-to-End Performance}
-\textbf{Main comparison.}
-Across the three workloads, MECC achieves 1.20--1.25$\times$ TPOT and 1.11--1.19$\times$ TTFT speedup over Fiddler on Mixtral-8$\times$7B (Figure~\ref{fig:performance}).
-On Qwen2-57B-A14B, the corresponding ranges are 1.15--1.22$\times$ and 1.12--1.19$\times$ (Figure~\ref{fig:performance_qwen}).
-The bars report separate comparisons for each workload and response stage; a TPOT ratio and a TTFT ratio do not share a latency denominator.
-MECC exceeds the Fiddler reference in every displayed model--workload pair for both metrics.
-The gain changes with the input and response stage, indicating that a single aggregate ratio would conceal useful differences in expert demand.
+\textbf{H100 large-model comparison.}
+Figure~\ref{fig:h100_main} extends the evaluation to Mixtral-8$\times$22B, whose approximately 252~GiB of FP16 expert weights exceeds the 50~GiB HBM and 64~GiB CPU primary pools combined.
+MECC reduces TPOT from Fiddler's 100 to 67~s/token (1.49$\times$) and TTFT from 864 to 773~s (1.12$\times$).
+FlashMoE-RF takes 74~s/token and 788~s TTFT, while Streaming takes 105~s/token and 929~s TTFT.
+The wider TPOT than TTFT separation against Fiddler is consistent with reuse during decoding: a displaced HBM expert can remain available through its host mirror, whereas a cold expert needed during prefill still delays the first token.
+With a 425~MiB/s HDD read path, avoiding a repeated backing-store access can matter more than the nominal HBM transfer bandwidth suggests.
 
-\textbf{Generation and first-token latency.}
-During decoding, repeated expert requests may hit in HBM, use a host-resident copy, or require another HDD read.
-MECC retains a displaced GPU expert in the host slot released by promotion, making that copy available to later requests.
-If that expert is selected again after leaving HBM, its host copy can serve the request without another HDD read.
-The access also updates the recency order, so future replacement responds to the observed sequence rather than only the initial analysis ranks.
-For TTFT, the initial resident set and reuse among input tokens also affect the time to the first response.
-Prefill may select several experts before any output token is produced; a cold expert on this path can delay the first response even when later decode requests benefit from reuse.
-The two panels therefore expose different effects of placement and retention; the component controls below examine them separately.
-
-\textbf{Model and workload response.}
-On Mixtral, MECC's TPOT ratios are close across the three inputs, while its TTFT gain declines from WikiText-2 to HumanEval.
-Qwen2 shows a different phase response: GSM8K has the smallest TPOT gain but the largest TTFT gain for MECC among its three workloads.
-The two models have different expert organizations, so a fixed byte budget covers different numbers of experts and different portions of routed demand.
-Within a model, the order and spacing of requests determine whether a previously used expert remains in HBM, survives in CPU memory, or must be fetched again from HDD.
-These factors provide a mechanism for the workload-dependent trends without requiring the same relative gain in prefill and decode.
-Because TPOT and TTFT use separate Fiddler denominators, their ratios describe improvement within each stage rather than a comparison of absolute stage durations.
-
-\textbf{Mechanism context.}
-The baselines differ in where they execute experts and how they choose residents: Fiddler may compute on the CPU, MoE-CORE allocates capacity by layer, MoE-Infinity tracks request history, SSD-LLaMA manages three storage tiers, and FlashMoE uses learned replacement~\cite{fiddler,core,moeinfinity,ssdllama,flashmoe}.
-MECC's initial plan allocates slots to layers according to analyzed expert demand, while serving accesses revise membership inside those allocations.
-The promotion rule connects the two resident tiers: the expert leaving HBM retains a host path through its existing mirror instead of becoming an immediate cold miss.
-The main figures include the combined cost of lookup, movement, execution, and replacement; they do not isolate these steps.
-Figures~\ref{fig:ablation_components} and~\ref{fig:ablation_traffic} separate the placement, retention, and delivery contributions using the same component sequence.
-
-\textbf{Delivery path.}
-An HBM hit needs no weight transfer; a CPU hit copies weights to the GPU; an HDD miss adds a host read before that copy.
-During prefill, a cold read may overlap execution of a resident expert, but its consumer waits for read and copy completion.
-Thus, request-source counts alone do not determine the exposed latency, a distinction examined in Figure~\ref{fig:ablation_traffic}.
+\textbf{Interpreting the two platforms.}
+Each panel normalizes to the Fiddler latency measured on the same model, workload, and hardware.
+The A100 and H100 panels thus report matched method comparisons rather than a hardware scaling curve.
+Figures~\ref{fig:ablation_components} and~\ref{fig:ablation_traffic} separate placement, retention, and delivery effects that the end-to-end results combine.
 
 \clearpage
+\flushbottom
 \subsection{Ablation Study}
 We add placement, joint retention, and delivery scheduling in sequence, then measure request sources and exposed time under the same configurations.
 \begin{figure}[H]

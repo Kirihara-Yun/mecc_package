@@ -1,13 +1,13 @@
 % !TeX root = ../main.tex
 \begin{abstract}
-HDD offloading enables mixture-of-experts (MoE) deployment on one GPU beyond the task's GPU and host memory capacity.
+HDD offloading enables mixture-of-experts (MoE) deployment on GPU beyond the task’s GPU and host memory capacity.
 Weight reads add latency to startup and token generation.
 We propose MECC (MoE Expert Cache Coordination), a three-tier cache for single-GPU inference.
 MECC uses offline routing analysis to allocate HBM/CPU capacity across layers and initialize expert residency.
 CPU-to-GPU promotion reuses the freed host slot to retain the displaced GPU expert's host copy.
 Request-driven updates adapt residency as task demand changes.
 Routing and expert weights remain unchanged.
-MECC achieves up to 1.25$\times$ TPOT and 1.19$\times$ TTFT speedup over the evaluated offloading baseline.
+On A100, MECC achieves up to 1.25$\times$ TPOT and 1.19$\times$ TTFT speedup over the state-of-the-art offloading baseline.
 \end{abstract}
 
 \begin{IEEEkeywords}
