@@ -1,0 +1,91 @@
+% Component-level mechanism; text inherits the paper's newtx fonts.
+\begin{tikzpicture}[x=1pt,y=1pt,>=Stealth,
+  every node/.style={font=\fontsize{7}{7.7}\selectfont,inner sep=0pt},
+  ctl/.style={->,densely dashed,draw=meccBlue,line width=.7pt},
+  wt/.style={->,draw=meccTeal,line width=1pt}]
+\path[use as bounding box] (0,0) rectangle (250,130);
+\definecolor{meccBlue}{HTML}{326C9B}
+\definecolor{meccTeal}{HTML}{6D9FAD}
+\definecolor{meccOrange}{HTML}{C78D51}
+\definecolor{meccInk}{HTML}{253645}
+
+% Compiler boundary.
+\draw[meccBlue!60,line width=.55pt] (1,98) rectangle (249,129);
+\node[anchor=west,text=meccBlue,font=\fontsize{6.7}{7.3}\selectfont\bfseries]
+  at (5,123) {OFFLINE};
+\foreach \x/\h in {9/9,15/7,21/6,27/4,33/3}
+  \fill[meccBlue!75] (\x,102) rectangle ++(4,\h);
+\node[anchor=west] at (44,113) {Routing counts};
+\node[anchor=west] at (44,103) {+ budgets};
+\draw[ctl] (92,113) -- (102,113);
+\node[draw=meccBlue,fill=meccBlue!9,minimum width=52pt,minimum height=19pt,
+      font=\fontsize{7}{7.7}\selectfont\bfseries]
+  (planner) at (129,113) {Expert planner};
+\draw[ctl] (156,113) -- (167,113);
+\node[draw=meccBlue!70,fill=white,minimum width=73pt,minimum height=19pt]
+  (plan) at (207,113) {$P_\ell=(K_{\mathrm H},K_{\mathrm C},S_0)$};
+
+% Per-request control path. The updated state remains inside the serving loop.
+\draw[meccInk!55,line width=.55pt] (1,1) rectangle (249,93);
+\node[anchor=west,text=meccInk,font=\fontsize{6.7}{7.3}\selectfont\bfseries]
+  at (5,87) {SERVING ACCESS $t$};
+\node[draw=meccInk!70,fill=white,minimum width=35pt,minimum height=18pt]
+  (router) at (24,72) {Router};
+\node[draw=meccTeal,fill=meccTeal!12,minimum width=62pt,minimum height=18pt,
+      font=\fontsize{7}{7.7}\selectfont\bfseries]
+  (retention) at (99,72) {Joint retention};
+\node[draw=meccOrange,fill=meccOrange!12,minimum width=49pt,minimum height=18pt,
+      font=\fontsize{7}{7.7}\selectfont\bfseries]
+  (delivery) at (178,72) {Delivery};
+\node[draw=meccBlue,fill=meccBlue!10,minimum width=25pt,minimum height=18pt,
+      font=\fontsize{6.7}{7.3}\selectfont\bfseries]
+  (gpu) at (233,72) {GPU};
+\draw[ctl] (router.east) -- node[above,fill=white,inner sep=.5pt,text=meccInk] {$e_t$}
+  (retention.west);
+\draw[ctl] (retention.east) -- node[above,fill=white,inner sep=.5pt,text=meccInk] {source}
+  (delivery.west);
+\draw[wt] (delivery.east) -- (gpu.west);
+\draw[ctl] (plan.south) -- ++(0,-13) -| (retention.north);
+
+% The selected CPU expert is promoted; its old host slot retains the HBM victim.
+\draw[meccInk!45,line width=.5pt] (9,4) rectangle (205,49);
+\node[anchor=west,font=\fontsize{6.5}{7.2}\selectfont\bfseries]
+  at (13,45) {Cache state};
+\node[font=\fontsize{6.5}{7.2}\selectfont\bfseries] at (92,45) {$S_{\ell,t}$};
+\draw[ctl] (112,45) -- (132,45);
+\node[font=\fontsize{6.5}{7.2}\selectfont\bfseries] at (165,45) {$S_{\ell,t+1}$};
+\foreach \y/\tier/\col in {34/HBM/meccBlue,23/CPU pinned/meccTeal,12/HDD/meccOrange}{
+  \fill[\col!10] (13,\y-4.5) rectangle (201,\y+4.5);
+  \draw[\col,line width=1.6pt] (13,\y-4.5) -- (13,\y+4.5);
+  \node[anchor=west,text=\col,font=\fontsize{6.7}{7.3}\selectfont\bfseries]
+    at (18,\y) {\tier};
+}
+\draw[meccInk!30,line width=.4pt] (125,8) -- (125,39);
+\foreach \x in {68,88,142,162} {
+  \fill[meccBlue!75] (\x,31) rectangle ++(18,6);
+  \fill[meccTeal!65] (\x,20) rectangle ++(18,6);
+  \fill[meccOrange!80] (\x,9) rectangle ++(18,6);
+}
+\node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (77,34) {$e_v$};
+\node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (77,23) {$e_t$};
+\node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (151,34) {$e_t$};
+\node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (151,23) {$e_v$};
+\foreach \x in {97,171} {
+  \node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (\x,34) {$e_a$};
+  \node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (\x,23) {$e_b$};
+}
+\foreach \x in {77,151}
+  \node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (\x,12) {$e_c$};
+\foreach \x in {97,171}
+  \node[text=white,font=\fontsize{6.1}{6.6}\selectfont\bfseries] at (\x,12) {$e_d$};
+% The dashed outlines follow the routed expert before and after promotion.
+\draw[draw=meccInk,densely dashed,line width=.7pt,rounded corners=.8pt]
+  (67,19) rectangle (87,27);
+\draw[draw=meccInk,densely dashed,line width=.7pt,rounded corners=.8pt]
+  (141,30) rectangle (161,38);
+\draw[ctl] (85,49) -- node[left,text=meccInk,font=\fontsize{6}{6.7}\selectfont] {$S_t$} (85,63);
+\draw[ctl] (110,63) -- node[right,text=meccInk,font=\fontsize{6}{6.7}\selectfont] {$S_{t+1}$} (110,49);
+\draw[wt] (201,23) -- (213,23) -- (213,58) --
+  node[below,text=meccInk,pos=.75,font=\fontsize{6}{6.7}\selectfont]
+  {H2D} (178,58) -- (delivery.south);
+\end{tikzpicture}

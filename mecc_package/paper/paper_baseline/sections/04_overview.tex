@@ -1,0 +1,220 @@
+% !TeX root = ../main.tex
+\section{Design}
+\label{sec:overview}
+\label{sec:method}
+Figure~\ref{fig:overview} shows how MECC connects an offline residency plan to the serving path.
+The planner uses recorded expert selections, model dimensions, and HBM/CPU budgets to set capacities and initial resident IDs for each layer.
+The loader places these experts in HBM and CPU memory.
+HDD keeps the full set of expert weights as backing storage.
+Together, the capacities and resident IDs define the cache state at deployment.
+
+During inference, the router's selected IDs enter the cache for their layer.
+A lookup identifies the source of each expert and updates HBM and CPU residency under that layer's fixed capacities.
+Figure~\ref{fig:overview} shows two possible sources: $e_2$ is resident in CPU memory, while $e_6$ needs an HDD read.
+Promoting $e_2$ frees its CPU slot, which can retain the expert displaced from HBM.
+The delivery path brings each requested weight to the GPU and completes its transfer before execution.
+
+The updated HBM and CPU resident sets carry into later tokens and requests.
+An expert ID belongs to a particular layer, so the same ID in another layer denotes a different weight block.
+Requests update only the accessed layer's state; other layers keep their residents.
+This lets serving demand change the initial placement while preserving the capacities assigned by the planner.
+
+\subsection{Expert Planner}
+\label{sec:expert_planner}
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{figures/fig04_compile_frontiers.pdf}
+\par\nointerlineskip
+\caption{Initial placement across layers A--C. Circled entries are the next uncovered experts; shared HBM/CPU budgets set the cuts in each ranked list.}
+\label{fig:compile}
+\end{figure}
+
+Consider $L$ MoE layers with $N_\ell$ experts per layer.
+For the routed pools considered here, experts have equal size $s$ and layers use the same top-$k$, so each slot has the same capacity cost across layers.
+
+Primary expert-residency budgets $B_{\mathrm H}$ and $B_{\mathrm C}$ provide $S_{\mathrm H}=\lfloor B_{\mathrm H}/s\rfloor$ HBM slots and $S_{\mathrm C}=\lfloor B_{\mathrm C}/s\rfloor$ CPU slots.
+Physical host usage includes CPU residents, GPU-weight mirrors, and staging buffers.
+
+Calibration orders experts by selection counts.
+The analysis collects selected expert IDs separately for each layer.
+Let $\pi_\ell(r)$ denote the local ID at rank $r$ in layer $\ell$.
+Expert ID breaks equal-count ties.
+Zero-count IDs follow observed experts in ID order.
+The planner therefore compares demand across layers while preserving a separate expert list for each layer.
+A log-count versus log-rank regression supplies $\alpha_\ell$ as the negative slope over positive counts.
+The rank model smooths the observed selection frequencies for allocation scoring:
+\begin{equation}
+q_{\ell,r}=\frac{r^{-\alpha_\ell}}{\sum_{j=1}^{N_\ell}j^{-\alpha_\ell}}.
+\end{equation}
+Here $q_{\ell,r}$ is conditional selection mass within layer $\ell$, with unit sum.
+Equal top-$k$ makes this mass comparable across layers.
+Counts determine which expert occupies each rank; the rank model supplies the allocation scores.
+
+Figure~\ref{fig:compile} shows the HBM and CPU cuts in those lists.
+Capacities satisfy $\sum_\ell K_{\mathrm H,\ell}\le S_{\mathrm H}$, $\sum_\ell K_{\mathrm C,\ell}\le S_{\mathrm C}$, and $K_{\mathrm H,\ell}+K_{\mathrm C,\ell}\le N_\ell$.
+The adaptive scan reserves one slot per layer in each fast tier, then distributes the remaining slots by marginal coverage.
+The reservation accounts for $L$ slots in each tier before the remaining allowance is distributed.
+
+The scan first assigns HBM slots.
+At each step, it chooses the layer with the largest next-rank score:
+\begin{equation}
+\Delta_\ell=q_{\ell,K_{\mathrm H,\ell}+1}.
+\end{equation}
+CPU allocation continues from the first ranks beyond each HBM cut.
+Its next candidate has score
+\begin{equation}
+\Delta^{\mathrm C}_\ell=q_{\ell,K_{\mathrm H,\ell}+K_{\mathrm C,\ell}+1}.
+\label{eq:cpu_marginal}
+\end{equation}
+The HBM offset directs CPU slots to experts beyond those already selected for the GPU.
+An eligible layer has an uncovered expert within its local list.
+The scan compares these candidates, assigns one slot, and advances the selected layer's cut.
+Every allocation exposes a new next-rank candidate in that layer.
+Layer ID breaks score ties, and expert ID breaks count ties.
+The direct scan takes $O(L(S_{\mathrm H}+S_{\mathrm C}))$ time after sorting.
+Its score is the additional within-layer selection mass covered by the next slot.
+Sorting the layer-local lists takes $O(\sum_\ell N_\ell\log N_\ell)$ time and runs once before deployment.
+
+The expert planner serializes a residency plan: model dimensions, expert size, capacity arrays, and ranked layer-local IDs.
+For layer $\ell$, ranks $1$ through $K_{\mathrm H,\ell}$ enter HBM.
+Ranks $K_{\mathrm H,\ell}+1$ through $K_{\mathrm H,\ell}+K_{\mathrm C,\ell}$ enter the CPU resident set.
+All other ranks remain available from the backing store.
+The JSON plan is the deployment artifact consumed by the loader.
+The loader constructs a cache for each layer from the corresponding IDs and capacities.
+The capacity arrays remain fixed during serving.
+Changing task demand updates the residents through online admission.
+
+\subsection{Expert Retention}
+\label{sec:expert_retention}
+Each layer maintains two ordered sets, from most-recently used (MRU) to least-recently used (LRU).
+Their concatenation places HBM residents before CPU residents.
+The two primary sets contain distinct expert IDs.
+The ordering describes recency across both managed tiers.
+An HBM hit moves its expert to HBM MRU.
+A CPU hit removes its host entry and promotes it to HBM MRU.
+The evicted GPU LRU expert then becomes CPU MRU.
+HDD retains the backing weights for every expert.
+The cold payload comes from a completed read or a pending read resolved at consumption.
+It enters HBM MRU and follows the same demotion rule as a CPU promotion.
+If this admission exceeds the CPU capacity, the CPU LRU entry is removed.
+The backing store supplies that expert again when a later request misses both tiers.
+
+\begin{figure}[H]
+\centering\includegraphics[width=\columnwidth]{figures/fig05_residency_cases.pdf}
+\par\nointerlineskip
+\caption{Expert recency across three requests. Colored paths track each expert; vertical order in each tier runs from MRU to LRU.}
+\label{fig:retention}
+\end{figure}
+Figure~\ref{fig:retention} starts with HBM $[a_1,a_2]$ and CPU $[a_3,a_4]$.
+Request $a_2$ gives HBM $[a_2,a_1]$.
+Request $a_3$ then promotes $a_3$ and demotes $a_1$, producing HBM $[a_3,a_2]$ and CPU $[a_1,a_4]$.
+Finally, $a_5$ enters HBM, $a_2$ becomes CPU MRU, and $a_4$ leaves CPU LRU.
+The final lists are $[a_5,a_3]$ and $[a_2,a_1]$.
+
+Each GPU resident carries a host mirror.
+The implementation stores device weights and their host tensor together in the GPU entry.
+On promotion, the CPU resident's host tensor continues as the promoted expert's mirror.
+The released slot is a logical CPU residency entry.
+The demoted expert's existing mirror becomes the new resident named by that entry.
+This exchange retains the demoted weights through a metadata update and saves a device-to-host copy.
+
+Mirrors and CPU residents serve different roles.
+A mirror supports an expert currently assigned to HBM; a CPU resident supplies an expert outside the HBM set.
+For equal-size blocks and full resident sets, their steady host payload is $s\sum_\ell(K_{\mathrm H,\ell}+K_{\mathrm C,\ell})$.
+Pending reads and staging buffers add to this payload.
+Deployment sizing includes these allocations alongside the primary CPU capacity.
+
+The ordered maps support lookup and recency updates in expected constant time.
+A CPU hit consumes one CPU entry before admitting the requested expert to HBM.
+A cold access introduces a new resident and may remove the CPU tail.
+After each access, the primary sets respect their assigned capacities.
+Active tensor references extend the lifetime of weights through expert execution.
+
+\subsection{Online Execution}
+\label{sec:weight_delivery}
+Serving requests update the initial state through the same access rules.
+When a task selects different experts, its first accesses admit them to HBM.
+Subsequent demotions place them at CPU MRU, while older CPU entries move toward replacement.
+HBM hits refresh recency directly.
+The updated state survives the end of a prompt and serves later requests on the same model instance.
+
+For each MoE layer, the wrapper evaluates the gate and groups token rows by selected expert.
+The loader resolves each layer-local expert ID through the memory tiers.
+The expert kernel processes its assigned rows.
+Gate weights scale the outputs before accumulation into the layer result.
+The gate continues to determine expert selection and mixture weights.
+
+During prefill, the loader submits reads for the selected experts absent from memory.
+Each read is resolved when its expert reaches consumption.
+Figure~\ref{fig:delivery} shows resident work overlapping a pending read for another selected expert.
+
+\begin{figure}[H]
+\centering\input{figures/fig06_delivery_timeline.tex}
+\par\nointerlineskip
+\caption{Illustrative prefill schedule for resident $a_1$ and HDD expert $a_5$.
+MECC overlaps the HDD read with $a_1$ execution, reducing the exposed wait before $a_5$.}
+\label{fig:delivery}
+\end{figure}
+A read future returns the host tensors that supply H2D.
+The copy stream moves them to the GPU.
+The loader synchronizes pending copies before yielding device tensors to computation.
+The expert kernel then consumes those tensors.
+Recording the consumer stream keeps their storage live through kernel completion.
+These dependencies connect read completion, copy completion, and expert execution.
+
+Prefill can request more experts than a single resident set holds.
+The loader batches CPU-resident experts when the group fits the configured HBM slot count.
+Larger groups use sequential access and eviction.
+Temporary transfer buffers and active references form part of runtime memory use alongside managed residents.
+Token generation uses the selected experts available for the current step.
+An HBM hit executes with existing device weights; other accesses take the corresponding host or HDD delivery path.
+
+Prefetchers use access analysis or lookahead to anticipate expert demand~\cite{pregated,fate,expertflow}.
+Batch and request schedulers expose work from concurrent inputs~\cite{klotski,bevy}; distributed edge schemes add network delivery~\cite{odmoe}.
+MECC combines request-driven retention with delivery of the experts selected at the current gate.
+Retention determines which weight blocks remain available across accesses.
+Delivery schedules the reads and copies that those accesses require.
+Recency updates change metadata and resident references. Reads and copies provide a new physical placement when the selected expert requires one.
+
+\newpage
+\subsection{Component Coordination}
+\label{sec:coordination}
+The planner, retention policy, and delivery path use the same per-layer cache state.
+At deployment, the planner fixes $K_{\mathrm H,\ell}$ and $K_{\mathrm C,\ell}$ and supplies the initial HBM and CPU expert IDs.
+At access $t$, the router selects a layer-local expert $e_t$.
+Write $S_{\ell,t}=(H_{\ell,t},C_{\ell,t})$ for the two resident ID sets before that access.
+Their membership may change, while their capacities remain bounded by the plan:
+\begin{equation}
+|H_{\ell,t}|\le K_{\mathrm H,\ell},\quad
+|C_{\ell,t}|\le K_{\mathrm C,\ell},\quad
+H_{\ell,t}\cap C_{\ell,t}=\varnothing.
+\end{equation}
+Figure~\ref{fig:coordination} follows the handoff from this fixed plan to one routed access and then to the next state.
+
+\begin{figure}[H]
+\centering\input{figures/fig07_coordination_v5.tex}
+\par\nointerlineskip
+\caption{Expert cache coordination for a CPU hit. Dashed boxes track selected expert $e_t$ from CPU to HBM; victim $e_v$ takes the released CPU slot.}
+\label{fig:coordination}
+\end{figure}
+
+The lookup has two outputs: a source for the current expert and a resident state for future accesses.
+An HBM hit refreshes recency and supplies weights already on the device.
+A CPU hit promotes its host tensor, then reuses the released CPU membership for the HBM expert displaced by promotion.
+An HDD miss brings in a new host tensor and may remove the CPU LRU entry.
+These transitions decide which expert IDs remain in the fast tiers; delivery carries out the required H2D copy or HDD read followed by H2D.
+The loader gives the expert kernel its device tensor after the transfer completes.
+
+Prefill provides a useful example of the two outputs occurring at different times.
+The loader can submit a read for an expert absent from both resident tiers while it computes another selected expert already in HBM.
+Submitting that read does not make the cold expert a resident.
+When the expert is consumed, its completed host payload enters the admission path, the H2D copy finishes, and the expert executes.
+The residency update affects later accesses, while the pending read and copy determine when the current access can execute.
+Temporary payloads remain part of physical memory use even before they become primary residents.
+
+The same state continues across token and request boundaries.
+If a later task selects experts outside the initial plan, their first accesses admit them under the existing per-layer capacities.
+Subsequent requests can use the resulting HBM or CPU residents without rerunning the planner.
+The planner therefore supplies the starting coverage, retention changes membership as demand changes, and delivery controls the wait exposed by each requested transfer.
+All three operate on the router's selected experts and leave its selection and mixture weights unchanged.
+A routed access updates recency and selects the source tier used by delivery. Later requests can reuse the resulting resident state under the same per-layer capacities.
+When a layer selects multiple experts, the loader batches CPU residents that fit its HBM allotment and resolves the remaining accesses in sequence.

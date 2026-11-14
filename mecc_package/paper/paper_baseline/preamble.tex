@@ -1,0 +1,73 @@
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+\brokenpenalty=1000
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{soul}
+\DeclareRobustCommand{\pending}[1]{#1}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{2pt}
+\setlength{\intextsep}{6pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{7pt plus 1pt minus 1pt}
+\setlength{\floatsep}{6pt plus 1pt minus 1pt}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{stfloats}
+\usepackage{balance}
+\makeatletter
+% Omit the conference author block when \author{} is empty.
+% Restore the class's full block automatically when authors are supplied.
+\patchcmd{\@maketitle}
+ {{\@IEEEspecialpapernotice\mbox{}\vskip\@IEEEauthorblockconfadjspace
+   \mbox{}\hfill\begin{@IEEEauthorhalign}\@author\end{@IEEEauthorhalign}\hfill\mbox{}\par}\relax}
+ {{\ifx\@author\@empty
+    \@IEEEspecialpapernotice
+   \else
+    \@IEEEspecialpapernotice\mbox{}\vskip\@IEEEauthorblockconfadjspace
+    \mbox{}\hfill\begin{@IEEEauthorhalign}\@author\end{@IEEEauthorhalign}\hfill\mbox{}\par
+   \fi}\relax}
+ {\typeout{MECC: empty conference author block omitted.}}
+ {\errmessage{Failed to patch the empty conference author block}}
+\patchcmd{\@BAlancecol}
+ {\setbox\@leftcolumn=\vbox to \@tempdima}
+ {\@tempdimb=\ht1\advance\@tempdimb by\dp1
+  \ifdim\@tempdimb>\@tempdima\@tempdima=\@tempdimb\fi
+  \@tempdimb=\ht3\advance\@tempdimb by\dp3
+  \ifdim\@tempdimb>\@tempdima\@tempdima=\@tempdimb\fi
+  \setbox\@leftcolumn=\vbox to \@tempdima}
+ {\typeout{MECC: balance packing includes split-box depth.}}
+ {\errmessage{Failed to patch balanced-column packing}}
+% Stretch section and figure spacing instead of leaving unequal column tails.
+\patchcmd{\@BAlancecol}{\unvbox1\vfil}{\unvbox1}
+ {\typeout{MECC: balanced left column uses body glue.}}
+ {\errmessage{Failed to patch left balance tail}}
+\patchcmd{\@BAlancecol}{\vfil}{}
+ {\typeout{MECC: balanced right column uses body glue.}}
+ {\errmessage{Failed to patch right balance tail}}
+\makeatother
+\usepackage{capt-of}
+\usepackage{float}
+\usepackage{needspace}
+\setcounter{dbltopnumber}{3}
+\renewcommand{\dbltopfraction}{0.85}
+\renewcommand{\textfraction}{0.10}
+\newcommand{\mecc}{\textsc{MECC}}
+\newcommand{\BH}{B_{\mathrm H}}
+\newcommand{\BC}{B_{\mathrm C}}
+\newcommand{\KH}{K_{\mathrm H}}
+\newcommand{\KC}{K_{\mathrm C}}
+\newtheorem{proposition}{Proposition}
+\title{\fontsize{17}{20}\selectfont MECC: Expert Cache Coordination for MoE Inference on a Single GPU}
+% Anonymous review copy: no author names or affiliation spacer rows.
+\author{}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={MECC: Expert Cache Coordination for MoE Inference on a Single GPU},pdfauthor={}}

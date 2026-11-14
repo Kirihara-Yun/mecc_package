@@ -1,0 +1,14 @@
+% !TeX root = ../main.tex
+\begin{abstract}
+MECC (MoE Expert Cache Coordination) coordinates GPU and host caches for HDD-backed inference.
+When expert weights exceed the combined GPU and host memory capacity, a miss in both caches requires an HDD read before expert execution.
+MECC analyzes expert routing to allocate cache slots across layers and select initial residents.
+During CPU-to-GPU promotion, it reuses the released host slot to retain the displaced GPU expert's host copy, avoiding a device-to-host transfer.
+MECC updates HBM and CPU residency through joint recency as requests change expert demand; routing and expert weights remain unchanged.
+On A100, MECC achieves up to 1.25$\times$ TPOT and 1.19$\times$ TTFT speedup over the state-of-the-art offloading baseline.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Mixture of experts, single-GPU inference, expert offloading, three-tier caching, hardware/software co-design.
+\end{IEEEkeywords}
+

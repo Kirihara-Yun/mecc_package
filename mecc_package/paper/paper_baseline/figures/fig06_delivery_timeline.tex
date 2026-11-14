@@ -1,0 +1,50 @@
+% Illustrative prefill schedule. Coordinates express dependency order, not measured time.
+\begin{tikzpicture}[x=1pt,y=1pt,>=Stealth,
+  every node/.style={font=\fontsize{7}{7.7}\selectfont,inner sep=0pt}]
+\path[use as bounding box] (0,0) rectangle (250,129);
+\begin{scope}[yshift=-4pt]
+\definecolor{delBlue}{HTML}{326C9B}
+\definecolor{delTeal}{HTML}{6D9FAD}
+\definecolor{delOrange}{HTML}{C78D51}
+\definecolor{delInk}{HTML}{253645}
+\node[anchor=west,text=delInk,font=\fontsize{7.3}{8}\selectfont\bfseries]
+  at (3,131) {Selected experts: $a_1$ in HBM, $a_5$ on HDD};
+\draw[->,draw=delInk!70,line width=.55pt] (63,120) -- (237,120);
+\node[anchor=east,text=delInk] at (250,120) {time};
+
+% The same resource lanes are used in both schedules.
+\foreach \bottom/\title/\io/\gpu in {67/Serial/98/79,12/MECC/43/24}{
+  \draw[delInk!40,line width=.5pt] (2,\bottom) rectangle (248,\bottom+48);
+  \fill[delInk!3] (62,\io-7) rectangle (216,\io+7);
+  \fill[delInk!3] (62,\gpu-7) rectangle (216,\gpu+7);
+  \node[anchor=west,text=delInk,font=\fontsize{7.4}{8}\selectfont\bfseries]
+    at (6,\bottom+40) {\title};
+  \node[anchor=east,text=delInk] at (56,\io) {I/O};
+  \node[anchor=east,text=delInk] at (56,\gpu) {GPU};
+  \fill[delOrange!88] (64,\io-6) rectangle (132,\io+6);
+  \node[text=white,font=\fontsize{7.1}{7.8}\selectfont\bfseries]
+    at (98,\io) {HDD read $a_5$};
+  \fill[delTeal!92] (134,\io-6) rectangle (158,\io+6);
+  \node[text=white,font=\fontsize{6.8}{7.4}\selectfont\bfseries]
+    at (146,\io) {H2D};
+  \draw[delInk!45,densely dashed,line width=.55pt] (158,\io-8) -- (158,\gpu+8);
+}
+\node[anchor=west,text=delInk,font=\fontsize{6.4}{7}\selectfont] at (162,106) {ready};
+\node[anchor=west,text=delInk,font=\fontsize{6.4}{7}\selectfont] at (162,51) {ready};
+% Serial: device computation starts after the read and copy.
+\fill[delBlue!88] (159,73) rectangle (183,85);
+\fill[delBlue!88] (185,73) rectangle (209,85);
+\node[text=white,font=\fontsize{7}{7.6}\selectfont\bfseries] at (171,79) {$a_1$};
+\node[text=white,font=\fontsize{7}{7.6}\selectfont\bfseries] at (197,79) {$a_5$};
+% MECC: the resident expert executes during the HDD read.
+\fill[delBlue!88] (64,18) rectangle (88,30);
+\node[text=white,font=\fontsize{7}{7.6}\selectfont\bfseries] at (76,24) {$a_1$};
+\draw[delInk!55,densely dashed,line width=.6pt] (90,18) rectangle (158,30);
+\node[text=delInk,font=\fontsize{6.7}{7.4}\selectfont] at (124,24) {exposed wait};
+\fill[delBlue!88] (159,18) rectangle (183,30);
+\node[text=white,font=\fontsize{7}{7.6}\selectfont\bfseries] at (171,24) {$a_5$};
+\draw[delBlue,line width=.7pt] (184,16) -- (184,7) -- (210,7) -- (210,16);
+\node[anchor=west,text=delBlue,font=\fontsize{6.6}{7.2}\selectfont\bfseries]
+  at (213,7) {saved};
+\end{scope}
+\end{tikzpicture}
